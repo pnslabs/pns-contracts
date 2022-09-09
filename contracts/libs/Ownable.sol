@@ -50,8 +50,8 @@ abstract contract Ownable is Context {
      * thereby removing any functionality that is only available to the owner.
      */
     function renounceOwnership() public virtual onlyOwner {
-        emit OwnershipTransferred(owner, address(0));
         owner = address(0);
+        emit OwnershipTransferred(owner, address(0));
     }
 
     /**
@@ -67,7 +67,7 @@ abstract contract Ownable is Context {
             newOwner != address(0),
             "Ownable: new owner is the zero address"
         );
-        emit OwnershipTransferred(owner, newOwner);
         owner = newOwner;
+        emit OwnershipTransferred(owner, newOwner);
     }
 }
