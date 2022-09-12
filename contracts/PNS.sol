@@ -1,4 +1,4 @@
-pragma solidity >=0.7.0;
+pragma solidity ^0.7.0;
 import "./IPNS.sol";
 
 contract PNS is IPNS {
@@ -12,14 +12,15 @@ contract PNS is IPNS {
         address owner;
         address wallet;
         bytes32 phoneHash;
-        uint64 createdAt;
+        uint256 createdAt;
         bool exists;
     }
 
     mapping(bytes32 => PhoneRecord) records;
 
     // Permits modifications only by the owner of the specified phoneHash.
-    modifier authorised(bytes32 phoneHash) {
+    modifier authorised(bytes32 phoneNumber) {
+        bytes32 phoneHash = _hash(phoneNumber);
         address owner = records[phoneHash].owner;
         require(owner == msg.sender);
         _;
@@ -32,10 +33,12 @@ contract PNS is IPNS {
      * @param wallet The address the phone number resolves to.
      */
     function setPhoneRecord(
-        uint256 phoneHash,
+        bytes32 phoneNumber,
         address owner,
         address wallet
-    ) external virtual override {
+    ) external virtual {
+        // hash phone number before storing it on chain
+        bytes32 phoneHash = _hash(phoneNumber);
         setOwner(phoneHash, owner);
         if (wallet != records[phoneHash].wallet) {
             records[phoneHash].wallet = wallet;
@@ -47,22 +50,41 @@ contract PNS is IPNS {
 
     /**
      * @dev Returns the address that owns the specified phone number phoneHash.
-     * @param phoneHash The specified phoneHash.
+     * @param phoneNumber The specified phoneHash.
      */
-    function getRecord(bytes32 phoneHash)
-        public
+    function getRecord(bytes32 phoneNumber)
+        external
         view
         virtual
         override
         returns (
             address owner,
             address wallet,
-            bytes32 phoneHash,
-            uint64 createdAt,
+            bytes32,
+            uint256 createdAt,
             bool exists
         )
     {
-        PhoneRecords memory recordData = records[phoneHash];
+        return _getRecord(phoneNumber);
+    }
+
+    /**
+     * @dev Returns the address that owns the specified phone number phoneHash.
+     * @param phoneNumber The specified phoneHash.
+     */
+    function _getRecord(bytes32 phoneNumber)
+        internal
+        view
+        returns (
+            address owner,
+            address wallet,
+            bytes32,
+            uint256 createdAt,
+            bool exists
+        )
+    {
+        bytes32 phoneHash = _hash(phoneNumber);
+        PhoneRecord memory recordData = records[phoneHash];
         require(recordData.exists, "phone record not found");
 
         return (
@@ -75,17 +97,17 @@ contract PNS is IPNS {
     }
 
     /**
-     * @dev Returns the address that owns the specified phone number phoneHash.
-     * @param phoneHash The specified phoneHash.
+     * @dev Returns the address that owns the specified phone number.
+     * @param phoneNumber The specified phoneNumber.
      * @return address of the owner.
      */
-    function getOwner(bytes32 phoneHash)
+    function getOwner(bytes32 phoneNumber)
         public
         view
         virtual
-        override
         returns (address)
     {
+        bytes32 phoneHash = _hash(phoneNumber);
         address addr = records[phoneHash].owner;
         if (addr == address(this)) {
             return address(0x0);
@@ -96,73 +118,88 @@ contract PNS is IPNS {
 
     /**
      * @dev Returns the address of the resolver for the specified phoneHash.
-     * @param phoneHash The specified phoneHash.
+     * @param phoneNumber The specified phoneHash.
      * @return address of the resolver.
      */
-    function getResolver(bytes32 phoneHash)
+    function getResolver(bytes32 phoneNumber)
         public
         view
         virtual
-        override
         returns (address)
     {
+        bytes32 phoneHash = _hash(phoneNumber);
         return records[phoneHash].wallet;
     }
 
     /**
      * @dev Returns whether a record has been imported to the registry.
-     * @param phoneHash The specified phoneHash.
+     * @param phoneNumber The specified phoneHash.
      * @return Bool if record exists
      */
-    function recordExists(bytes32 phoneHash)
+    function recordExists(bytes32 phoneNumber)
         public
         view
         virtual
-        override
         returns (bool)
     {
+        bytes32 phoneHash = _hash(phoneNumber);
         return records[phoneHash].exists;
     }
 
     /**
      * @dev Transfers ownership of a phoneHash to a new address. May only be called by the current owner of the phoneHash.
-     * @param phoneHash The phoneHash to transfer ownership of.
+     * @param phoneNumber The phoneHash to transfer ownership of.
      * @param owner The address of the new owner.
      */
-    function setOwner(bytes32 phoneHash, address owner)
+    function setOwner(bytes32 phoneNumber, address owner)
         public
         virtual
-        override
-        authorised(phoneHash)
+        authorised(phoneNumber)
     {
-        _setOwner(phoneHash, owner);
+        bytes32 phoneHash = _setOwner(phoneNumber, owner);
         emit Transfer(phoneHash, owner);
     }
 
     /**
      * @dev Sets the resolver address for the specified phoneHash.
-     * @param phoneHash The phoneHash to update.
-     * @param resolver The address of the resolver.
+     * @param phoneNumber The phoneNumber to update.
+     * @param wallet The address of the resolver.
      */
-    function linkPhoneToWallet(bytes32 phoneHash, address wallet)
+    function linkPhoneToWallet(bytes32 phoneNumber, address wallet)
         public
         virtual
-        override
-        authorised(phoneHash)
+        authorised(phoneNumber)
     {
+        bytes32 phoneHash = _hash(phoneNumber);
         _linkPhoneNumberToWallet(phoneHash, wallet);
         emit PhoneLinked(phoneHash, wallet);
     }
 
-    function _setOwner(bytes32 phoneHash, address owner) internal virtual {
+    function _setOwner(bytes32 phoneNumber, address owner)
+        internal
+        virtual
+        returns (bytes32)
+    {
+        bytes32 phoneHash = _hash(phoneNumber);
         records[phoneHash].owner = owner;
+        return phoneHash;
     }
 
-    function _linkPhoneNumberToWallet(bytes32 phoneHash, address wallet)
+    function _linkPhoneNumberToWallet(bytes32 phoneNumber, address wallet)
         internal
     {
+        bytes32 phoneHash = _hash(phoneNumber);
         if (wallet != records[phoneHash].wallet) {
             records[phoneHash].wallet = wallet;
         }
+    }
+
+    /**
+     * @dev Returns the hash for a given phoneNumber
+     * @param phoneNumber The phoneNumber to hash
+     * @return The ENS node hash.
+     */
+    function _hash(bytes32 phoneNumber) internal returns (bytes32) {
+        return keccak256(abi.encode(phoneNumber));
     }
 }

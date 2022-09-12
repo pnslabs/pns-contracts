@@ -9,4 +9,21 @@ interface IPNS {
 
     //logs when a resolve address is set for the specified phoneHash.
     event PhoneLinked(bytes32 phoneHash, address wallet);
+
+    function setPhoneRecord(
+        uint256 phoneHash,
+        address owner,
+        address wallet
+    ) external;
+
+    function getRecord(bytes32 phoneHash)
+        external
+        view
+        returns (
+            address owner,
+            address wallet,
+            bytes32,
+            uint64 createdAt,
+            bool exists
+        );
 }
