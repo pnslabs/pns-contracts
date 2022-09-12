@@ -1,12 +1,20 @@
-pragma solidity ^0.7.0;
+pragma solidity 0.8.9;
 import "./IPNS.sol";
 
-contract PNS is IPNS {
+contract PNS {
     // assign phone number phoneHash to an address
     // transfer ownership of address to a new phone number
     // unlink phone number phoneHash to an address
     // get phone number tied to an address
     // get address tied to a phone number
+    // logs when you sets the record for a phoneHash.
+    event PhoneRecordCreated(bytes32 phoneHash, address wallet, address owner);
+
+    // logs when transfers ownership of a phoneHash to a new address
+    event Transfer(bytes32 phoneHash, address owner);
+
+    //logs when a resolve address is set for the specified phoneHash.
+    event PhoneLinked(bytes32 phoneHash, address wallet);
 
     struct PhoneRecord {
         address owner;
@@ -55,8 +63,6 @@ contract PNS is IPNS {
     function getRecord(bytes32 phoneNumber)
         external
         view
-        virtual
-        override
         returns (
             address owner,
             address wallet,
@@ -136,12 +142,7 @@ contract PNS is IPNS {
      * @param phoneNumber The specified phoneHash.
      * @return Bool if record exists
      */
-    function recordExists(bytes32 phoneNumber)
-        public
-        view
-        virtual
-        returns (bool)
-    {
+    function recordExists(bytes32 phoneNumber) public view returns (bool) {
         bytes32 phoneHash = _hash(phoneNumber);
         return records[phoneHash].exists;
     }
@@ -199,7 +200,7 @@ contract PNS is IPNS {
      * @param phoneNumber The phoneNumber to hash
      * @return The ENS node hash.
      */
-    function _hash(bytes32 phoneNumber) internal returns (bytes32) {
+    function _hash(bytes32 phoneNumber) internal pure returns (bytes32) {
         return keccak256(abi.encode(phoneNumber));
     }
 }
