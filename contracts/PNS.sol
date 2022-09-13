@@ -16,7 +16,7 @@ contract PNS {
     //logs when a resolve address is set for the specified phoneHash.
     event PhoneLinked(bytes32 phoneHash, address wallet);
 
-    struct NetworkRecord {
+    struct ResolverRecord {
         address wallet;
         uint256 createdAt;
         bool exists;
@@ -24,7 +24,7 @@ contract PNS {
 
     struct PhoneRecord {
         address owner;
-        mapping(string => NetworkRecord) wallet;
+        mapping(string => ResolverRecord) wallet;
         bytes32 phoneHash;
         uint256 createdAt;
         bool exists;
@@ -181,12 +181,12 @@ contract PNS {
      * @param phoneNumber The specified phoneHash.
      * @param network The specified network of the resolver.
      */
-    function getNetwork(bytes32 phoneNumber, string memory network)
+    function getResolverDetails(bytes32 phoneNumber, string memory network)
         external
         view
-        returns (NetworkRecord memory resolver)
+        returns (ResolverRecord memory resolver)
     {
-        return _getNetwork(phoneNumber, network);
+        return _getResolverDetails(phoneNumber, network);
     }
 
     function _setOwner(bytes32 phoneNumber, address owner)
@@ -250,10 +250,10 @@ contract PNS {
      * @param phoneNumber The specified phoneHash.
      * @param network The specified network.
      */
-    function _getNetwork(bytes32 phoneNumber, string memory network)
+    function _getResolverDetails(bytes32 phoneNumber, string memory network)
         internal
         view
-        returns (NetworkRecord memory resolver)
+        returns (ResolverRecord memory resolver)
     {
         bytes32 phoneHash = _hash(phoneNumber);
         PhoneRecord storage recordData = records[phoneHash];

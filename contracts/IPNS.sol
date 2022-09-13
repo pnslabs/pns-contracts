@@ -18,7 +18,7 @@ interface IPNS {
             bool exists
         );
 
-    function getNetwork(bytes32 phoneHash, string memory network)
+    function getResolverDetails(bytes32 phoneHash, string memory network)
         external
         view
         returns (
