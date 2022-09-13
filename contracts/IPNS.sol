@@ -4,7 +4,8 @@ interface IPNS {
     function setPhoneRecord(
         uint256 phoneHash,
         address owner,
-        address wallet
+        address wallet,
+        string memory network
     ) external;
 
     function getRecord(bytes32 phoneHash)
@@ -12,9 +13,17 @@ interface IPNS {
         view
         returns (
             address owner,
-            address wallet,
             bytes32,
             uint64 createdAt,
+            bool exists
+        );
+
+    function getNetwork(bytes32 phoneHash, string memory network)
+        external
+        view
+        returns (
+            address wallet,
+            uint256 createdAt,
             bool exists
         );
 }
