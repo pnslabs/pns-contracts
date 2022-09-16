@@ -19,6 +19,7 @@ contract PNS {
     struct ResolverRecord {
         address wallet;
         uint256 createdAt;
+        string label;
         bool exists;
     }
 
@@ -45,22 +46,22 @@ contract PNS {
      * @param phoneNumber The phoneNumber to update.
      * @param owner The address of the new owner.
      * @param wallet The address the phone number resolves to.
-     * @param network The specified network of the resolver.
+     * @param label The label is specified network of the resolver.
      */
     function setPhoneRecord(
         bytes32 phoneNumber,
         address owner,
         address wallet,
-        string memory network
+        string memory label
     ) external virtual {
         // hash phone number before storing it on chain
         bytes32 phoneHash = _hash(phoneNumber);
         setOwner(phoneHash, owner);
 
-        if (wallet != records[phoneHash].wallet[network].wallet) {
-            records[phoneHash].wallet[network].wallet = wallet;
-            records[phoneHash].wallet[network].createdAt = block.timestamp;
-            records[phoneHash].wallet[network].exists = true;
+        if (wallet != records[phoneHash].wallet[label].wallet) {
+            records[phoneHash].wallet[label].wallet = wallet;
+            records[phoneHash].wallet[label].label = label;
+            records[phoneHash].wallet[label].exists = true;
         }
 
         records[phoneHash].createdAt = block.timestamp;
@@ -149,44 +150,44 @@ contract PNS {
      * @dev Sets the resolver address for the specified phoneHash.
      * @param phoneNumber The phoneNumber to update.
      * @param wallet The address of the resolver.
-     * @param network The specified network of the resolver.
+     * @param label The specified label of the resolver.
      */
     function linkPhoneToWallet(
         bytes32 phoneNumber,
         address wallet,
-        string memory network
+        string memory label
     ) public virtual authorised(phoneNumber) {
         bytes32 phoneHash = _hash(phoneNumber);
-        _linkPhoneNumberToWallet(phoneHash, wallet, network);
+        _linkPhoneNumberToWallet(phoneHash, wallet, label);
         emit PhoneLinked(phoneHash, wallet);
     }
 
     /**
      * @dev Returns whether a record has been imported to the registry.
      * @param phoneNumber The specified phoneHash.
-     * @param network The specified network of the resolver.
+     * @param label The specified label of the resolver.
      * @return Bool if record exists
      */
-    function resolverExists(bytes32 phoneNumber, string memory network)
+    function resolverExists(bytes32 phoneNumber, string memory label)
         public
         view
         returns (bool)
     {
         bytes32 phoneHash = _hash(phoneNumber);
-        return records[phoneHash].wallet[network].exists;
+        return records[phoneHash].wallet[label].exists;
     }
 
     /**
-     * @dev Returns an existing network for the specified phone number phoneHash.
+     * @dev Returns an existing label for the specified phone number phoneHash.
      * @param phoneNumber The specified phoneHash.
-     * @param network The specified network of the resolver.
+     * @param label The specified label of the resolver.
      */
-    function getResolverDetails(bytes32 phoneNumber, string memory network)
+    function getResolverDetails(bytes32 phoneNumber, string memory label)
         external
         view
         returns (ResolverRecord memory resolver)
     {
-        return _getResolverDetails(phoneNumber, network);
+        return _getResolverDetails(phoneNumber, label);
     }
 
     function _setOwner(bytes32 phoneNumber, address owner)
@@ -202,11 +203,12 @@ contract PNS {
     function _linkPhoneNumberToWallet(
         bytes32 phoneNumber,
         address wallet,
-        string memory network
+        string memory label
     ) internal {
         bytes32 phoneHash = _hash(phoneNumber);
-        if (wallet != records[phoneHash].wallet[network].wallet) {
-            records[phoneHash].wallet[network].wallet = wallet;
+        if (wallet != records[phoneHash].wallet[label].wallet) {
+            records[phoneHash].wallet[label].wallet = wallet;
+            records[phoneHash].wallet[label].label = label;
         }
     }
 
@@ -246,11 +248,11 @@ contract PNS {
     }
 
     /**
-     * @dev Returns an existing network for the specified phone number phoneHash.
+     * @dev Returns an existing label for the specified phone number phoneHash.
      * @param phoneNumber The specified phoneHash.
-     * @param network The specified network.
+     * @param label The specified label.
      */
-    function _getResolverDetails(bytes32 phoneNumber, string memory network)
+    function _getResolverDetails(bytes32 phoneNumber, string memory label)
         internal
         view
         returns (ResolverRecord memory resolver)
@@ -259,6 +261,6 @@ contract PNS {
         PhoneRecord storage recordData = records[phoneHash];
         require(recordData.exists, "phone record not found");
 
-        return (recordData.wallet[network]);
+        return (recordData.wallet[label]);
     }
 }
