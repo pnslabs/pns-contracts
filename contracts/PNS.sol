@@ -46,7 +46,7 @@ contract PNS {
      * @param phoneNumber The phoneNumber to update.
      * @param owner The address of the new owner.
      * @param wallet The address the phone number resolves to.
-     * @param label The label is specified network of the resolver.
+     * @param label The label is specified label of the resolver.
      */
     function setPhoneRecord(
         bytes32 phoneNumber,
@@ -107,19 +107,19 @@ contract PNS {
     }
 
     /**
-     * @dev Returns the address of the resolver for the specified phoneHash and network.
+     * @dev Returns the address of the resolver for the specified phoneHash and label.
      * @param phoneNumber The specified phoneHash.
-     * @param network The specified network of the resolver.
+     * @param label The specified label of the resolver.
      * @return address of the resolver.
      */
-    function getResolver(bytes32 phoneNumber, string memory network)
+    function getResolver(bytes32 phoneNumber, string memory label)
         public
         view
         virtual
         returns (address)
     {
         bytes32 phoneHash = _hash(phoneNumber);
-        return records[phoneHash].wallet[network].wallet;
+        return records[phoneHash].wallet[label].wallet;
     }
 
     /**
