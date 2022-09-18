@@ -19,7 +19,7 @@ module.exports = {
   },
   networks: {
     localhost: {
-      url: `http://localhost:8545`,
+      url: `http://127.0.0.1:8545`,
       accounts: [`0x${PRIVATE_KEY_GANACHE}`],
       gasPrice: parseInt(utils.parseUnits("132", "gwei")),
       allowUnlimitedContractSize: true,

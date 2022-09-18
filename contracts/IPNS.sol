@@ -2,9 +2,9 @@ pragma solidity 0.8.9;
 
 interface IPNS {
     function setPhoneRecord(
-        uint256 phoneHash,
+        bytes32 phoneHash,
         address owner,
-        address wallet,
+        address resolver,
         string memory label
     ) external;
 
@@ -15,7 +15,7 @@ interface IPNS {
 
     function linkPhoneToWallet(
         bytes32 phoneNumber,
-        address wallet,
+        address resolver,
         string memory label
     ) external;
 
