@@ -4,12 +4,10 @@
 // You can also run a script with `npx hardhat run <script>`. If you do that, Hardhat
 // will compile your contracts, add the Hardhat Runtime Environment's members to the
 // global scope, and execute the script.
-const hre = require("hardhat");
-const upgradeContract = require("./util");
-const { ethers, web3 } = hre;
+const Web3 = require("web3");
+const web3 = new Web3("http://localhost:8545");
 
 async function main() {
-  const [owner] = ethers.getSigner();
   let pns;
   let proxyAdmin;
   let transparentUpgradeableProxy;
@@ -24,7 +22,7 @@ async function main() {
   console.log("PNS Contract Deployed", pns.address);
 
   // setting up proxy admin to be this address. You can set it up to be multi-sig
-  proxyAdmin = await ProxyAdminContract.deploy({ from: owner[0] });
+  proxyAdmin = await ProxyAdminContract.deploy();
   console.log("Proxy Admin deployed", proxyAdmin.address);
 
   const encodedData = web3.utils.hexToBytes("0x");
