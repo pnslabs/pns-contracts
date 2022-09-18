@@ -25,19 +25,19 @@ contract PNS {
 
     struct PhoneRecord {
         address owner;
-        mapping(string => ResolverRecord) wallet;
+        ResolverRecord[] wallet;
         bytes32 phoneHash;
         uint256 createdAt;
         bool exists;
     }
-
+    mapping(string => ResolverRecord) resolverRecordMapping;
     mapping(bytes32 => PhoneRecord) records;
 
     // Permits modifications only by the owner of the specified phoneHash.
     modifier authorised(bytes32 phoneNumber) {
         bytes32 phoneHash = _hash(phoneNumber);
         address owner = records[phoneHash].owner;
-        require(owner == msg.sender);
+        require(owner == msg.sender, "caller is not authorised");
         _;
     }
 
@@ -45,28 +45,33 @@ contract PNS {
      * @dev Sets the record for a phoneHash.
      * @param phoneNumber The phoneNumber to update.
      * @param owner The address of the new owner.
-     * @param wallet The address the phone number resolves to.
-     * @param label The label is specified network of the resolver.
+     * @param resolver The address the phone number resolves to.
+     * @param label The label is specified label of the resolver.
      */
     function setPhoneRecord(
         bytes32 phoneNumber,
         address owner,
-        address wallet,
+        address resolver,
         string memory label
     ) external virtual {
         // hash phone number before storing it on chain
         bytes32 phoneHash = _hash(phoneNumber);
-        setOwner(phoneHash, owner);
+        ResolverRecord storage resolverRecordData = resolverRecordMapping[
+            label
+        ];
 
-        if (wallet != records[phoneHash].wallet[label].wallet) {
-            records[phoneHash].wallet[label].wallet = wallet;
-            records[phoneHash].wallet[label].label = label;
-            records[phoneHash].wallet[label].exists = true;
+        if (!resolverRecordData.exists) {
+            resolverRecordData.label = label;
+            resolverRecordData.createdAt = block.timestamp;
+            resolverRecordData.wallet = resolver;
+            resolverRecordData.exists = true;
         }
-
+        records[phoneHash].phoneHash = phoneHash;
+        records[phoneHash].owner = owner;
         records[phoneHash].createdAt = block.timestamp;
         records[phoneHash].exists = true;
-        emit PhoneRecordCreated(phoneHash, wallet, owner);
+        records[phoneHash].wallet.push(resolverRecordData);
+        emit PhoneRecordCreated(phoneHash, resolver, owner);
     }
 
     /**
@@ -78,6 +83,7 @@ contract PNS {
         view
         returns (
             address owner,
+            ResolverRecord[] memory,
             bytes32,
             uint256 createdAt,
             bool exists
@@ -107,19 +113,19 @@ contract PNS {
     }
 
     /**
-     * @dev Returns the address of the resolver for the specified phoneHash and network.
+     * @dev Returns the address of the resolver for the specified phoneHash and label.
      * @param phoneNumber The specified phoneHash.
-     * @param network The specified network of the resolver.
+     * @param label The specified label of the resolver.
      * @return address of the resolver.
      */
-    function getResolver(bytes32 phoneNumber, string memory network)
+    function getResolver(bytes32 phoneNumber, string memory label)
         public
         view
         virtual
-        returns (address)
+        returns (ResolverRecord[] memory)
     {
         bytes32 phoneHash = _hash(phoneNumber);
-        return records[phoneHash].wallet[network].wallet;
+        return records[phoneHash].wallet;
     }
 
     /**
@@ -149,17 +155,17 @@ contract PNS {
     /**
      * @dev Sets the resolver address for the specified phoneHash.
      * @param phoneNumber The phoneNumber to update.
-     * @param wallet The address of the resolver.
+     * @param resolver The address of the resolver.
      * @param label The specified label of the resolver.
      */
     function linkPhoneToWallet(
         bytes32 phoneNumber,
-        address wallet,
+        address resolver,
         string memory label
     ) public virtual authorised(phoneNumber) {
         bytes32 phoneHash = _hash(phoneNumber);
-        _linkPhoneNumberToWallet(phoneHash, wallet, label);
-        emit PhoneLinked(phoneHash, wallet);
+        _linkPhoneNumberToWallet(phoneHash, resolver, label);
+        emit PhoneLinked(phoneHash, resolver);
     }
 
     /**
@@ -174,7 +180,8 @@ contract PNS {
         returns (bool)
     {
         bytes32 phoneHash = _hash(phoneNumber);
-        return records[phoneHash].wallet[label].exists;
+        ResolverRecord memory resolverRecordData = resolverRecordMapping[label];
+        return resolverRecordData.exists;
     }
 
     /**
@@ -202,14 +209,22 @@ contract PNS {
 
     function _linkPhoneNumberToWallet(
         bytes32 phoneNumber,
-        address wallet,
+        address resolver,
         string memory label
     ) internal {
         bytes32 phoneHash = _hash(phoneNumber);
-        if (wallet != records[phoneHash].wallet[label].wallet) {
-            records[phoneHash].wallet[label].wallet = wallet;
-            records[phoneHash].wallet[label].label = label;
+        ResolverRecord storage resolverRecordData = resolverRecordMapping[
+            label
+        ];
+
+        if (!resolverRecordData.exists) {
+            resolverRecordData.label = label;
+            resolverRecordData.createdAt = block.timestamp;
+            resolverRecordData.wallet = resolver;
+            resolverRecordData.exists = true;
         }
+
+        records[phoneHash].wallet.push(resolverRecordData);
     }
 
     /**
@@ -230,6 +245,7 @@ contract PNS {
         view
         returns (
             address owner,
+            ResolverRecord[] memory,
             bytes32,
             uint256 createdAt,
             bool exists
@@ -241,6 +257,7 @@ contract PNS {
 
         return (
             recordData.owner,
+            recordData.wallet,
             recordData.phoneHash,
             recordData.createdAt,
             recordData.exists
@@ -260,7 +277,9 @@ contract PNS {
         bytes32 phoneHash = _hash(phoneNumber);
         PhoneRecord storage recordData = records[phoneHash];
         require(recordData.exists, "phone record not found");
-
-        return (recordData.wallet[label]);
+        ResolverRecord storage resolverRecordData = resolverRecordMapping[
+            label
+        ];
+        return (resolverRecordData);
     }
 }

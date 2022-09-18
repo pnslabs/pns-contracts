@@ -4,22 +4,37 @@
 // You can also run a script with `npx hardhat run <script>`. If you do that, Hardhat
 // will compile your contracts, add the Hardhat Runtime Environment's members to the
 // global scope, and execute the script.
-const hre = require("hardhat");
+const Web3 = require("web3");
+const web3 = new Web3("http://localhost:8545");
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
-  const unlockTime = currentTimestampInSeconds + ONE_YEAR_IN_SECS;
+  let pns;
+  let proxyAdmin;
+  let transparentUpgradeableProxy;
 
-  const lockedAmount = hre.ethers.utils.parseEther("1");
+  const PNSContract = await ethers.getContractFactory("PNS");
+  const ProxyAdminContract = await ethers.getContractFactory("ProxyAdmin");
+  const TransparentUpgradeableProxyContract = await ethers.getContractFactory(
+    "TransparentUpgradeableProxy",
+  );
 
-  const Lock = await hre.ethers.getContractFactory("Lock");
-  const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
+  pns = await PNSContract.deploy();
+  console.log("PNS Contract Deployed", pns.address);
 
-  await lock.deployed();
+  // setting up proxy admin to be this address. You can set it up to be multi-sig
+  proxyAdmin = await ProxyAdminContract.deploy();
+  console.log("Proxy Admin deployed", proxyAdmin.address);
 
+  const encodedData = web3.utils.hexToBytes("0x");
+
+  transparentUpgradeableProxy =
+    await TransparentUpgradeableProxyContract.deploy(
+      pns.address,
+      proxyAdmin.address,
+      encodedData,
+    );
   console.log(
-    `Lock with 1 ETH and unlock timestamp ${unlockTime} deployed to ${lock.address}`
+    `Proxy deployed to ${transparentUpgradeableProxy.address}, you can now upgrade to v2!`,
   );
 }
 
