@@ -115,10 +115,9 @@ contract PNS {
     /**
      * @dev Returns the address of the resolver for the specified phoneHash and label.
      * @param phoneNumber The specified phoneHash.
-     * @param label The specified label of the resolver.
      * @return address of the resolver.
      */
-    function getResolver(bytes32 phoneNumber, string memory label)
+    function getResolver(bytes32 phoneNumber)
         public
         view
         virtual

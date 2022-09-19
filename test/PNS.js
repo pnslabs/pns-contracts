@@ -42,6 +42,13 @@ contract("PNS", () => {
       "eth",
     );
     console.log(phoneRecordTX, "phoneRecord");
+    const phoneRecordTX2 = await pnsContract.setPhoneRecord(
+      phoneNumber,
+      adminAccount,
+      adminAccount,
+      "eth",
+    );
+    console.log(phoneRecordTX, "phoneRecord");
   });
   it("should get record", async function () {
     const recordTX = await pnsContract.getRecord(phoneNumber);
