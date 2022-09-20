@@ -17,7 +17,7 @@ contract("PNS", () => {
   let phoneNumber = keccak256("07084462591");
   let phoneNumber2 = keccak256("07284462591");
   let label1 = "ETH";
-  let label2 = "BITCOIN";
+  let label2 = "BTC";
   let resolverCreatedLength = 0;
 
   before(async function () {
