@@ -64,7 +64,7 @@ contract("PNS", () => {
     });
   });
 
-  describe("Label linking", () => {
+  describe("Label linking::", () => {
     it("verifies that new recorded created exist", async () => {
       const phoneRecord = await pnsContract.linkPhoneToWallet(
         phoneNumber,
@@ -93,7 +93,7 @@ contract("PNS", () => {
     });
   });
 
-  describe("Owner", () => {
+  describe("Owner::", () => {
     it("gets the correct owner of the record", async () => {
       const recordOwner = await pnsContract.getOwner(phoneNumber);
 
