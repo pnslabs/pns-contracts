@@ -15,8 +15,9 @@ contract("PNS", () => {
   let resolverAccount;
   let accounts;
   let phoneNumber = keccak256("07084462591");
-  let label1 = "eth";
-  let label2 = "bitcoin";
+  let phoneNumber2 = keccak256("07284462591");
+  let label1 = "ETH";
+  let label2 = "BITCOIN";
   let resolverCreatedLength = 0;
 
   before(async function () {
@@ -44,6 +45,7 @@ contract("PNS", () => {
         adminAccount,
         label1
       );
+
       resolverCreatedLength++;
       assert(
         phoneRecordTX.receipt.status == true,
