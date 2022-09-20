@@ -1,7 +1,7 @@
 pragma solidity 0.8.9;
-import "./IPNS.sol";
+import "./IPNSSchema.sol";
 
-contract PNS {
+contract PNS is IPNSSchema {
     // assign phone number phoneHash to an address
     // transfer ownership of address to a new phone number
     // unlink phone number phoneHash to an address
@@ -16,20 +16,6 @@ contract PNS {
     //logs when a resolve address is set for the specified phoneHash.
     event PhoneLinked(bytes32 phoneHash, address wallet);
 
-    struct ResolverRecord {
-        address wallet;
-        uint256 createdAt;
-        string label;
-        bool exists;
-    }
-
-    struct PhoneRecord {
-        address owner;
-        ResolverRecord[] wallet;
-        bytes32 phoneHash;
-        uint256 createdAt;
-        bool exists;
-    }
     mapping(string => ResolverRecord) resolverRecordMapping;
     mapping(bytes32 => PhoneRecord) records;
 

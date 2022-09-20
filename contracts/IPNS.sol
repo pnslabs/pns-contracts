@@ -1,6 +1,7 @@
 pragma solidity 0.8.9;
+import "./IPNSSchema.sol";
 
-interface IPNS {
+interface IPNS is IPNSSchema {
     function setPhoneRecord(
         bytes32 phoneHash,
         address owner,
@@ -8,44 +9,31 @@ interface IPNS {
         string memory label
     ) external;
 
-    function resolverExists(bytes32 phoneNumber, string memory label)
-        external
-        view
-        returns (bool);
-
     function linkPhoneToWallet(
-        bytes32 phoneNumber,
+        bytes32 phoneHash,
         address resolver,
         string memory label
     ) external;
 
-    function setOwner(bytes32 phoneNumber, address owner) external;
+    function setOwner(bytes32 phoneHash, address owner) external;
 
-    function recordExists(bytes32 phoneNumber) external view returns (bool);
+    function recordExists(bytes32 phoneHash) external view returns (bool);
 
-    function getResolver(bytes32 phoneNumber, string memory label)
-        external
-        view
-        returns (address);
-
-    function getOwner(bytes32 phoneNumber) external view returns (address);
+    function getOwner(bytes32 phoneHash) external view returns (address);
 
     function getRecord(bytes32 phoneHash)
         external
         view
         returns (
             address owner,
+            ResolverRecord[] memory,
             bytes32,
             uint64 createdAt,
             bool exists
         );
 
-    function getResolverDetails(bytes32 phoneHash, string memory label)
+    function getResolverDetails(bytes32 phoneHash)
         external
         view
-        returns (
-            address wallet,
-            uint256 createdAt,
-            bool exists
-        );
+        returns (ResolverRecord[] memory);
 }
