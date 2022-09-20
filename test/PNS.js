@@ -1,3 +1,4 @@
+const { assert } = require("chai");
 const { web3 } = require("hardhat");
 const { keccak256 } = require("../scripts/util");
 const PNS = artifacts.require("PNS");
@@ -14,7 +15,7 @@ contract("PNS", () => {
   let resolverAccount;
   let accounts;
   let phoneNumber = keccak256("07084462591");
-  console.log(phoneNumber, "phone number");
+  let phoneNumber2 = keccak256("09084462591");
 
   before(async function () {
     accounts = await web3.eth.getAccounts();
@@ -41,23 +42,19 @@ contract("PNS", () => {
       adminAccount,
       "eth",
     );
-    console.log(phoneRecordTX, "phoneRecord");
-    const phoneRecordTX2 = await pnsContract.setPhoneRecord(
-      phoneNumber,
-      adminAccount,
-      adminAccount,
-      "eth",
+    assert(
+      phoneRecordTX.receipt.status == true,
+      "phone record created successfully",
     );
-    console.log(phoneRecordTX, "phoneRecord");
   });
-  it("should get record", async function () {
-    const recordTX = await pnsContract.getRecord(phoneNumber);
-    console.log(recordTX, "record tx");
-    // console.log(
-    //   `resolver address ${recordTX[0]}`,
-    //   `time created ${recordTX[1]}`,
-    //   `resolver label ${recordTX[2]}`,
-    //   `record exists ${recordTX[3]}`,
-    // );
-  });
+  //   it("should get record", async function () {
+  //     const recordTX = await pnsContract.getRecord(phoneNumber);
+  //     console.log(recordTX, "record tx");
+  // console.log(
+  //   `resolver address ${recordTX[0]}`,
+  //   `time created ${recordTX[1]}`,
+  //   `resolver label ${recordTX[2]}`,
+  //   `record exists ${recordTX[3]}`,
+  // );
+  // });
 });

@@ -34,8 +34,7 @@ contract PNS {
     mapping(bytes32 => PhoneRecord) records;
 
     // Permits modifications only by the owner of the specified phoneHash.
-    modifier authorised(bytes32 phoneNumber) {
-        bytes32 phoneHash = _hash(phoneNumber);
+    modifier authorised(bytes32 phoneHash) {
         address owner = records[phoneHash].owner;
         require(owner == msg.sender, "caller is not authorised");
         _;
@@ -43,19 +42,20 @@ contract PNS {
 
     /**
      * @dev Sets the record for a phoneHash.
-     * @param phoneNumber The phoneNumber to update.
+     * @param phoneHash The phoneHash to update.
      * @param owner The address of the new owner.
      * @param resolver The address the phone number resolves to.
      * @param label The label is specified label of the resolver.
      */
     function setPhoneRecord(
-        bytes32 phoneNumber,
+        bytes32 phoneHash,
         address owner,
         address resolver,
         string memory label
     ) external virtual {
         // hash phone number before storing it on chain
-        bytes32 phoneHash = _hash(phoneNumber);
+
+        recordExists(phoneHash);
         ResolverRecord storage resolverRecordData = resolverRecordMapping[
             label
         ];
@@ -76,9 +76,9 @@ contract PNS {
 
     /**
      * @dev Returns the address that owns the specified phone number phoneHash.
-     * @param phoneNumber The specified phoneHash.
+     * @param phoneHash The specified phoneHash.
      */
-    function getRecord(bytes32 phoneNumber)
+    function getRecord(bytes32 phoneHash)
         external
         view
         returns (
@@ -89,21 +89,15 @@ contract PNS {
             bool exists
         )
     {
-        return _getRecord(phoneNumber);
+        return _getRecord(phoneHash);
     }
 
     /**
      * @dev Returns the address that owns the specified phone number.
-     * @param phoneNumber The specified phoneNumber.
+     * @param phoneHash The specified phoneHash.
      * @return address of the owner.
      */
-    function getOwner(bytes32 phoneNumber)
-        public
-        view
-        virtual
-        returns (address)
-    {
-        bytes32 phoneHash = _hash(phoneNumber);
+    function getOwner(bytes32 phoneHash) public view virtual returns (address) {
         address addr = records[phoneHash].owner;
         if (addr == address(this)) {
             return address(0x0);
@@ -113,108 +107,74 @@ contract PNS {
     }
 
     /**
-     * @dev Returns the address of the resolver for the specified phoneHash and label.
-     * @param phoneNumber The specified phoneHash.
-     * @return address of the resolver.
-     */
-    function getResolver(bytes32 phoneNumber)
-        public
-        view
-        virtual
-        returns (ResolverRecord[] memory)
-    {
-        bytes32 phoneHash = _hash(phoneNumber);
-        return records[phoneHash].wallet;
-    }
-
-    /**
      * @dev Returns whether a record has been imported to the registry.
-     * @param phoneNumber The specified phoneHash.
+     * @param phoneHash The specified phoneHash.
      * @return Bool if record exists
      */
-    function recordExists(bytes32 phoneNumber) public view returns (bool) {
-        bytes32 phoneHash = _hash(phoneNumber);
+    function recordExists(bytes32 phoneHash) public view returns (bool) {
         return records[phoneHash].exists;
     }
 
     /**
      * @dev Transfers ownership of a phoneHash to a new address. May only be called by the current owner of the phoneHash.
-     * @param phoneNumber The phoneHash to transfer ownership of.
+     * @param phoneHash The phoneHash to transfer ownership of.
      * @param owner The address of the new owner.
      */
-    function setOwner(bytes32 phoneNumber, address owner)
+    function setOwner(bytes32 phoneHash, address owner)
         public
         virtual
-        authorised(phoneNumber)
+        authorised(phoneHash)
     {
-        bytes32 phoneHash = _setOwner(phoneNumber, owner);
+        _setOwner(phoneHash, owner);
         emit Transfer(phoneHash, owner);
     }
 
     /**
      * @dev Sets the resolver address for the specified phoneHash.
-     * @param phoneNumber The phoneNumber to update.
+     * @param phoneHash The phoneHash to update.
      * @param resolver The address of the resolver.
      * @param label The specified label of the resolver.
      */
     function linkPhoneToWallet(
-        bytes32 phoneNumber,
+        bytes32 phoneHash,
         address resolver,
         string memory label
-    ) public virtual authorised(phoneNumber) {
-        bytes32 phoneHash = _hash(phoneNumber);
-        _linkPhoneNumberToWallet(phoneHash, resolver, label);
+    ) public virtual authorised(phoneHash) {
+        _linkphoneHashToWallet(phoneHash, resolver, label);
         emit PhoneLinked(phoneHash, resolver);
     }
 
     /**
-     * @dev Returns whether a record has been imported to the registry.
-     * @param phoneNumber The specified phoneHash.
-     * @param label The specified label of the resolver.
-     * @return Bool if record exists
-     */
-    function resolverExists(bytes32 phoneNumber, string memory label)
-        public
-        view
-        returns (bool)
-    {
-        bytes32 phoneHash = _hash(phoneNumber);
-        ResolverRecord memory resolverRecordData = resolverRecordMapping[label];
-        return resolverRecordData.exists;
-    }
-
-    /**
      * @dev Returns an existing label for the specified phone number phoneHash.
-     * @param phoneNumber The specified phoneHash.
-     * @param label The specified label of the resolver.
+     * @param phoneHash The specified phoneHash.
      */
-    function getResolverDetails(bytes32 phoneNumber, string memory label)
+    function getResolverDetails(bytes32 phoneHash)
         external
         view
-        returns (ResolverRecord memory resolver)
+        returns (ResolverRecord[] memory resolver)
     {
-        return _getResolverDetails(phoneNumber, label);
+        return _getResolverDetails(phoneHash);
     }
 
-    function _setOwner(bytes32 phoneNumber, address owner)
+    function _setOwner(bytes32 phoneHash, address owner)
         internal
         virtual
         returns (bytes32)
     {
-        bytes32 phoneHash = _hash(phoneNumber);
         records[phoneHash].owner = owner;
         return phoneHash;
     }
 
-    function _linkPhoneNumberToWallet(
-        bytes32 phoneNumber,
+    function _linkphoneHashToWallet(
+        bytes32 phoneHash,
         address resolver,
         string memory label
     ) internal {
-        bytes32 phoneHash = _hash(phoneNumber);
         ResolverRecord storage resolverRecordData = resolverRecordMapping[
             label
         ];
+        PhoneRecord storage recordData = records[phoneHash];
+        require(recordData.exists, "phone record not found");
 
         if (!resolverRecordData.exists) {
             resolverRecordData.label = label;
@@ -227,19 +187,19 @@ contract PNS {
     }
 
     /**
-     * @dev Returns the hash for a given phoneNumber
-     * @param phoneNumber The phoneNumber to hash
+     * @dev Returns the hash for a given phoneHash
+     * @param phoneHash The phoneHash to hash
      * @return The ENS node hash.
      */
-    function _hash(bytes32 phoneNumber) internal pure returns (bytes32) {
-        return keccak256(abi.encode(phoneNumber));
+    function _hash(bytes32 phoneHash) internal pure returns (bytes32) {
+        return keccak256(abi.encode(phoneHash));
     }
 
     /**
      * @dev Returns the address that owns the specified phone number phoneHash.
-     * @param phoneNumber The specified phoneHash.
+     * @param phoneHash The specified phoneHash.
      */
-    function _getRecord(bytes32 phoneNumber)
+    function _getRecord(bytes32 phoneHash)
         internal
         view
         returns (
@@ -250,7 +210,6 @@ contract PNS {
             bool exists
         )
     {
-        bytes32 phoneHash = _hash(phoneNumber);
         PhoneRecord storage recordData = records[phoneHash];
         require(recordData.exists, "phone record not found");
 
@@ -264,21 +223,16 @@ contract PNS {
     }
 
     /**
-     * @dev Returns an existing label for the specified phone number phoneHash.
-     * @param phoneNumber The specified phoneHash.
-     * @param label The specified label.
+     * @dev Returns an existing resolver for the specified phone number phoneHash.
+     * @param phoneHash The specified phoneHash.
      */
-    function _getResolverDetails(bytes32 phoneNumber, string memory label)
+    function _getResolverDetails(bytes32 phoneHash)
         internal
         view
-        returns (ResolverRecord memory resolver)
+        returns (ResolverRecord[] memory)
     {
-        bytes32 phoneHash = _hash(phoneNumber);
         PhoneRecord storage recordData = records[phoneHash];
         require(recordData.exists, "phone record not found");
-        ResolverRecord storage resolverRecordData = resolverRecordMapping[
-            label
-        ];
-        return (resolverRecordData);
+        return recordData.wallet;
     }
 }
