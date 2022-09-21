@@ -41,7 +41,9 @@ contract PNS is IPNSSchema {
     ) external virtual {
         // hash phone number before storing it on chain
 
-        recordExists(phoneHash);
+        PhoneRecord storage recordData = records[phoneHash];
+        require(!recordData.exists, "phone record already exists");
+
         ResolverRecord storage resolverRecordData = resolverRecordMapping[
             label
         ];
@@ -161,15 +163,16 @@ contract PNS is IPNSSchema {
         ];
         PhoneRecord storage recordData = records[phoneHash];
         require(recordData.exists, "phone record not found");
+        require(!resolverRecordData.exists, "resolver label already exist");
 
         if (!resolverRecordData.exists) {
             resolverRecordData.label = label;
             resolverRecordData.createdAt = block.timestamp;
             resolverRecordData.wallet = resolver;
             resolverRecordData.exists = true;
-        }
 
-        records[phoneHash].wallet.push(resolverRecordData);
+            recordData.wallet.push(resolverRecordData);
+        }
     }
 
     /**
