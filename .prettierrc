@@ -1,0 +1,17 @@
+{
+    "singleQuote": true,
+    "trailingComma": "all",
+    "overrides": [
+        {
+            "files": "*.sol",
+            "options": {
+                "printWidth": 150,
+                "tabWidth": 4,
+                "useTabs": true,
+                "singleQuote": true,
+                "bracketSpacing": false,
+                "explicitTypes": "always"
+            }
+        }
+    ]
+}
