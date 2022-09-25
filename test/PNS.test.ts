@@ -1,6 +1,8 @@
 import { assert, expect } from "chai";
 import { web3 } from "hardhat";
 import { keccak256 } from "../scripts/util";
+import { PNS, ProxyAdmin, TransparentUpgradeableProxy} from '../../typechain-types';
+
 // const PNS = artifacts.require("PNS");
 // const ProxyAdmin = artifacts.require("ProxyAdmin");
 // const TransparentUpgradeableProxy = artifacts.require(
