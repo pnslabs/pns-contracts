@@ -1,8 +1,11 @@
-require("@nomicfoundation/hardhat-toolbox");
-require("@nomiclabs/hardhat-truffle5");
-require("dotenv").config();
-const { utils } = require("ethers");
-const PRIVATE_KEY_GANACHE = process.env.PRIVATE_KEY_GANACHE;
+import "@nomicfoundation/hardhat-toolbox";
+import 'dotenv/config';
+import 'hardhat-contract-sizer';
+import '@typechain/hardhat';
+import { utils } from 'ethers';
+
+// import { HardhatUserConfig, task } from 'hardhat/config';
+
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -20,9 +23,8 @@ module.exports = {
   networks: {
     localhost: {
       url: `http://127.0.0.1:8545`,
-      accounts: [`0x${PRIVATE_KEY_GANACHE}`],
+      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
       gasPrice: parseInt(utils.parseUnits("132", "gwei")),
-      allowUnlimitedContractSize: true,
     },
   },
 };
