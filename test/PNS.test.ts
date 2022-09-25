@@ -1,11 +1,11 @@
-const { assert, expect } = require("chai");
-const { web3 } = require("hardhat");
-const { keccak256 } = require("../scripts/util");
-const PNS = artifacts.require("PNS");
-const ProxyAdmin = artifacts.require("ProxyAdmin");
-const TransparentUpgradeableProxy = artifacts.require(
-  "TransparentUpgradeableProxy"
-);
+import { assert, expect } from "chai";
+import { web3 } from "hardhat";
+import { keccak256 } from "../scripts/util";
+// const PNS = artifacts.require("PNS");
+// const ProxyAdmin = artifacts.require("ProxyAdmin");
+// const TransparentUpgradeableProxy = artifacts.require(
+//   "TransparentUpgradeableProxy"
+// );
 contract("PNS", () => {
   let pnsContract = null;
   let proxyAdminContract = null;
@@ -118,3 +118,11 @@ contract("PNS", () => {
     });
   });
 });
+function contract(arg0: string, arg1: () => void) {
+  throw new Error("Function not implemented.");
+}
+
+function before(arg0: () => Promise<void>) {
+  throw new Error("Function not implemented.");
+}
+
