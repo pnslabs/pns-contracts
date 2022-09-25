@@ -3,10 +3,11 @@
   "license": "MIT",
   "scripts": {
     "clean": "hardhat clean",
+    "deploy": "npx hardhat run scripts/deploy.ts",
     "commit": "git-cz",
     "compile": "hardhat compile",
     "coverage": "cross-env CODE_COVERAGE=true hardhat coverage --solcoverjs ./.solcover.js --temp artifacts --testfiles \"./test/**/*.ts\"",
-    "test": "hardhat test --network localhost",
+    "test": "npx hardhat test",
     "deploy:localhost": "npx hardhat run --network localhost scripts/deploy.ts"
   },
   "devDependencies": {
