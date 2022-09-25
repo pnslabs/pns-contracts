@@ -1,0 +1,68 @@
+#Included:
+#                 1. Install and Download Dependencies
+#                 2. Compile Contracts
+#                 3. Deploy a Contract to the Local network
+#                 4. Test the locally deployed Contract in the local network.
+#                 5. Run all tests
+#                 6. slither integration ( static analysis)
+
+name: ci-checks
+
+on: [push]
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compile-and-deploy-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up environment
+        uses: ./.github/actions/setup
+      - name: Compile & Build Contracts
+        run: yarn compile
+      - name: Deploy Contracts Locally
+        run: yarn deploy
+        id: deployment-successful
+
+  lint:
+    name: Lint contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      # - name: Set up environment
+      # uses: ./.github/actions/setup
+      - name: Lint Contracts
+        run: yarn lint:contracts
+        continue-on-error: true
+
+
+  tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up environment
+        uses: ./.github/actions/setup
+      - name: Generate typings
+        run: yarn compile
+      - name: Run Test
+        run: yarn test
+
+  # coverage: (not being checked)
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Set up environment
+  #       uses: ./.github/actions/setup
+  #     - name: Run Coverage Checks
+  #       run: yarn coverage
+
+  audit:
+    name: Audit dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Audit packages for vulnerabilities
+        run: yarn audit
