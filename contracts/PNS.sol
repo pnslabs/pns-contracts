@@ -1,13 +1,25 @@
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
-import "./IPNSSchema.sol";
+import "./interfaces/IPNSSchema.sol";
+
+/**
+ * @dev Implementation of PNS.
+ *
+ * {quick introduction,( useful to auditors)}
+ */
 
 contract PNS is IPNSSchema {
+    //TODO:
     // assign phone number phoneHash to an address
     // transfer ownership of address to a new phone number
     // unlink phone number phoneHash to an address
     // get phone number tied to an address
     // get address tied to a phone number
     // logs when you sets the record for a phoneHash.
+
+    mapping(string => ResolverRecord) resolverRecordMapping;
+    mapping(bytes32 => PhoneRecord) records;
+
     event PhoneRecordCreated(bytes32 phoneHash, address wallet, address owner);
 
     // logs when transfers ownership of a phoneHash to a new address
@@ -16,15 +28,7 @@ contract PNS is IPNSSchema {
     //logs when a resolve address is set for the specified phoneHash.
     event PhoneLinked(bytes32 phoneHash, address wallet);
 
-    mapping(string => ResolverRecord) resolverRecordMapping;
-    mapping(bytes32 => PhoneRecord) records;
-
-    // Permits modifications only by the owner of the specified phoneHash.
-    modifier authorised(bytes32 phoneHash) {
-        address owner = records[phoneHash].owner;
-        require(owner == msg.sender, "caller is not authorised");
-        _;
-    }
+    
 
     /**
      * @dev Sets the record for a phoneHash.
@@ -54,11 +58,11 @@ contract PNS is IPNSSchema {
             resolverRecordData.wallet = resolver;
             resolverRecordData.exists = true;
         }
-        records[phoneHash].phoneHash = phoneHash;
-        records[phoneHash].owner = owner;
-        records[phoneHash].createdAt = block.timestamp;
-        records[phoneHash].exists = true;
-        records[phoneHash].wallet.push(resolverRecordData);
+        recordData.phoneHash = phoneHash;
+        recordData.owner = owner;
+        recordData.createdAt = block.timestamp;
+        recordData.exists = true;
+        recordData.wallet.push(resolverRecordData);
         emit PhoneRecordCreated(phoneHash, resolver, owner);
     }
 
@@ -223,5 +227,14 @@ contract PNS is IPNSSchema {
         PhoneRecord storage recordData = records[phoneHash];
         require(recordData.exists, "phone record not found");
         return recordData.wallet;
+    }
+
+    //============MODIFIERS==============
+
+    // Permits modifications only by the owner of the specified phoneHash.
+    modifier authorised(bytes32 phoneHash) {
+        address owner = records[phoneHash].owner;
+        require(owner == msg.sender, "caller is not authorised");
+        _;
     }
 }
