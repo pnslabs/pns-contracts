@@ -1,25 +1,54 @@
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
-import "./IPNSSchema.sol";
+import "./IPNS.sol";
 
-contract PNS is IPNSSchema {
+/**
+ * @title The contract for phone number service.
+ * @author Njoku Emmanuel
+ * @author Justice Eziefule
+ * @author Joseph Peculiar
+ * @notice You can only interact with the public functions and state definitions.
+ * @dev The interface IPNS is inherited which inherits IPNSSchema.
+ */
+contract PNS is IPNS {
     // assign phone number phoneHash to an address
     // transfer ownership of address to a new phone number
     // unlink phone number phoneHash to an address
     // get phone number tied to an address
     // get address tied to a phone number
-    // logs when you sets the record for a phoneHash.
+
+    /**
+     * @dev logs the event when a phoneHash record is created.
+     * @param phoneHash The phoneHash to be linked to the record.
+     * @param wallet The resolver (address) of the record
+     * @param owner The address of the owner
+     */
     event PhoneRecordCreated(bytes32 phoneHash, address wallet, address owner);
 
-    // logs when transfers ownership of a phoneHash to a new address
+    /**
+     * @dev logs when there is a transfer of ownership of a phoneHash to a new address
+     * @param phoneHash The phoneHash of the record to be updated.
+     * @param owner The address of the owner
+     */
     event Transfer(bytes32 phoneHash, address owner);
 
-    //logs when a resolve address is set for the specified phoneHash.
+    /**
+     * @dev logs when a resolver address is linked to a specified phoneHash.
+     * @param phoneHash The phoneHash of the record to be linked.
+     * @param wallet The address of the resolver.
+     */
     event PhoneLinked(bytes32 phoneHash, address wallet);
 
+    /// Mapping state to store resolver record
     mapping(string => ResolverRecord) resolverRecordMapping;
+
+    /// Mapping state to store mobile phone number record that will be linked to a resolver
     mapping(bytes32 => PhoneRecord) records;
 
-    // Permits modifications only by the owner of the specified phoneHash.
+    /**
+     * @dev Permits modifications only by the owner of the specified phoneHash.
+     * @param phoneHash The phoneHash of the record owner to be compared.
+     */
     modifier authorised(bytes32 phoneHash) {
         address owner = records[phoneHash].owner;
         require(owner == msg.sender, "caller is not authorised");

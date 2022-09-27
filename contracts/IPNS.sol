@@ -1,6 +1,15 @@
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 import "./IPNSSchema.sol";
 
+/**
+ * @title Interface for the PNS contract.
+ * @author Njoku Emmanuel
+ * @author Justice Eziefule
+ * @author Joseph Peculiar
+ * @notice This only serves as a function guide for the PNS contract.
+ * @dev All function call interfaces are defined here.
+ */
 interface IPNS is IPNSSchema {
     function setPhoneRecord(
         bytes32 phoneHash,
@@ -28,7 +37,7 @@ interface IPNS is IPNSSchema {
             address owner,
             ResolverRecord[] memory,
             bytes32,
-            uint64 createdAt,
+            uint256 createdAt,
             bool exists
         );
 
