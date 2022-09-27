@@ -11,12 +11,6 @@ import "./IPNS.sol";
  * @dev The interface IPNS is inherited which inherits IPNSSchema.
  */
 contract PNS is IPNS {
-    // assign phone number phoneHash to an address
-    // transfer ownership of address to a new phone number
-    // unlink phone number phoneHash to an address
-    // get phone number tied to an address
-    // get address tied to a phone number
-
     /**
      * @dev logs the event when a phoneHash record is created.
      * @param phoneHash The phoneHash to be linked to the record.
