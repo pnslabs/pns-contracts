@@ -4,9 +4,7 @@ import "./IPNS.sol";
 
 /**
  * @title The contract for phone number service.
- * @author Njoku Emmanuel
- * @author Justice Eziefule
- * @author Joseph Peculiar
+ * @author PNS foundation core
  * @notice You can only interact with the public functions and state definitions.
  * @dev The interface IPNS is inherited which inherits IPNSSchema.
  */

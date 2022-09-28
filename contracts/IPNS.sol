@@ -4,9 +4,7 @@ import "./IPNSSchema.sol";
 
 /**
  * @title Interface for the PNS contract.
- * @author Njoku Emmanuel
- * @author Justice Eziefule
- * @author Joseph Peculiar
+ * @author PNS foundation core
  * @notice This only serves as a function guide for the PNS contract.
  * @dev All function call interfaces are defined here.
  */
