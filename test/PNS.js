@@ -4,7 +4,7 @@ const { keccak256 } = require("../scripts/util");
 const PNS = artifacts.require("PNS");
 const ProxyAdmin = artifacts.require("ProxyAdmin");
 const TransparentUpgradeableProxy = artifacts.require(
-  "TransparentUpgradeableProxy"
+  "TransparentUpgradeableProxy",
 );
 contract("PNS", () => {
   let pnsContract = null;
@@ -33,7 +33,7 @@ contract("PNS", () => {
     transparentUpgradeableProxyContract = await TransparentUpgradeableProxy.new(
       pnsContract.address,
       proxyAdminContract.address,
-      encodedData
+      encodedData,
     );
   });
 
@@ -43,13 +43,13 @@ contract("PNS", () => {
         phoneNumber,
         adminAccount,
         adminAccount,
-        label1
+        label1,
       );
 
       resolverCreatedLength++;
       assert(
         phoneRecordTX.receipt.status == true,
-        "phone record created successfully"
+        "phone record created successfully",
       );
     });
 
@@ -71,7 +71,7 @@ contract("PNS", () => {
       const phoneRecord = await pnsContract.linkPhoneToWallet(
         phoneNumber,
         adminAccount,
-        label2
+        label2,
       );
       resolverCreatedLength++;
 
@@ -90,6 +90,8 @@ contract("PNS", () => {
       const firstLabel = resolvers[0][2];
       const secondLabel = resolvers[1][2];
 
+      console.log(resolvers, "resolvers");
+
       assert.equal(firstLabel, label1);
       assert.equal(secondLabel, label2);
     });
@@ -105,7 +107,7 @@ contract("PNS", () => {
     it("changes record owner", async () => {
       const recordOwner = await pnsContract.setOwner(
         phoneNumber,
-        normalAccount
+        normalAccount,
       );
 
       assert.equal(recordOwner.receipt.status, true);
