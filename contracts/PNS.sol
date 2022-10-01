@@ -84,7 +84,7 @@ contract PNS is IPNS {
     }
 
     /**
-     * @dev Returns the address that owns the specified phone number phoneHash.
+     * @dev Returns the resolver details of the specified phoneHash.
      * @param phoneHash The specified phoneHash.
      */
     function getRecord(bytes32 phoneHash)
