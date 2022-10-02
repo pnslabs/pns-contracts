@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
-import "./IPNS.sol";
+import "./interfaces/IPNS.sol";
 
 /**
  * @title The contract for phone number service.
@@ -9,6 +9,12 @@ import "./IPNS.sol";
  * @dev The interface IPNS is inherited which inherits IPNSSchema.
  */
 contract PNS is IPNS {
+    /// Mapping state to store resolver record
+    mapping(string => ResolverRecord) resolverRecordMapping;
+
+    /// Mapping state to store mobile phone number record that will be linked to a resolver
+    mapping(bytes32 => PhoneRecord) records;
+
     /**
      * @dev logs the event when a phoneHash record is created.
      * @param phoneHash The phoneHash to be linked to the record.
@@ -30,22 +36,6 @@ contract PNS is IPNS {
      * @param wallet The address of the resolver.
      */
     event PhoneLinked(bytes32 phoneHash, address wallet);
-
-    /// Mapping state to store resolver record
-    mapping(string => ResolverRecord) resolverRecordMapping;
-
-    /// Mapping state to store mobile phone number record that will be linked to a resolver
-    mapping(bytes32 => PhoneRecord) records;
-
-    /**
-     * @dev Permits modifications only by the owner of the specified phoneHash.
-     * @param phoneHash The phoneHash of the record owner to be compared.
-     */
-    modifier authorised(bytes32 phoneHash) {
-        address owner = records[phoneHash].owner;
-        require(owner == msg.sender, "caller is not authorised");
-        _;
-    }
 
     /**
      * @dev Sets the record for a phoneHash.
@@ -247,11 +237,14 @@ contract PNS is IPNS {
     }
 
     //============MODIFIERS==============
-
-    // Permits modifications only by the owner of the specified phoneHash.
+    /**
+     * @dev Permits modifications only by the owner of the specified phoneHash.
+     * @param phoneHash The phoneHash of the record owner to be compared.
+     */
     modifier authorised(bytes32 phoneHash) {
         address owner = records[phoneHash].owner;
         require(owner == msg.sender, "caller is not authorised");
         _;
     }
+
 }

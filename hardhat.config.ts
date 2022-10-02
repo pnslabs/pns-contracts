@@ -3,9 +3,7 @@ import 'dotenv/config';
 import 'hardhat-contract-sizer';
 import '@typechain/hardhat';
 import { utils } from 'ethers';
-
 // import { HardhatUserConfig, task } from 'hardhat/config';
-
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
