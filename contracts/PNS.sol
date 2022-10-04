@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
-import "./interfaces/IPNS.sol";
+import "./Interfaces/IPNS.sol";
 
 /**
  * @title The contract for phone number service.
