@@ -4,8 +4,10 @@
 // You can also run a script with `npx hardhat run <script>`. If you do that, Hardhat
 // will compile your contracts, add the Hardhat Runtime Environment's members to the
 // global scope, and execute the script.
-const Web3 = require("web3");
+import Web3 from "web3";
+import { ethers } from "hardhat";
 const web3 = new Web3("http://localhost:8545");
+
 
 async function main() {
   let pns;

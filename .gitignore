@@ -1,11 +1,29 @@
+# Dependency directory
 node_modules
+yarn-error.log
+
+# local env variables
 .env
+
+# macOS
+.DS_Store
+
+# Coverage directory used by tools like istanbul
 coverage
 coverage.json
-typechain
-typechain-types
+
+# temporary artifact from solidity-coverage
+allFiredEvents
+.coverage_artifacts
+.coverage_cache
+.coverage_contracts
 
 #Hardhat files
 cache
 artifacts
 
+#compilation
+typechain
+.openzeppelin
+typechain-types
+.idea
