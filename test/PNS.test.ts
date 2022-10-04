@@ -1,130 +1,98 @@
-import { assert, expect } from "chai";
-import { web3 } from "hardhat";
-import { keccak256 } from "../scripts/util";
-import { PNS, ProxyAdmin, TransparentUpgradeableProxy} from '../../typechain-types';
+import { ethers } from "hardhat";
 
-// const PNS = artifacts.require("PNS");
-// const ProxyAdmin = artifacts.require("ProxyAdmin");
-// const TransparentUpgradeableProxy = artifacts.require(
-//   "TransparentUpgradeableProxy"
-// );
-contract("PNS", () => {
+const { assert, expect } = require('chai');
+const { web3 } = require('web3');
+const { keccak256 } = require('../scripts/util');
+
+describe('PNS', () => {
   let pnsContract = null;
   let proxyAdminContract = null;
   let transparentUpgradeableProxyContract = null;
   let adminAccount;
-  let normalAccount = "0xf34f20B517D589A3a4847FE0d98762638e64E594";
+  let normalAccount = '0xf34f20B517D589A3a4847FE0d98762638e64E594';
   let resolverAccount;
   let accounts;
-  let phoneNumber = keccak256("07084462591");
-  let phoneNumber2 = keccak256("07284462591");
-  let label1 = "ETH";
-  let label2 = "BTC";
+  let phoneNumber = keccak256('07084462591');
+  let phoneNumber2 = keccak256('07284462591');
+  let label1 = 'ETH';
+  let label2 = 'BTC';
   let resolverCreatedLength = 0;
 
   before(async function () {
-    accounts = await web3.eth.getAccounts();
-    console.log(accounts, "account");
-    adminAccount = accounts[0];
+    [adminAccount] = await ethers.getSigners();
 
-    const encodedData = web3.utils.hexToBytes("0x");
+     const PNSContract = await ethers.getContractFactory('PNS');
+     const ProxyAdminContract = await ethers.getContractFactory('ProxyAdmin');
+     const TransparentUpgradeableProxyContract = await ethers.getContractFactory('TransparentUpgradeableProxy');
 
-    pnsContract = await PNS.new();
-    proxyAdminContract = await ProxyAdmin.new();
-    console.log(proxyAdminContract.address, "proxy address");
-    transparentUpgradeableProxyContract = await TransparentUpgradeableProxy.new(
-      pnsContract.address,
-      proxyAdminContract.address,
-      encodedData
-    );
+    pnsContract = await PNSContract.deploy();
+    proxyAdminContract = await ProxyAdminContract.deploy();
+    const encodedData = ethers.utils.hexlify('0x');
+
+     transparentUpgradeableProxyContract = await TransparentUpgradeableProxyContract.deploy(
+       pnsContract.address,
+       proxyAdminContract.address,
+       encodedData,
+     );
+
   });
 
-  describe("Record::", () => {
-    it("should create a new record", async function () {
-      const phoneRecordTX = await pnsContract.setPhoneRecord(
-        phoneNumber,
-        adminAccount,
-        adminAccount,
-        label1
-      );
-
+  describe('Record::', () => {
+    it('should create a new record', async function () {
+      await expect(pnsContract.setPhoneRecord(phoneNumber, adminAccount.address, adminAccount.address, label1)).to.not.be.reverted;
       resolverCreatedLength++;
-      assert(
-        phoneRecordTX.receipt.status == true,
-        "phone record created successfully"
-      );
     });
 
-    it("verifies that new recorded created exist", async () => {
+    it('verifies that new recorded created exist', async () => {
       const phoneRecordExist = await pnsContract.recordExists(phoneNumber);
 
       assert.equal(phoneRecordExist, true);
     });
 
-    it("ties the correct owner to record", async () => {
+    it('ties the correct owner to record', async () => {
       const phoneRecord = await pnsContract.getRecord(phoneNumber);
-
-      assert.equal(phoneRecord.owner, adminAccount);
+      assert.equal(phoneRecord.owner, adminAccount.address);
     });
   });
 
-  describe("Label linking::", () => {
-    it("verifies that new recorded created exist", async () => {
-      const phoneRecord = await pnsContract.linkPhoneToWallet(
-        phoneNumber,
-        adminAccount,
-        label2
-      );
+  describe('Label linking::', () => {
+    //misleading test 
+    it('verifies that new recorded created exist', async () => {
+      await expect(pnsContract.linkPhoneToWallet(phoneNumber, adminAccount.address, label2)).to.not.be.reverted;
       resolverCreatedLength++;
-
-      assert.equal(phoneRecord.receipt.status, true);
     });
 
-    it("verifies that all currently created resolvers are available", async () => {
+    it('verifies that all currently created resolvers are available', async () => {
       const resolvers = await pnsContract.getResolverDetails(phoneNumber);
       const wallets = resolvers.length;
 
       assert.equal(wallets, resolverCreatedLength);
     });
 
-    it("verifies that labels are correct", async () => {
+    it('verifies that labels are correct', async () => {
       const resolvers = await pnsContract.getResolverDetails(phoneNumber);
       const firstLabel = resolvers[0][2];
       const secondLabel = resolvers[1][2];
-
+       
       assert.equal(firstLabel, label1);
       assert.equal(secondLabel, label2);
     });
   });
 
-  describe("Owner::", () => {
-    it("gets the correct owner of the record", async () => {
+  describe('Owner::', () => {
+    it('gets the correct owner of the record', async () => {
       const recordOwner = await pnsContract.getOwner(phoneNumber);
 
-      assert.equal(recordOwner, adminAccount);
+      assert.equal(recordOwner, adminAccount.address);
     });
 
-    it("changes record owner", async () => {
-      const recordOwner = await pnsContract.setOwner(
-        phoneNumber,
-        normalAccount
-      );
-
-      assert.equal(recordOwner.receipt.status, true);
+    it('changes record owner', async () => {
+      await expect(pnsContract.connect(adminAccount).setOwner(phoneNumber, normalAccount)).to.not.be.reverted;
     });
 
-    it("gets new record owner", async () => {
+    it('gets new record owner', async () => {
       const recordOwner = await pnsContract.getOwner(phoneNumber);
-
       assert.equal(recordOwner, normalAccount);
     });
   });
 });
-function contract(arg0: string, arg1: () => void) {
-  throw new Error("Function not implemented.");
-}
-
-function before(arg0: () => Promise<void>) {
-  throw new Error("Function not implemented.");
-}
-
