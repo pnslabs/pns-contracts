@@ -9,7 +9,9 @@ import "./Interfaces/IPNS.sol";
  * @dev The interface IPNS is inherited which inherits IPNSSchema.
  */
 contract PNS is IPNS {
+    /// Expiry time constant value
     uint256 private constant EXPIRY_TIME = 365 days;
+    /// Grace period constant value
     uint256 private constant GRACE_PERIOD = 60 days;
 
     /// Mapping state to store resolver record
@@ -44,6 +46,31 @@ contract PNS is IPNS {
     event PhoneLinked(bytes32 phoneHash, address wallet);
 
     /**
+     * @dev logs when phone record has entered a grace period.
+     * @param phoneHash The phoneHash of the record.
+     */
+    event PhoneRecordEnteredGracePeriod(bytes32 phoneHash);
+
+    /**
+     * @dev logs when phone record has expired.
+     * @param phoneHash The phoneHash of the record.
+     */
+    event PhoneRecordExpired(bytes32 phoneHash);
+
+    /**
+     * @dev logs when phone record is re-authenticated.
+     * @param phoneHash The phoneHash of the record.
+     */
+    event PhoneRecordAuthenticated(bytes32 phoneHash);
+
+    /**
+     * @dev logs when phone record is claimed.
+     * @param phoneHash The phoneHash of the record.
+     * @param owner The address of the new owner
+     */
+    event PhoneRecordClaimed(bytes32 phoneHash, address owner);
+
+    /**
      * @dev Sets the record for a phoneHash.
      * @param phoneHash The phoneHash to update.
      * @param owner The address of the new owner.
@@ -73,6 +100,8 @@ contract PNS is IPNS {
         recordData.owner = owner;
         recordData.createdAt = block.timestamp;
         recordData.exists = true;
+        recordData.isInGracePeriod = false;
+        recordData.isExpired = false;
         recordData.wallet.push(resolverRecordData);
 
         expiryOf[phoneHash] = block.timestamp + EXPIRY_TIME;
@@ -91,7 +120,9 @@ contract PNS is IPNS {
             ResolverRecord[] memory,
             bytes32,
             uint256 createdAt,
-            bool exists
+            bool exists,
+            bool isInGracePeriod,
+            bool isExpired
         )
     {
         return _getRecord(phoneHash);
@@ -144,7 +175,13 @@ contract PNS is IPNS {
         bytes32 phoneHash,
         address resolver,
         string memory label
-    ) public virtual authorised(phoneHash) {
+    )
+        public
+        virtual
+        authorised(phoneHash)
+        expired(phoneHash)
+        authenticated(phoneHash)
+    {
         _linkphoneHashToWallet(phoneHash, resolver, label);
         emit PhoneLinked(phoneHash, resolver);
     }
@@ -159,6 +196,76 @@ contract PNS is IPNS {
         returns (ResolverRecord[] memory resolver)
     {
         return _getResolverDetails(phoneHash);
+    }
+
+    /**
+     * @dev Returns the expiry time remaining for the specified phoneHash.
+     * @param phoneHash The specified phoneHash.
+     * @return uint256 of the expiry time remaining.
+     */
+    function getExpiryTime(bytes32 phoneHash)
+        public
+        view
+        virtual
+        returns (uint256)
+    {
+        return expiryOf[phoneHash];
+    }
+
+    /**
+     * @dev Re authenticates a phone record.
+     * @param phoneHash The phoneHash.
+     */
+    function reAuthenticate(bytes32 phoneHash)
+        external
+        virtual
+        authorised(phoneHash)
+        hasExpiryOf(phoneHash)
+    {
+        PhoneRecord storage recordData = records[phoneHash];
+        require(
+            recordData.exists,
+            "only an existing phone record can be re-authenticated"
+        );
+        require(
+            recordData.isInGracePeriod,
+            "only a phone record in grace period can be re-authenticated"
+        );
+
+        recordData.isInGracePeriod = false;
+        recordData.isExpired = false;
+
+        expiryOf[phoneHash] = block.timestamp + EXPIRY_TIME;
+        emit PhoneRecordAuthenticated(phoneHash);
+    }
+
+    /**
+     * @dev Claims an already existing but expired phone record.
+     * @param phoneHash The phoneHash.
+     * @param owner The address of the new owner.
+     */
+    function claimExpiredPhoneRecord(bytes32 phoneHash, address owner)
+        external
+        virtual
+        hasExpiryOf(phoneHash)
+    {
+        PhoneRecord storage recordData = records[phoneHash];
+        require(
+            recordData.exists,
+            "only an existing phone record can be claimed"
+        );
+        require(
+            recordData.isExpired,
+            "only an expired phone record can be claimed"
+        );
+
+        recordData.phoneHash = phoneHash;
+        recordData.owner = owner;
+        recordData.isInGracePeriod = false;
+        recordData.isExpired = false;
+
+        expiryOf[phoneHash] = block.timestamp + EXPIRY_TIME;
+        emit PhoneRecordClaimed(phoneHash, owner);
     }
 
     function _setOwner(bytes32 phoneHash, address owner)
@@ -213,7 +320,9 @@ contract PNS is IPNS {
             ResolverRecord[] memory,
             bytes32,
             uint256 createdAt,
-            bool exists
+            bool exists,
+            bool isInGracePeriod,
+            bool isExpired
         )
     {
         PhoneRecord storage recordData = records[phoneHash];
@@ -224,7 +333,9 @@ contract PNS is IPNS {
             recordData.wallet,
             recordData.phoneHash,
             recordData.createdAt,
-            recordData.exists
+            recordData.exists,
+            recordData.isInGracePeriod,
+            recordData.isExpired
         );
     }
 
@@ -249,11 +360,23 @@ contract PNS is IPNS {
     function _hasPassedExpiryTime(bytes32 phoneHash)
         internal
         view
+        hasExpiryOf(phoneHash)
         returns (bool)
     {
-        require(expiryOf[phoneHash] > 0, "phone record not found");
-
         return block.timestamp > expiryOf[phoneHash];
+    }
+
+    /**
+     * @dev Returns the grace period state of an existing phone record.
+     * @param phoneHash The specified phoneHash.
+     */
+    function _hasPassedGracePeriod(bytes32 phoneHash)
+        internal
+        view
+        hasExpiryOf(phoneHash)
+        returns (bool)
+    {
+        return block.timestamp > expiryOf[phoneHash] + GRACE_PERIOD;
     }
 
     //============MODIFIERS==============
@@ -268,14 +391,40 @@ contract PNS is IPNS {
     }
 
     /**
+     * @dev Permits the function to run only if expiry of record is found
+     * @param phoneHash The phoneHash of the record to be compared.
+     */
+    modifier hasExpiryOf(bytes32 phoneHash) {
+        require(expiryOf[phoneHash] > 0, "phone expiry record not found");
+        _;
+    }
+
+    /**
      * @dev Permits the function to run only if phone record is not expired.
      * @param phoneHash The phoneHash of the record to be compared.
      */
-    modifier hasExpired(bytes32 phoneHash) {
+    modifier expired(bytes32 phoneHash) {
         bool _hasExpired = _hasPassedExpiryTime(phoneHash);
         if (_hasExpired) {
             PhoneRecord storage recordData = records[phoneHash];
-            recordData.isPaused = true;
+            recordData.isInGracePeriod = true;
+            emit PhoneRecordEnteredGracePeriod(phoneHash);
+        }
+        _;
+    }
+
+    /**
+     * @dev Permits the function to run only if phone record is still authenticated.
+     * @param phoneHash The phoneHash of the record to be compared.
+     */
+    modifier authenticated(bytes32 phoneHash) {
+        bool _hasExhaustedGracePeriod = _hasPassedGracePeriod(phoneHash);
+        if (_hasExhaustedGracePeriod) {
+            PhoneRecord storage recordData = records[phoneHash];
+            recordData.isInGracePeriod = false;
+            recordData.isExpired = true;
+            emit PhoneRecordExpired(phoneHash);
+            revert("phone record has expired, please re-authenticate");
         }
         _;
     }

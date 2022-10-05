@@ -21,7 +21,7 @@ interface IPNSSchema {
         bytes32 phoneHash;
         uint256 createdAt;
         bool exists;
-        bool isPaused;
+        bool isInGracePeriod;
         bool isExpired;
     }
 }
