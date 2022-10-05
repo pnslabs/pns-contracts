@@ -9,11 +9,17 @@ import "./Interfaces/IPNS.sol";
  * @dev The interface IPNS is inherited which inherits IPNSSchema.
  */
 contract PNS is IPNS {
+    uint256 private constant EXPIRY_TIME = 365 days;
+    uint256 private constant GRACE_PERIOD = 60 days;
+
     /// Mapping state to store resolver record
     mapping(string => ResolverRecord) resolverRecordMapping;
 
     /// Mapping state to store mobile phone number record that will be linked to a resolver
     mapping(bytes32 => PhoneRecord) records;
+
+    /// Mapping state to store expiry time of each mobile phone number record
+    mapping(bytes32 => uint256) expiryOf;
 
     /**
      * @dev logs the event when a phoneHash record is created.
@@ -50,8 +56,6 @@ contract PNS is IPNS {
         address resolver,
         string memory label
     ) external virtual {
-        // hash phone number before storing it on chain
-
         PhoneRecord storage recordData = records[phoneHash];
         require(!recordData.exists, "phone record already exists");
 
@@ -70,6 +74,8 @@ contract PNS is IPNS {
         recordData.createdAt = block.timestamp;
         recordData.exists = true;
         recordData.wallet.push(resolverRecordData);
+
+        expiryOf[phoneHash] = block.timestamp + EXPIRY_TIME;
         emit PhoneRecordCreated(phoneHash, resolver, owner);
     }
 
@@ -236,6 +242,20 @@ contract PNS is IPNS {
         return recordData.wallet;
     }
 
+    /**
+     * @dev Returns the expiry state of an existing phone record.
+     * @param phoneHash The specified phoneHash.
+     */
+    function _hasPassedExpiryTime(bytes32 phoneHash)
+        internal
+        view
+        returns (bool)
+    {
+        require(expiryOf[phoneHash] > 0, "phone record not found");
+
+        return block.timestamp > expiryOf[phoneHash];
+    }
+
     //============MODIFIERS==============
     /**
      * @dev Permits modifications only by the owner of the specified phoneHash.
@@ -247,4 +267,16 @@ contract PNS is IPNS {
         _;
     }
 
+    /**
+     * @dev Permits the function to run only if phone record is not expired.
+     * @param phoneHash The phoneHash of the record to be compared.
+     */
+    modifier hasExpired(bytes32 phoneHash) {
+        bool _hasExpired = _hasPassedExpiryTime(phoneHash);
+        if (_hasExpired) {
+            PhoneRecord storage recordData = records[phoneHash];
+            recordData.isPaused = true;
+        }
+        _;
+    }
 }
