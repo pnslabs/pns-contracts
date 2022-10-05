@@ -1,4 +1,4 @@
-import { ethers } from "hardhat";
+import { ethers } from 'hardhat';
 
 const { assert, expect } = require('chai');
 const { web3 } = require('web3');
@@ -21,25 +21,25 @@ describe('PNS', () => {
   before(async function () {
     [adminAccount] = await ethers.getSigners();
 
-     const PNSContract = await ethers.getContractFactory('PNS');
-     const ProxyAdminContract = await ethers.getContractFactory('ProxyAdmin');
-     const TransparentUpgradeableProxyContract = await ethers.getContractFactory('TransparentUpgradeableProxy');
+    const PNSContract = await ethers.getContractFactory('PNS');
+    const ProxyAdminContract = await ethers.getContractFactory('ProxyAdmin');
+    const TransparentUpgradeableProxyContract = await ethers.getContractFactory('TransparentUpgradeableProxy');
 
     pnsContract = await PNSContract.deploy();
     proxyAdminContract = await ProxyAdminContract.deploy();
     const encodedData = ethers.utils.hexlify('0x');
 
-     transparentUpgradeableProxyContract = await TransparentUpgradeableProxyContract.deploy(
-       pnsContract.address,
-       proxyAdminContract.address,
-       encodedData,
-     );
-
+    transparentUpgradeableProxyContract = await TransparentUpgradeableProxyContract.deploy(
+      pnsContract.address,
+      proxyAdminContract.address,
+      encodedData,
+    );
   });
 
   describe('Record::', () => {
     it('should create a new record', async function () {
-      await expect(pnsContract.setPhoneRecord(phoneNumber, adminAccount.address, adminAccount.address, label1)).to.not.be.reverted;
+      await expect(pnsContract.setPhoneRecord(phoneNumber, adminAccount.address, adminAccount.address, label1)).to.not
+        .be.reverted;
       resolverCreatedLength++;
     });
 
@@ -56,7 +56,7 @@ describe('PNS', () => {
   });
 
   describe('Label linking::', () => {
-    //misleading test 
+    //misleading test
     it('verifies that new recorded created exist', async () => {
       await expect(pnsContract.linkPhoneToWallet(phoneNumber, adminAccount.address, label2)).to.not.be.reverted;
       resolverCreatedLength++;
@@ -73,7 +73,7 @@ describe('PNS', () => {
       const resolvers = await pnsContract.getResolverDetails(phoneNumber);
       const firstLabel = resolvers[0][2];
       const secondLabel = resolvers[1][2];
-       
+
       assert.equal(firstLabel, label1);
       assert.equal(secondLabel, label2);
     });
@@ -93,6 +93,14 @@ describe('PNS', () => {
     it('gets new record owner', async () => {
       const recordOwner = await pnsContract.getOwner(phoneNumber);
       assert.equal(recordOwner, normalAccount);
+    });
+  });
+
+  describe('Expiration::', () => {
+    it('gets returns the expiration time of the phone record', async () => {
+      const expirationTime = await pnsContract.getExpiryTime(phoneNumber);
+
+      expect(Number(expirationTime)).to.be.greaterThan(0);
     });
   });
 });
