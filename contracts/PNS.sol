@@ -99,7 +99,7 @@ contract PNS is IPNS {
         recordData.exists = true;
         recordData.isInGracePeriod = false;
         recordData.isExpired = false;
-        recordData.expirataionTime = block.timestamp + EXPIRY_TIME;
+        recordData.expirationTime = block.timestamp + EXPIRY_TIME;
         recordData.wallet.push(resolverRecordData);
 
         emit PhoneRecordCreated(phoneHash, resolver, owner);
@@ -218,7 +218,7 @@ contract PNS is IPNS {
 
         recordData.isInGracePeriod = false;
         recordData.isExpired = false;
-        recordData.expirataionTime = block.timestamp + EXPIRY_TIME;
+        recordData.expirationTime = block.timestamp + EXPIRY_TIME;
 
         emit PhoneRecordAuthenticated(phoneHash);
     }
@@ -247,7 +247,7 @@ contract PNS is IPNS {
         recordData.owner = owner;
         recordData.isInGracePeriod = false;
         recordData.isExpired = false;
-        recordData.expirataionTime = block.timestamp + EXPIRY_TIME;
+        recordData.expirationTime = block.timestamp + EXPIRY_TIME;
 
         emit PhoneRecordClaimed(phoneHash, owner);
     }
@@ -321,7 +321,7 @@ contract PNS is IPNS {
             recordData.exists,
             recordData.isInGracePeriod,
             recordData.isExpired,
-            recordData.expirataionTime
+            recordData.expirationTime
         );
     }
 
@@ -350,7 +350,7 @@ contract PNS is IPNS {
         returns (bool)
     {
         PhoneRecord storage recordData = records[phoneHash];
-        return block.timestamp > recordData.expirataionTime;
+        return block.timestamp > recordData.expirationTime;
     }
 
     /**
@@ -364,7 +364,7 @@ contract PNS is IPNS {
         returns (bool)
     {
         PhoneRecord storage recordData = records[phoneHash];
-        return block.timestamp > (recordData.expirataionTime + GRACE_PERIOD);
+        return block.timestamp > (recordData.expirationTime + GRACE_PERIOD);
     }
 
     //============MODIFIERS==============
@@ -384,10 +384,7 @@ contract PNS is IPNS {
      */
     modifier hasExpiryOf(bytes32 phoneHash) {
         PhoneRecord storage recordData = records[phoneHash];
-        require(
-            recordData.expirataionTime > 0,
-            "phone expiry record not found"
-        );
+        require(recordData.expirationTime > 0, "phone expiry record not found");
         _;
     }
 
