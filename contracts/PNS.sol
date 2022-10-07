@@ -65,7 +65,13 @@ contract PNS is IPNS {
      * @param phoneHash The phoneHash of the record.
      * @param owner The address of the new owner
      */
-    event PhoneRecordClaimed(bytes32 phoneHash, address owner);
+    event PhoneRecordClaimed(
+        bytes32 phoneHash,
+        address owner,
+        bool isInGracePeriod,
+        bool isExpired,
+        uint256 expirationTime
+    );
 
     /**
      * @dev Sets the record for a phoneHash.
@@ -249,7 +255,13 @@ contract PNS is IPNS {
         recordData.isExpired = false;
         recordData.expirationTime = block.timestamp + EXPIRY_TIME;
 
-        emit PhoneRecordClaimed(phoneHash, owner);
+        emit PhoneRecordClaimed(
+            phoneHash,
+            owner,
+            recordData.isInGracePeriod,
+            recordData.isExpired,
+            recordData.expirationTime
+        );
     }
 
     function _setOwner(bytes32 phoneHash, address owner)
