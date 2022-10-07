@@ -6,10 +6,10 @@ const { developmentChains, testVariables } = require('../../helper-hardhat-confi
 !developmentChains.includes(network.name)
   ? describe.skip
   : describe('PNS Expiration', () => {
-      const { phoneNumber } = testVariables;
+      const { phoneNumber1 } = testVariables;
 
       it('gets returns the expiration time of the phone record', async () => {
-        const phoneRecord = await testVariables.pnsContract.getRecord(phoneNumber);
+        const phoneRecord = await testVariables.pnsContract.getRecord(phoneNumber1);
 
         expect(Number(phoneRecord[7])).to.be.greaterThan(0);
       });
