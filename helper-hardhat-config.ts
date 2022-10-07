@@ -1,19 +1,5 @@
 const { keccak256: _keccak256 } = require('./utils/util');
 
-const networkConfig = {
-  31337: {
-    name: 'localhost',
-  },
-  42: {
-    name: 'kovan',
-  },
-  4: {
-    name: 'rinkeby',
-  },
-};
-
-const developmentChains = ['hardhat', 'localhost'];
-
 let testVariables = {
   signer1: null,
   signer2: null,
@@ -31,7 +17,5 @@ let testVariables = {
 };
 
 module.exports = {
-  networkConfig,
-  developmentChains,
   testVariables,
 };

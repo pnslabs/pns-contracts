@@ -1,16 +1,14 @@
 import { network } from 'hardhat';
 
 const { expect } = require('chai');
-const { developmentChains, testVariables } = require('../../helper-hardhat-config');
+const { testVariables } = require('../../helper-hardhat-config');
 
-!developmentChains.includes(network.name)
-  ? describe.skip
-  : describe('PNS Expiration', () => {
-      const { phoneNumber1 } = testVariables;
+describe('PNS Expiration', () => {
+  const { phoneNumber1 } = testVariables;
 
-      it('gets returns the expiration time of the phone record', async () => {
-        const phoneRecord = await testVariables.pnsContract.getRecord(phoneNumber1);
+  it('gets returns the expiration time of the phone record', async () => {
+    const phoneRecord = await testVariables.pnsContract.getRecord(phoneNumber1);
 
-        expect(Number(phoneRecord[7])).to.be.greaterThan(0);
-      });
-    });
+    expect(Number(phoneRecord[7])).to.be.greaterThan(0);
+  });
+});
