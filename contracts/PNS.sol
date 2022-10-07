@@ -20,9 +20,6 @@ contract PNS is IPNS {
     /// Mapping state to store mobile phone number record that will be linked to a resolver
     mapping(bytes32 => PhoneRecord) records;
 
-    /// Mapping state to store expiry time of each mobile phone number record
-    mapping(bytes32 => uint256) expiryOf;
-
     /**
      * @dev logs the event when a phoneHash record is created.
      * @param phoneHash The phoneHash to be linked to the record.
@@ -102,9 +99,9 @@ contract PNS is IPNS {
         recordData.exists = true;
         recordData.isInGracePeriod = false;
         recordData.isExpired = false;
+        recordData.expirataionTime = block.timestamp + EXPIRY_TIME;
         recordData.wallet.push(resolverRecordData);
 
-        expiryOf[phoneHash] = block.timestamp + EXPIRY_TIME;
         emit PhoneRecordCreated(phoneHash, resolver, owner);
     }
 
@@ -122,7 +119,8 @@ contract PNS is IPNS {
             uint256 createdAt,
             bool exists,
             bool isInGracePeriod,
-            bool isExpired
+            bool isExpired,
+            uint256 expirationTime
         )
     {
         return _getRecord(phoneHash);
@@ -199,20 +197,6 @@ contract PNS is IPNS {
     }
 
     /**
-     * @dev Returns the expiry time remaining for the specified phoneHash.
-     * @param phoneHash The specified phoneHash.
-     * @return uint256 of the expiry time remaining.
-     */
-    function getExpiryTime(bytes32 phoneHash)
-        public
-        view
-        virtual
-        returns (uint256)
-    {
-        return expiryOf[phoneHash];
-    }
-
-    /**
      * @dev Re authenticates a phone record.
      * @param phoneHash The phoneHash.
      */
@@ -234,8 +218,8 @@ contract PNS is IPNS {
 
         recordData.isInGracePeriod = false;
         recordData.isExpired = false;
+        recordData.expirataionTime = block.timestamp + EXPIRY_TIME;
 
-        expiryOf[phoneHash] = block.timestamp + EXPIRY_TIME;
         emit PhoneRecordAuthenticated(phoneHash);
     }
 
@@ -263,8 +247,8 @@ contract PNS is IPNS {
         recordData.owner = owner;
         recordData.isInGracePeriod = false;
         recordData.isExpired = false;
+        recordData.expirataionTime = block.timestamp + EXPIRY_TIME;
 
-        expiryOf[phoneHash] = block.timestamp + EXPIRY_TIME;
         emit PhoneRecordClaimed(phoneHash, owner);
     }
 
@@ -322,7 +306,8 @@ contract PNS is IPNS {
             uint256 createdAt,
             bool exists,
             bool isInGracePeriod,
-            bool isExpired
+            bool isExpired,
+            uint256 expirationTime
         )
     {
         PhoneRecord storage recordData = records[phoneHash];
@@ -335,7 +320,8 @@ contract PNS is IPNS {
             recordData.createdAt,
             recordData.exists,
             recordData.isInGracePeriod,
-            recordData.isExpired
+            recordData.isExpired,
+            recordData.expirataionTime
         );
     }
 
@@ -363,7 +349,8 @@ contract PNS is IPNS {
         hasExpiryOf(phoneHash)
         returns (bool)
     {
-        return block.timestamp > expiryOf[phoneHash];
+        PhoneRecord storage recordData = records[phoneHash];
+        return block.timestamp > recordData.expirataionTime;
     }
 
     /**
@@ -376,7 +363,8 @@ contract PNS is IPNS {
         hasExpiryOf(phoneHash)
         returns (bool)
     {
-        return block.timestamp > expiryOf[phoneHash] + GRACE_PERIOD;
+        PhoneRecord storage recordData = records[phoneHash];
+        return block.timestamp > (recordData.expirataionTime + GRACE_PERIOD);
     }
 
     //============MODIFIERS==============
@@ -395,7 +383,11 @@ contract PNS is IPNS {
      * @param phoneHash The phoneHash of the record to be compared.
      */
     modifier hasExpiryOf(bytes32 phoneHash) {
-        require(expiryOf[phoneHash] > 0, "phone expiry record not found");
+        PhoneRecord storage recordData = records[phoneHash];
+        require(
+            recordData.expirataionTime > 0,
+            "phone expiry record not found"
+        );
         _;
     }
 

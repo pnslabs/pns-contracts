@@ -39,15 +39,14 @@ interface IPNS is IPNSSchema {
             uint256 createdAt,
             bool exists,
             bool isInGracePeriod,
-            bool isExpired
+            bool isExpired,
+            uint256 expirataionTime
         );
 
     function getResolverDetails(bytes32 phoneHash)
         external
         view
         returns (ResolverRecord[] memory);
-
-    function getExpiryTime(bytes32 phoneHash) external view returns (uint256);
 
     function reAuthenticate(bytes32 phoneHash) external;
 

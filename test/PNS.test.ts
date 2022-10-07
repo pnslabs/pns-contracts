@@ -98,9 +98,9 @@ describe('PNS', () => {
 
   describe('Expiration::', () => {
     it('gets returns the expiration time of the phone record', async () => {
-      const expirationTime = await pnsContract.getExpiryTime(phoneNumber);
+      const phoneRecord = await pnsContract.getRecord(phoneNumber);
 
-      expect(Number(expirationTime)).to.be.greaterThan(0);
+      expect(Number(phoneRecord[7])).to.be.greaterThan(0);
     });
   });
 });
