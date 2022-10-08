@@ -6,7 +6,7 @@ const { testVariables } = require('../../helper-hardhat-config');
 describe('PNS Record', () => {
   const { phoneNumber1, phoneNumber2, label1 } = testVariables;
 
-  it('should create a new record', async function () {
+  it('should create a new record and emit an event', async function () {
     await expect(
       testVariables.pnsContract.setPhoneRecord(
         phoneNumber1,
@@ -14,7 +14,7 @@ describe('PNS Record', () => {
         testVariables.adminAddress,
         label1,
       ),
-    ).to.not.be.reverted;
+    ).to.emit(testVariables.pnsContract, 'PhoneRecordCreated');
 
     testVariables.resolverCreatedLength++;
   });

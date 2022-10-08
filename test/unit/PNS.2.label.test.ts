@@ -16,9 +16,11 @@ describe('PNS Label linking', () => {
   //   ).to.be.revertedWith('caller is not authorised');
   // });
 
-  it('should link a new resolver to a phone record', async () => {
-    await expect(testVariables.pnsContract.linkPhoneToWallet(phoneNumber1, testVariables.adminAddress, label2)).to.not
-      .be.reverted;
+  it('should link a new resolver to a phone record and emit an event', async () => {
+    await expect(testVariables.pnsContract.linkPhoneToWallet(phoneNumber1, testVariables.adminAddress, label2)).to.emit(
+      testVariables.pnsContract,
+      'PhoneLinked',
+    );
     testVariables.resolverCreatedLength++;
   });
 
