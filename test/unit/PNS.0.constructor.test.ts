@@ -18,7 +18,6 @@ describe('PNS Constructor', () => {
 
   it('should successfully add an admin address in constructor', async function () {
     const admin = await testVariables.pnsContract.getAdmin(testVariables.adminAddress);
-    console.log(admin);
     expect(admin[2]).to.equal(true);
   });
 });
