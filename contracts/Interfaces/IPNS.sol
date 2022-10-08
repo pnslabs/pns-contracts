@@ -50,7 +50,12 @@ interface IPNS is IPNSSchema {
 
     function reAuthenticate(bytes32 phoneHash) external;
 
-    function claimExpiredPhoneRecord(bytes32 phoneHash, address owner) external;
+    function claimExpiredPhoneRecord(
+        bytes32 phoneHash,
+        address owner,
+        address resolver,
+        string memory label
+    ) external;
 
     function setNewExpiryTime(uint256 time) external;
 

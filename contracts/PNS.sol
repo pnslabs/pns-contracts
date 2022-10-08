@@ -106,7 +106,7 @@ contract PNS is IPNS {
      * @param phoneHash The phoneHash to update.
      * @param owner The address of the new owner.
      * @param resolver The address the phone number resolves to.
-     * @param label The label is specified label of the resolver.
+     * @param label The specified label of the resolver.
      */
     function setPhoneRecord(
         bytes32 phoneHash,
@@ -258,16 +258,23 @@ contract PNS is IPNS {
     }
 
     /**
-     * @dev Claims an already existing but expired phone record.
+     * @dev Claims an already existing but expired phone record, and sets a completely new resolver.
      * @param phoneHash The phoneHash.
      * @param owner The address of the new owner.
+     * @param resolver The address the phone number resolves to.
+     * @param label The specified label of the resolver.
      */
-    function claimExpiredPhoneRecord(bytes32 phoneHash, address owner)
-        external
-        virtual
-        hasExpiryOf(phoneHash)
-    {
+    function claimExpiredPhoneRecord(
+        bytes32 phoneHash,
+        address owner,
+        address resolver,
+        string memory label
+    ) external virtual hasExpiryOf(phoneHash) {
         PhoneRecord storage recordData = records[phoneHash];
+        ResolverRecord storage resolverRecordData = resolverRecordMapping[
+            label
+        ];
+
         require(
             recordData.exists,
             "only an existing phone record can be claimed"
@@ -282,6 +289,14 @@ contract PNS is IPNS {
         recordData.isInGracePeriod = false;
         recordData.isExpired = false;
         recordData.expirationTime = block.timestamp + expiryTime;
+        delete recordData.wallet;
+
+        if (!resolverRecordData.exists) {
+            resolverRecordData.label = label;
+            resolverRecordData.createdAt = block.timestamp;
+            resolverRecordData.wallet = resolver;
+            resolverRecordData.exists = true;
+        }
 
         emit PhoneRecordClaimed(
             phoneHash,
