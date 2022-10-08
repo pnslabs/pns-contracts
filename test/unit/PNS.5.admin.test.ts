@@ -4,13 +4,19 @@ const { expect } = require('chai');
 const { testVariables } = require('../../helper-hardhat-config');
 
 describe('PNS Admin', () => {
-  const { address1 } = testVariables;
+  const { address1, zeroAddress } = testVariables;
   const twoYearsInSeconds = 63072000;
   const thirtyDaysInSeconds = 2592000;
 
   it('reverts with an error when attempting to add an admin that already exists', async () => {
     await expect(testVariables.pnsContract.addAdmin(testVariables.adminAddress)).to.be.revertedWith(
       'admin already exists',
+    );
+  });
+
+  it('reverts with an error when attempting to add an admin with a zero address', async () => {
+    await expect(testVariables.pnsContract.addAdmin(zeroAddress)).to.be.revertedWith(
+      'cannot add zero address as admin',
     );
   });
 

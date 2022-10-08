@@ -4,6 +4,7 @@ let testVariables = {
   signer1: null,
   signer2: null,
   adminAddress: null,
+  zeroAddress: '0x0000000000000000000000000000000000000000',
   address1: '0xcD058D84F922450591AD59303AA2B4A864da19e6',
   address2: '0x368d517d45F984990Fc7c38e2Eaa503f5b5c7Ce6',
   address3: '0xe1563051F86414C5Fc3b7fa8cde3eBf50293d577',
