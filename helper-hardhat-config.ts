@@ -15,6 +15,8 @@ let testVariables = {
   label2: 'BTC',
   resolverCreatedLength: 0,
   pnsContract: null,
+  twoYearsInSeconds: 63072000,
+  thirtyDaysInSeconds: 2592000,
 };
 
 module.exports = {
