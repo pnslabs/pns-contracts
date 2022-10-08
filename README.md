@@ -23,6 +23,7 @@ getRecord
 getOwner
 recordExists
 getExpiryTime
+getGracePeriod
 ```
 
 These functions implement the IPNS.sol interface.
@@ -75,9 +76,15 @@ Returns an existing label for the specified phone number phoneHash.
 
 <br />
 
-## getExpiryTime(bytes32 phoneHash) external view returns (uint256)
+## getExpiryTime() external view returns (uint256)
 
-Returns the expiry time remaining for the specified phoneHash.
+Gets the current expiry time.
+
+<br />
+
+## getGracePeriod() external view returns (uint256)
+
+Gets the current grace period.
 
 <br />
 
