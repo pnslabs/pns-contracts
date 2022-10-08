@@ -90,6 +90,13 @@ contract PNS is IPNS {
      */
     event GracePeriodUpdated(uint256 gracePeriod, address updater);
 
+    /**
+     * @dev logs when a new admin has been added.
+     * @param newAdmin The new admin address.
+     * @param admin The admin who made the call.
+     */
+    event AdminAdded(address newAdmin, address admin);
+
     constructor() {
         admins[msg.sender] = Admins(msg.sender, block.timestamp, true);
     }
@@ -283,6 +290,18 @@ contract PNS is IPNS {
             recordData.isExpired,
             recordData.expirationTime
         );
+    }
+
+    /**
+     * @dev Adds a new admin.
+     * @param newAdmin The address of the new admin.
+     */
+    function addAdmin(address newAdmin) external isAdmin {
+        require(newAdmin != address(0), "cannot add zero address as admin");
+        require(!admins[newAdmin].exists, "admin already exists");
+
+        admins[newAdmin] = Admins(newAdmin, block.timestamp, true);
+        emit AdminAdded(newAdmin, msg.sender);
     }
 
     /**
