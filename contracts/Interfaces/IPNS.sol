@@ -55,4 +55,8 @@ interface IPNS is IPNSSchema {
     function setNewExpiryTime(uint256 time) external;
 
     function setNewGracePeriod(uint256 time) external;
+
+    function getExpiryTime() external view returns (uint256);
+
+    function getGracePeriod() external view returns (uint256);
 }

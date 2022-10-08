@@ -303,6 +303,22 @@ contract PNS is IPNS {
         emit GracePeriodUpdated(time, msg.sender);
     }
 
+    /**
+     * @dev Gets the current expiry time of a phone record.
+     * @return uint256 The current expiry time in seconds.
+     */
+    function getExpiryTime() external view returns (uint256) {
+        return expiryTime;
+    }
+
+    /**
+     * @dev Gets the current grace period.
+     * @return uint256 The current grace period in seconds.
+     */
+    function getGracePeriod() external view returns (uint256) {
+        return gracePeriod;
+    }
+
     function _setOwner(bytes32 phoneHash, address owner)
         internal
         virtual
