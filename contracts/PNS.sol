@@ -9,16 +9,19 @@ import "./Interfaces/IPNS.sol";
  * @dev The interface IPNS is inherited which inherits IPNSSchema.
  */
 contract PNS is IPNS {
-    /// Expiry time immutable value
-    uint256 private immutable i_expiryTime = 365 days;
-    /// Grace period immutable value
-    uint256 private immutable i_gracePeriod = 60 days;
+    /// Expiry time value
+    uint256 private expiryTime = 365 days;
+    /// Grace period value
+    uint256 private gracePeriod = 60 days;
 
     /// Mapping state to store resolver record
     mapping(string => ResolverRecord) resolverRecordMapping;
 
     /// Mapping state to store mobile phone number record that will be linked to a resolver
     mapping(bytes32 => PhoneRecord) records;
+
+    /// Mapping state to store addresses of admins
+    mapping(address => Admins) admins;
 
     /**
      * @dev logs the event when a phoneHash record is created.
@@ -74,6 +77,24 @@ contract PNS is IPNS {
     );
 
     /**
+     * @dev logs when phone record is claimed.
+     * @param expiryTime The new expiry time in seconds.
+     * @param updater Who made the call
+     */
+    event ExpiryTimeUpdated(uint256 expiryTime, address updater);
+
+    /**
+     * @dev logs when phone record is claimed.
+     * @param gracePeriod The new grace period in seconds.
+     * @param updater Who made the call
+     */
+    event GracePeriodUpdated(uint256 gracePeriod, address updater);
+
+    constructor() {
+        admins[msg.sender] = Admins(msg.sender, block.timestamp, true);
+    }
+
+    /**
      * @dev Sets the record for a phoneHash.
      * @param phoneHash The phoneHash to update.
      * @param owner The address of the new owner.
@@ -105,7 +126,7 @@ contract PNS is IPNS {
         recordData.exists = true;
         recordData.isInGracePeriod = false;
         recordData.isExpired = false;
-        recordData.expirationTime = block.timestamp + i_expiryTime;
+        recordData.expirationTime = block.timestamp + expiryTime;
         recordData.wallet.push(resolverRecordData);
 
         emit PhoneRecordCreated(phoneHash, resolver, owner);
@@ -224,7 +245,7 @@ contract PNS is IPNS {
 
         recordData.isInGracePeriod = false;
         recordData.isExpired = false;
-        recordData.expirationTime = block.timestamp + i_expiryTime;
+        recordData.expirationTime = block.timestamp + expiryTime;
 
         emit PhoneRecordAuthenticated(phoneHash);
     }
@@ -253,7 +274,7 @@ contract PNS is IPNS {
         recordData.owner = owner;
         recordData.isInGracePeriod = false;
         recordData.isExpired = false;
-        recordData.expirationTime = block.timestamp + i_expiryTime;
+        recordData.expirationTime = block.timestamp + expiryTime;
 
         emit PhoneRecordClaimed(
             phoneHash,
@@ -262,6 +283,24 @@ contract PNS is IPNS {
             recordData.isExpired,
             recordData.expirationTime
         );
+    }
+
+    /**
+     * @dev Updates the expiry time of a phone record.
+     * @param time The new expiry time in seconds.
+     */
+    function setNewExpiryTime(uint256 time) external isAdmin {
+        expiryTime = time;
+        emit ExpiryTimeUpdated(time, msg.sender);
+    }
+
+    /**
+     * @dev Updates the grace period.
+     * @param time The new grace period in seconds.
+     */
+    function setNewGracePeriod(uint256 time) external isAdmin {
+        gracePeriod = time;
+        emit GracePeriodUpdated(time, msg.sender);
     }
 
     function _setOwner(bytes32 phoneHash, address owner)
@@ -376,7 +415,7 @@ contract PNS is IPNS {
         returns (bool)
     {
         PhoneRecord storage recordData = records[phoneHash];
-        return block.timestamp > (recordData.expirationTime + i_gracePeriod);
+        return block.timestamp > (recordData.expirationTime + gracePeriod);
     }
 
     //============MODIFIERS==============
@@ -427,6 +466,14 @@ contract PNS is IPNS {
             emit PhoneRecordExpired(phoneHash);
             revert("phone record has expired, please re-authenticate");
         }
+        _;
+    }
+
+    /**
+     * @dev Permits modifications only by an admin.
+     */
+    modifier isAdmin() {
+        require(admins[msg.sender].exists, "caller is not an admin");
         _;
     }
 }
