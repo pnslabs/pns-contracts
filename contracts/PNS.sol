@@ -9,10 +9,10 @@ import "./Interfaces/IPNS.sol";
  * @dev The interface IPNS is inherited which inherits IPNSSchema.
  */
 contract PNS is IPNS {
-    /// Expiry time constant value
-    uint256 private constant EXPIRY_TIME = 365 days;
-    /// Grace period constant value
-    uint256 private constant GRACE_PERIOD = 60 days;
+    /// Expiry time immutable value
+    uint256 private immutable i_expiryTime = 365 days;
+    /// Grace period immutable value
+    uint256 private immutable i_gracePeriod = 60 days;
 
     /// Mapping state to store resolver record
     mapping(string => ResolverRecord) resolverRecordMapping;
@@ -105,7 +105,7 @@ contract PNS is IPNS {
         recordData.exists = true;
         recordData.isInGracePeriod = false;
         recordData.isExpired = false;
-        recordData.expirationTime = block.timestamp + EXPIRY_TIME;
+        recordData.expirationTime = block.timestamp + i_expiryTime;
         recordData.wallet.push(resolverRecordData);
 
         emit PhoneRecordCreated(phoneHash, resolver, owner);
@@ -224,7 +224,7 @@ contract PNS is IPNS {
 
         recordData.isInGracePeriod = false;
         recordData.isExpired = false;
-        recordData.expirationTime = block.timestamp + EXPIRY_TIME;
+        recordData.expirationTime = block.timestamp + i_expiryTime;
 
         emit PhoneRecordAuthenticated(phoneHash);
     }
@@ -253,7 +253,7 @@ contract PNS is IPNS {
         recordData.owner = owner;
         recordData.isInGracePeriod = false;
         recordData.isExpired = false;
-        recordData.expirationTime = block.timestamp + EXPIRY_TIME;
+        recordData.expirationTime = block.timestamp + i_expiryTime;
 
         emit PhoneRecordClaimed(
             phoneHash,
@@ -376,7 +376,7 @@ contract PNS is IPNS {
         returns (bool)
     {
         PhoneRecord storage recordData = records[phoneHash];
-        return block.timestamp > (recordData.expirationTime + GRACE_PERIOD);
+        return block.timestamp > (recordData.expirationTime + i_gracePeriod);
     }
 
     //============MODIFIERS==============
