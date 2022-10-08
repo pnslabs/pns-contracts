@@ -66,4 +66,13 @@ interface IPNS is IPNSSchema {
     function getGracePeriod() external view returns (uint256);
 
     function addAdmin(address newAdmin) external;
+
+    function getAdmin(address admin)
+        external
+        view
+        returns (
+            address user,
+            uint256 createdAt,
+            bool exists
+        );
 }

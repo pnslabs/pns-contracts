@@ -4,18 +4,7 @@ const { assert, expect } = require('chai');
 const { testVariables } = require('../../helper-hardhat-config');
 
 describe('PNS Record', () => {
-  let adminAccount;
   const { phoneNumber1, phoneNumber2, label1 } = testVariables;
-
-  before(async function () {
-    [adminAccount] = await ethers.getSigners();
-    testVariables.signer1 = adminAccount;
-    testVariables.adminAddress = adminAccount.address;
-
-    const PNSContract = await ethers.getContractFactory('PNS');
-
-    testVariables.pnsContract = await PNSContract.deploy();
-  });
 
   it('should create a new record', async function () {
     await expect(

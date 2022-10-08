@@ -21,7 +21,7 @@ contract PNS is IPNS {
     mapping(bytes32 => PhoneRecord) records;
 
     /// Mapping state to store addresses of admins
-    mapping(address => Admins) admins;
+    mapping(address => Admin) admins;
 
     /**
      * @dev logs the event when a phoneHash record is created.
@@ -98,7 +98,7 @@ contract PNS is IPNS {
     event AdminAdded(address newAdmin, address admin);
 
     constructor() {
-        admins[msg.sender] = Admins(msg.sender, block.timestamp, true);
+        admins[msg.sender] = Admin(msg.sender, block.timestamp, true);
     }
 
     /**
@@ -315,8 +315,32 @@ contract PNS is IPNS {
         require(newAdmin != address(0), "cannot add zero address as admin");
         require(!admins[newAdmin].exists, "admin already exists");
 
-        admins[newAdmin] = Admins(newAdmin, block.timestamp, true);
+        admins[newAdmin] = Admin(newAdmin, block.timestamp, true);
         emit AdminAdded(newAdmin, msg.sender);
+    }
+
+    /**
+     * @dev Gets all the current admins.
+     * @param admin The address of the admin.
+     * @return user admin address.
+     * @return createdAt the date the admin was added.
+     * @return exists if the admin exists.
+     */
+    function getAdmin(address admin)
+        external
+        view
+        isAdmin
+        returns (
+            address user,
+            uint256 createdAt,
+            bool exists
+        )
+    {
+        return (
+            admins[admin].user,
+            admins[admin].createdAt,
+            admins[admin].exists
+        );
     }
 
     /**
