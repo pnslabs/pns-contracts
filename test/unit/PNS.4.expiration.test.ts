@@ -6,6 +6,12 @@ const { testVariables } = require('../../helper-hardhat-config');
 describe('PNS Expire', () => {
   const { oneYearInSeconds, thirtyDaysInSeconds, phoneNumber1, label1, twoYearsInSeconds, address3 } = testVariables;
 
+  it('gets returns the expiration time of the phone record', async () => {
+    const phoneRecord = await testVariables.pnsContract.getRecord(phoneNumber1);
+
+    expect(Number(phoneRecord[7])).to.be.greaterThan(0);
+  });
+
   it('reverts with an error when attempting to reAuthenticate a phone record that is not in grace period', async () => {
     await expect(testVariables.pnsContract.reAuthenticate(phoneNumber1)).to.be.revertedWith(
       'only a phone record currently in grace period can be re-authenticated',
