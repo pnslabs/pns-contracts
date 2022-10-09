@@ -1,4 +1,4 @@
-import "@nomicfoundation/hardhat-toolbox";
+import '@nomicfoundation/hardhat-toolbox';
 import 'dotenv/config';
 import 'hardhat-contract-sizer';
 import '@typechain/hardhat';

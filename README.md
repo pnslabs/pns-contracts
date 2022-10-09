@@ -12,6 +12,8 @@ The `PNS.sol` smart contract comes with these list of public setter functions:
 setPhoneRecord
 setOwner
 linkPhoneToWallet
+reAuthenticate
+claimExpiredPhoneRecord
 ```
 
 And these lists of public getter functions;
@@ -20,6 +22,8 @@ And these lists of public getter functions;
 getRecord
 getOwner
 recordExists
+getExpiryTime
+getGracePeriod
 ```
 
 These functions implement the IPNS.sol interface.
@@ -33,6 +37,12 @@ The IPNS's interface is as follows:
 ## setPhoneRecord(bytes32 phoneHash, address owner, address resolver, string label) external
 
 Sets a resolver record and links it to the phoneHash and owner.
+
+<br />
+
+## linkPhoneToWallet(bytes32 phoneHash, address resolver, string label) external
+
+Sets the resolver address for the specified phoneHash.
 
 <br />
 
@@ -60,6 +70,36 @@ Transfers ownership of a phoneHash to a new address. May only be called by the c
 
 <br />
 
+## getResolverDetails(bytes32 phoneHash) external view returns (ResolverRecord[] memory)
+
+Returns an existing label for the specified phone number phoneHash.
+
+<br />
+
+## getExpiryTime() external view returns (uint256)
+
+Gets the current expiry time.
+
+<br />
+
+## getGracePeriod() external view returns (uint256)
+
+Gets the current grace period.
+
+<br />
+
+## reAuthenticate(bytes32 phoneHash) external
+
+Re authenticates a phone record.
+
+<br />
+
+## claimExpiredPhoneRecord(bytes32 phoneHash, address owner) external
+
+Claims an already existing but expired phone record.
+
+<br />
+
 # Developer guide
 
 ## How to setup
@@ -69,7 +109,7 @@ git clone https://github.com/pnsfoundation/PNS-Core.git
 
 cd PNS-CORE
 
-npm install
+yarn install
 ```
 
 ## Run local ganache
@@ -83,5 +123,5 @@ ganache
 ## Run unit tests
 
 ```shell
-npm run test
+yarn run test
 ```
