@@ -15,6 +15,7 @@ let testVariables = {
   label2: 'BTC',
   resolverCreatedLength: 0,
   pnsContract: null,
+  oneYearInSeconds: 31536000,
   twoYearsInSeconds: 63072000,
   thirtyDaysInSeconds: 2592000,
 };

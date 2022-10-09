@@ -192,6 +192,8 @@ contract PNS is IPNS {
         public
         virtual
         authorised(phoneHash)
+        expired(phoneHash)
+        authenticated(phoneHash)
     {
         _setOwner(phoneHash, owner);
         emit Transfer(phoneHash, owner);
@@ -241,13 +243,15 @@ contract PNS is IPNS {
         hasExpiryOf(phoneHash)
     {
         PhoneRecord storage recordData = records[phoneHash];
+        bool _timeHasPassedExpiryTime = _hasPassedExpiryTime(phoneHash);
+        bool _hasExhaustedGracePeriod = _hasPassedGracePeriod(phoneHash);
         require(
             recordData.exists,
             "only an existing phone record can be re-authenticated"
         );
         require(
-            recordData.isInGracePeriod,
-            "only a phone record in grace period can be re-authenticated"
+            _timeHasPassedExpiryTime && !_hasExhaustedGracePeriod,
+            "only a phone record currently in grace period can be re-authenticated"
         );
 
         recordData.isInGracePeriod = false;
@@ -274,13 +278,14 @@ contract PNS is IPNS {
         ResolverRecord storage resolverRecordData = resolverRecordMapping[
             label
         ];
+        bool _hasExhaustedGracePeriod = _hasPassedGracePeriod(phoneHash);
 
         require(
             recordData.exists,
             "only an existing phone record can be claimed"
         );
         require(
-            recordData.isExpired,
+            _hasExhaustedGracePeriod,
             "only an expired phone record can be claimed"
         );
 
@@ -437,6 +442,8 @@ contract PNS is IPNS {
     {
         PhoneRecord storage recordData = records[phoneHash];
         require(recordData.exists, "phone record not found");
+        bool _isInGracePeriod = _hasPassedExpiryTime(phoneHash);
+        bool _isExpired = _hasPassedGracePeriod(phoneHash);
 
         return (
             recordData.owner,
@@ -444,8 +451,8 @@ contract PNS is IPNS {
             recordData.phoneHash,
             recordData.createdAt,
             recordData.exists,
-            recordData.isInGracePeriod,
-            recordData.isExpired,
+            _isInGracePeriod,
+            _isExpired,
             recordData.expirationTime
         );
     }
