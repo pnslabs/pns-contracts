@@ -17,7 +17,7 @@ describe('PNS Record', () => {
     adminAddress = _adminAddress;
   });
 
-  it('should create a new record and emit an event', async function () {
+  it('creates a new record', async function () {
     await expect(pnsContract.setPhoneRecord(phoneNumber1, adminAddress, adminAddress, label)).to.emit(
       pnsContract,
       'PhoneRecordCreated',
