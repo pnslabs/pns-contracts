@@ -1,30 +1,25 @@
-import { network, ethers } from 'hardhat';
+import { network } from 'hardhat';
 
 const { expect } = require('chai');
 const { keccak256: _keccak256 } = require('../../utils/util');
+const { testVariables } = require('../../helper-hardhat-config');
 
 describe('PNS Expire', () => {
-  let adminAccount;
   let pnsContract;
-  let adminAddress;
   const phoneNumber = _keccak256('07084462591');
-  const oneYearInSeconds = 31536000;
   const twoYearsInSeconds = 63072000;
   const thirtyDaysInSeconds = 2592000;
   const label = 'ETH';
-  const address = '0xcD058D84F922450591AD59303AA2B4A864da19e6';
+  let address1;
+  const address2 = '0x368d517d45F984990Fc7c38e2Eaa503f5b5c7Ce6';
 
-  before(async function () {
-    [adminAccount] = await ethers.getSigners();
-    adminAddress = adminAccount.address;
-
-    const PNSContract = await ethers.getContractFactory('PNS');
-
-    pnsContract = await PNSContract.deploy();
+  before(() => {
+    address1 = testVariables.adminAddress;
+    pnsContract = testVariables.pnsContract;
   });
 
   it('should create a new record and emit an event', async function () {
-    await expect(pnsContract.setPhoneRecord(phoneNumber, adminAddress, adminAddress, label)).to.emit(
+    await expect(pnsContract.setPhoneRecord(phoneNumber, address1, address1, label)).to.emit(
       pnsContract,
       'PhoneRecordCreated',
     );
@@ -50,7 +45,7 @@ describe('PNS Expire', () => {
   });
 
   it('increases the evm time to be in grace period, while expiration status remains false', async () => {
-    await network.provider.send('evm_increaseTime', [oneYearInSeconds]);
+    await network.provider.send('evm_increaseTime', [twoYearsInSeconds]);
     await network.provider.send('evm_mine', []);
     const getRecord = await pnsContract.getRecord(phoneNumber);
     expect(getRecord[5]).to.equal(true);
@@ -62,9 +57,9 @@ describe('PNS Expire', () => {
   });
 
   it('reverts with an error when attempting to claim an unexpired phone record', async () => {
-    await expect(
-      pnsContract.claimExpiredPhoneRecord(phoneNumber, adminAddress, adminAddress, label),
-    ).to.be.revertedWith('only an expired phone record can be claimed');
+    await expect(pnsContract.claimExpiredPhoneRecord(phoneNumber, address1, address1, label)).to.be.revertedWith(
+      'only an expired phone record can be claimed',
+    );
   });
 
   it('increases the evm time until it exceeds the phone record expiration time', async () => {
@@ -76,7 +71,7 @@ describe('PNS Expire', () => {
   });
 
   it('successfully claims an expired phone record, and emits an event', async () => {
-    await expect(pnsContract.claimExpiredPhoneRecord(phoneNumber, address, address, label)).to.emit(
+    await expect(pnsContract.claimExpiredPhoneRecord(phoneNumber, address2, address2, label)).to.emit(
       pnsContract,
       'PhoneRecordClaimed',
     );

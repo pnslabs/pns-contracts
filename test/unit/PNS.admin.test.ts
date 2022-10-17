@@ -1,6 +1,7 @@
 import { ethers } from 'hardhat';
 
 const { expect } = require('chai');
+const { testVariables } = require('../../helper-hardhat-config');
 
 describe('PNS Admin', () => {
   let adminAccount;
@@ -13,45 +14,56 @@ describe('PNS Admin', () => {
 
   before(async function () {
     [adminAccount] = await ethers.getSigners();
-    adminAddress = adminAccount.address;
+    testVariables.adminAddress = adminAccount.address;
 
     const PNSContract = await ethers.getContractFactory('PNS');
 
-    pnsContract = await PNSContract.deploy();
+    testVariables.pnsContract = await PNSContract.deploy();
+    pnsContract = testVariables.pnsContract;
+    adminAddress = testVariables.adminAddress;
   });
 
-  it('reverts with an error when attempting to add an admin that already exists', async () => {
-    await expect(pnsContract.addAdmin(adminAddress)).to.be.revertedWith('admin already exists');
+  describe('Constructor', () => {
+    it('should successfully add an admin address in constructor', async function () {
+      const admin = await pnsContract.getAdmin(adminAddress);
+      expect(admin[2]).to.equal(true);
+    });
   });
 
-  it('reverts with an error when attempting to add an admin with a zero address', async () => {
-    await expect(pnsContract.addAdmin(zeroAddress)).to.be.revertedWith('cannot add zero address as admin');
-  });
+  describe('Admin', () => {
+    it('reverts with an error when attempting to add an admin that already exists', async () => {
+      await expect(pnsContract.addAdmin(adminAddress)).to.be.revertedWith('admin already exists');
+    });
 
-  it('adds a new admin and emits event', async () => {
-    await expect(pnsContract.addAdmin(newAdmin)).to.emit(pnsContract, 'AdminAdded');
-  });
+    it('reverts with an error when attempting to add an admin with a zero address', async () => {
+      await expect(pnsContract.addAdmin(zeroAddress)).to.be.revertedWith('cannot add zero address as admin');
+    });
 
-  it('gets the newly added admin', async () => {
-    const admin = await pnsContract.getAdmin(newAdmin);
-    expect(admin[2]).to.equal(true);
-  });
+    it('adds a new admin and emits event', async () => {
+      await expect(pnsContract.addAdmin(newAdmin)).to.emit(pnsContract, 'AdminAdded');
+    });
 
-  it('admin can set a new expiry time and it emits the expected event', async () => {
-    await expect(pnsContract.setNewExpiryTime(twoYearsInSeconds)).to.emit(pnsContract, 'ExpiryTimeUpdated');
-  });
+    it('gets the newly added admin', async () => {
+      const admin = await pnsContract.getAdmin(newAdmin);
+      expect(admin[2]).to.equal(true);
+    });
 
-  it('returns newly updated expiry time', async () => {
-    const expiryTime = await pnsContract.getExpiryTime();
-    expect(expiryTime).to.equal(twoYearsInSeconds);
-  });
+    it('admin can set a new expiry time and it emits the expected event', async () => {
+      await expect(pnsContract.setNewExpiryTime(twoYearsInSeconds)).to.emit(pnsContract, 'ExpiryTimeUpdated');
+    });
 
-  it('admin can set a new grace period and it emits the expected event', async () => {
-    await expect(pnsContract.setNewGracePeriod(thirtyDaysInSeconds)).to.emit(pnsContract, 'GracePeriodUpdated');
-  });
+    it('returns newly updated expiry time', async () => {
+      const expiryTime = await pnsContract.getExpiryTime();
+      expect(expiryTime).to.equal(twoYearsInSeconds);
+    });
 
-  it('returns newly updated grace period', async () => {
-    const gracePeriod = await pnsContract.getGracePeriod();
-    expect(gracePeriod).to.equal(thirtyDaysInSeconds);
+    it('admin can set a new grace period and it emits the expected event', async () => {
+      await expect(pnsContract.setNewGracePeriod(thirtyDaysInSeconds)).to.emit(pnsContract, 'GracePeriodUpdated');
+    });
+
+    it('returns newly updated grace period', async () => {
+      const gracePeriod = await pnsContract.getGracePeriod();
+      expect(gracePeriod).to.equal(thirtyDaysInSeconds);
+    });
   });
 });
