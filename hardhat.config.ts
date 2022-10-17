@@ -2,6 +2,8 @@ import '@nomicfoundation/hardhat-toolbox';
 import 'dotenv/config';
 import 'hardhat-contract-sizer';
 import '@typechain/hardhat';
+import '@nomiclabs/hardhat-ethers';
+import '@openzeppelin/hardhat-upgrades';
 import { utils } from 'ethers';
 // import { HardhatUserConfig, task } from 'hardhat/config';
 
