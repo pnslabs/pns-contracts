@@ -1,16 +1,28 @@
 import { ethers } from 'hardhat';
 
-const { assert } = require('chai');
+const { assert, expect } = require('chai');
 const { keccak256: _keccak256 } = require('../../utils/util');
-const { testVariables } = require('../../helper-hardhat-config');
 
 describe('PNS Record Owner', () => {
+  let adminAccount;
   let pnsContract;
   const phoneNumber = _keccak256('07084462591');
-  const address = '0x368d517d45F984990Fc7c38e2Eaa503f5b5c7Ce6';
+  const label = 'ETH';
+  const address = '0xcD058D84F922450591AD59303AA2B4A864da19e6';
 
-  before(() => {
-    pnsContract = testVariables.pnsContract;
+  before(async function () {
+    [adminAccount] = await ethers.getSigners();
+
+    const PNSContract = await ethers.getContractFactory('PNS');
+
+    pnsContract = await PNSContract.deploy();
+  });
+
+  it('should create a new record and emit an event', async function () {
+    await expect(pnsContract.setPhoneRecord(phoneNumber, address, address, label)).to.emit(
+      pnsContract,
+      'PhoneRecordCreated',
+    );
   });
 
   it('gets the correct owner of the record', async () => {
