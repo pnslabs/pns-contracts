@@ -1,23 +1,20 @@
 import { ethers } from 'hardhat';
 
 const { assert, expect } = require('chai');
-const { keccak256: _keccak256 } = require('../../utils/util');
+const { keccak256 } = require('../../utils/util');
+const { deployContract } = require('../../helper-hardhat-config');
 
 describe('PNS Record', () => {
-  let adminAccount;
   let pnsContract;
   let adminAddress;
-  const phoneNumber1 = _keccak256('07084462591');
-  const phoneNumber2 = _keccak256('08084442592');
+  const phoneNumber1 = keccak256('07084462591');
+  const phoneNumber2 = keccak256('08084442592');
   const label = 'ETH';
 
   before(async function () {
-    [adminAccount] = await ethers.getSigners();
-    adminAddress = adminAccount.address;
-
-    const PNSContract = await ethers.getContractFactory('PNS');
-
-    pnsContract = await PNSContract.deploy();
+    const { pnsContract: _pnsContract, adminAddress: _adminAddress } = await deployContract();
+    pnsContract = _pnsContract;
+    adminAddress = _adminAddress;
   });
 
   it('should create a new record and emit an event', async function () {

@@ -1,13 +1,13 @@
 import { network, ethers } from 'hardhat';
 
 const { expect } = require('chai');
-const { keccak256: _keccak256 } = require('../../utils/util');
+const { keccak256 } = require('../../utils/util');
+const { deployContract } = require('../../helper-hardhat-config');
 
 describe('PNS Expire', () => {
-  let adminAccount;
   let pnsContract;
   let adminAddress;
-  const phoneNumber = _keccak256('07084462591');
+  const phoneNumber = keccak256('07084462591');
   const oneYearInSeconds = 31536000;
   const twoYearsInSeconds = 63072000;
   const thirtyDaysInSeconds = 2592000;
@@ -15,12 +15,9 @@ describe('PNS Expire', () => {
   const address = '0xcD058D84F922450591AD59303AA2B4A864da19e6';
 
   before(async function () {
-    [adminAccount] = await ethers.getSigners();
-    adminAddress = adminAccount.address;
-
-    const PNSContract = await ethers.getContractFactory('PNS');
-
-    pnsContract = await PNSContract.deploy();
+    const { pnsContract: _pnsContract, adminAddress: _adminAddress } = await deployContract();
+    pnsContract = _pnsContract;
+    adminAddress = _adminAddress;
   });
 
   it('should create a new record and emit an event', async function () {

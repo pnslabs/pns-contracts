@@ -1,20 +1,16 @@
 import { ethers } from 'hardhat';
 
 const { expect } = require('chai');
+const { deployContract } = require('../../helper-hardhat-config');
 
 describe('PNS Constructor', () => {
-  let adminAccount;
   let pnsContract;
   let adminAddress;
 
   before(async function () {
-    [adminAccount] = await ethers.getSigners();
-    // testVariables.signer1 = adminAccount;
-    adminAddress = adminAccount.address;
-
-    const PNSContract = await ethers.getContractFactory('PNS');
-
-    pnsContract = await PNSContract.deploy();
+    const { pnsContract: _pnsContract, adminAddress: _adminAddress } = await deployContract();
+    pnsContract = _pnsContract;
+    adminAddress = _adminAddress;
   });
 
   it('should successfully add an admin address in constructor', async function () {

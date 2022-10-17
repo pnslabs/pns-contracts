@@ -1,25 +1,22 @@
 import { ethers } from 'hardhat';
 
 const { assert, expect } = require('chai');
-const { keccak256: _keccak256 } = require('../../utils/util');
+const { keccak256 } = require('../../utils/util');
+const { deployContract } = require('../../helper-hardhat-config');
 
 describe('PNS Label linking', () => {
-  let adminAccount;
   let pnsContract;
   let adminAddress;
-  const phoneNumber1 = _keccak256('07084462591');
-  const phoneNumber2 = _keccak256('08084442592');
+  const phoneNumber1 = keccak256('07084462591');
+  const phoneNumber2 = keccak256('08084442592');
   const label1 = 'ETH';
   const label2 = 'BTC';
   let resolverCreatedLength = 0;
 
   before(async function () {
-    [adminAccount] = await ethers.getSigners();
-    adminAddress = adminAccount.address;
-
-    const PNSContract = await ethers.getContractFactory('PNS');
-
-    pnsContract = await PNSContract.deploy();
+    const { pnsContract: _pnsContract, adminAddress: _adminAddress } = await deployContract();
+    pnsContract = _pnsContract;
+    adminAddress = _adminAddress;
   });
 
   // will come back to this

@@ -1,9 +1,9 @@
 import { ethers } from 'hardhat';
 
 const { expect } = require('chai');
+const { deployContract } = require('../../helper-hardhat-config');
 
 describe('PNS Admin', () => {
-  let adminAccount;
   let pnsContract;
   let adminAddress;
   const newAdmin = '0xcD058D84F922450591AD59303AA2B4A864da19e6';
@@ -12,12 +12,9 @@ describe('PNS Admin', () => {
   const thirtyDaysInSeconds = 2592000;
 
   before(async function () {
-    [adminAccount] = await ethers.getSigners();
-    adminAddress = adminAccount.address;
-
-    const PNSContract = await ethers.getContractFactory('PNS');
-
-    pnsContract = await PNSContract.deploy();
+    const { pnsContract: _pnsContract, adminAddress: _adminAddress } = await deployContract();
+    pnsContract = _pnsContract;
+    adminAddress = _adminAddress;
   });
 
   it('reverts with an error when attempting to add an admin that already exists', async () => {
