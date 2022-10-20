@@ -220,7 +220,6 @@ contract PNS is IPNS, Initializable {
 		string memory label
 	) external virtual hasExpiryOf(phoneHash) {
 		PhoneRecord storage recordData = records[phoneHash];
-		ResolverRecord storage resolverRecordData = resolverRecordMapping[label];
 		bool _hasExhaustedGracePeriod = _hasPassedGracePeriod(phoneHash);
 
 		require(recordData.exists, 'only an existing phone record can be claimed');
@@ -295,6 +294,14 @@ contract PNS is IPNS, Initializable {
 	 */
 	function getGracePeriod() external view returns (uint256) {
 		return gracePeriod;
+	}
+
+	/**
+	 * @dev Gets the current version of the smart contract.
+	 * @return uint32 The current version
+	 */
+	function getVersion() external view virtual returns (uint32) {
+		return 1;
 	}
 
 	function _setOwner(bytes32 phoneHash, address owner) internal virtual returns (bytes32) {

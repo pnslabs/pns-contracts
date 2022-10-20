@@ -14,6 +14,15 @@ async function deployContract() {
   return { pnsContract, adminAddress };
 }
 
+async function deployUpgradedContract(pnsContract) {
+  const PNSV2TestContract = await ethers.getContractFactory('PNSV2Test');
+
+  const upgradedPNSContract = await upgrades.upgradeProxy(pnsContract, PNSV2TestContract);
+
+  return { upgradedPNSContract };
+}
+
 module.exports = {
   deployContract,
+  deployUpgradedContract,
 };
