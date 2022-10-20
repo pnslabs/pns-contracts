@@ -1,7 +1,7 @@
 const { assert } = require('chai');
 const { deployContract, deployUpgradedContract } = require('../../helper-hardhat-config');
 
-describe('PNS Record', () => {
+describe('PNS Contract Upgrade', () => {
   let pnsContract;
 
   before(async function () {
