@@ -1,6 +1,6 @@
 import { network, ethers } from 'hardhat';
 
-const { expect } = require('chai');
+const { expect, assert } = require('chai');
 const { keccak256 } = require('../../utils/util');
 const { deployContract } = require('../../helper-hardhat-config');
 
@@ -11,7 +11,8 @@ describe('PNS Expire', () => {
   const oneYearInSeconds = 31536000;
   const twoYearsInSeconds = 63072000;
   const thirtyDaysInSeconds = 2592000;
-  const label = 'ETH';
+  const label1 = 'ETH';
+  const label2 = 'BTC';
   const address = '0xcD058D84F922450591AD59303AA2B4A864da19e6';
 
   before(async function () {
@@ -21,7 +22,7 @@ describe('PNS Expire', () => {
   });
 
   it('should create a new record and emit an event', async function () {
-    await expect(pnsContract.setPhoneRecord(phoneNumber, adminAddress, adminAddress, label)).to.emit(
+    await expect(pnsContract.setPhoneRecord(phoneNumber, adminAddress, adminAddress, label1)).to.emit(
       pnsContract,
       'PhoneRecordCreated',
     );
@@ -60,7 +61,7 @@ describe('PNS Expire', () => {
 
   it('reverts with an error when attempting to claim an unexpired phone record', async () => {
     await expect(
-      pnsContract.claimExpiredPhoneRecord(phoneNumber, adminAddress, adminAddress, label),
+      pnsContract.claimExpiredPhoneRecord(phoneNumber, adminAddress, adminAddress, label1),
     ).to.be.revertedWith('only an expired phone record can be claimed');
   });
 
@@ -73,9 +74,18 @@ describe('PNS Expire', () => {
   });
 
   it('successfully claims an expired phone record, and emits an event', async () => {
-    await expect(pnsContract.claimExpiredPhoneRecord(phoneNumber, address, address, label)).to.emit(
+    await expect(pnsContract.claimExpiredPhoneRecord(phoneNumber, address, address, label2)).to.emit(
       pnsContract,
-      'PhoneRecordClaimed',
+      'PhoneRecordCreated',
     );
+  });
+
+  it('successfully deletes the previous record, and sets a new one when record is claimed.', async () => {
+    const resolvers = await pnsContract.getResolverDetails(phoneNumber);
+    const wallets = resolvers.length;
+    const label = resolvers[0][2];
+
+    assert.equal(wallets, 1);
+    assert.equal(label, label2);
   });
 });
