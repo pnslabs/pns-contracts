@@ -67,13 +67,6 @@ contract PNS is IPNS, Initializable {
 
 	/**
 	 * @dev logs when phone record is claimed.
-	 * @param phoneHash The phoneHash of the record.
-	 * @param owner The address of the new owner
-	 */
-	event PhoneRecordClaimed(bytes32 phoneHash, address owner, bool isInGracePeriod, bool isExpired, uint256 expirationTime);
-
-	/**
-	 * @dev logs when phone record is claimed.
 	 * @param expiryTime The new expiry time in seconds.
 	 * @param updater Who made the call
 	 */
@@ -115,27 +108,7 @@ contract PNS is IPNS, Initializable {
 		address resolver,
 		string memory label
 	) external virtual {
-		PhoneRecord storage recordData = records[phoneHash];
-		require(!recordData.exists, 'phone record already exists');
-
-		ResolverRecord storage resolverRecordData = resolverRecordMapping[label];
-
-		if (!resolverRecordData.exists) {
-			resolverRecordData.label = label;
-			resolverRecordData.createdAt = block.timestamp;
-			resolverRecordData.wallet = resolver;
-			resolverRecordData.exists = true;
-		}
-		recordData.phoneHash = phoneHash;
-		recordData.owner = owner;
-		recordData.createdAt = block.timestamp;
-		recordData.exists = true;
-		recordData.isInGracePeriod = false;
-		recordData.isExpired = false;
-		recordData.expirationTime = block.timestamp + expiryTime;
-		recordData.wallet.push(resolverRecordData);
-
-		emit PhoneRecordCreated(phoneHash, resolver, owner);
+		return _setPhoneRecord(phoneHash, owner, resolver, label);
 	}
 
 	/**
@@ -253,21 +226,9 @@ contract PNS is IPNS, Initializable {
 		require(recordData.exists, 'only an existing phone record can be claimed');
 		require(_hasExhaustedGracePeriod, 'only an expired phone record can be claimed');
 
-		recordData.phoneHash = phoneHash;
-		recordData.owner = owner;
-		recordData.isInGracePeriod = false;
-		recordData.isExpired = false;
-		recordData.expirationTime = block.timestamp + expiryTime;
-		delete recordData.wallet;
+		delete records[phoneHash];
 
-		if (!resolverRecordData.exists) {
-			resolverRecordData.label = label;
-			resolverRecordData.createdAt = block.timestamp;
-			resolverRecordData.wallet = resolver;
-			resolverRecordData.exists = true;
-		}
-
-		emit PhoneRecordClaimed(phoneHash, owner, recordData.isInGracePeriod, recordData.isExpired, recordData.expirationTime);
+		return _setPhoneRecord(phoneHash, owner, resolver, label);
 	}
 
 	/**
@@ -339,6 +300,35 @@ contract PNS is IPNS, Initializable {
 	function _setOwner(bytes32 phoneHash, address owner) internal virtual returns (bytes32) {
 		records[phoneHash].owner = owner;
 		return phoneHash;
+	}
+
+	function _setPhoneRecord(
+		bytes32 phoneHash,
+		address owner,
+		address resolver,
+		string memory label
+	) internal {
+		PhoneRecord storage recordData = records[phoneHash];
+		require(!recordData.exists, 'phone record already exists');
+
+		ResolverRecord storage resolverRecordData = resolverRecordMapping[label];
+
+		if (!resolverRecordData.exists) {
+			resolverRecordData.label = label;
+			resolverRecordData.createdAt = block.timestamp;
+			resolverRecordData.wallet = resolver;
+			resolverRecordData.exists = true;
+		}
+		recordData.phoneHash = phoneHash;
+		recordData.owner = owner;
+		recordData.createdAt = block.timestamp;
+		recordData.exists = true;
+		recordData.isInGracePeriod = false;
+		recordData.isExpired = false;
+		recordData.expirationTime = block.timestamp + expiryTime;
+		recordData.wallet.push(resolverRecordData);
+
+		emit PhoneRecordCreated(phoneHash, resolver, owner);
 	}
 
 	function _linkphoneHashToWallet(
