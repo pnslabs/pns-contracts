@@ -21,5 +21,14 @@ interface IPNSSchema {
         bytes32 phoneHash;
         uint256 createdAt;
         bool exists;
+        bool isInGracePeriod;
+        bool isExpired;
+        uint256 expirationTime;
+    }
+
+    struct Admin {
+        address user;
+        uint256 createdAt;
+        bool exists;
     }
 }
