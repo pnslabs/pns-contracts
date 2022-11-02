@@ -15,6 +15,8 @@ contract PNS is IPNS, Initializable {
 	uint256 private expiryTime;
 	/// Grace period value
 	uint256 private gracePeriod;
+	/// Authentication fee value
+	uint256 private authFee;
 
 	/// Mapping state to store resolver record
 	mapping(string => ResolverRecord) resolverRecordMapping;
@@ -93,6 +95,7 @@ contract PNS is IPNS, Initializable {
 		admins[msg.sender] = Admin(msg.sender, block.timestamp, true);
 		expiryTime = 365 days;
 		gracePeriod = 60 days;
+		authFee = 1 ether;
 	}
 
 	/**
@@ -107,7 +110,7 @@ contract PNS is IPNS, Initializable {
 		address owner,
 		address resolver,
 		string memory label
-	) external virtual {
+	) external payable virtual {
 		return _setPhoneRecord(phoneHash, owner, resolver, label);
 	}
 
@@ -192,7 +195,9 @@ contract PNS is IPNS, Initializable {
 	 * @dev Re authenticates a phone record.
 	 * @param phoneHash The phoneHash.
 	 */
-	function reAuthenticate(bytes32 phoneHash) external virtual authorised(phoneHash) hasExpiryOf(phoneHash) {
+	function reAuthenticate(bytes32 phoneHash) external payable virtual authorised(phoneHash) hasExpiryOf(phoneHash) {
+		require(msg.value >= authFee, 'msg.value must be greater than or equal to authFee');
+
 		PhoneRecord storage recordData = records[phoneHash];
 		bool _timeHasPassedExpiryTime = _hasPassedExpiryTime(phoneHash);
 		bool _hasExhaustedGracePeriod = _hasPassedGracePeriod(phoneHash);
@@ -202,6 +207,11 @@ contract PNS is IPNS, Initializable {
 		recordData.isInGracePeriod = false;
 		recordData.isExpired = false;
 		recordData.expirationTime = block.timestamp + expiryTime;
+
+		payable(address(this)).transfer(msg.value);
+		(bool success, ) = address(this).call{value: msg.value}('');
+		require(success, 'Transfer failed.');
+		(bool sent, ) = msg.sender.call{value: msg.value - authFee}('');
 
 		emit PhoneRecordAuthenticated(phoneHash);
 	}
@@ -218,7 +228,7 @@ contract PNS is IPNS, Initializable {
 		address owner,
 		address resolver,
 		string memory label
-	) external virtual hasExpiryOf(phoneHash) {
+	) external payable virtual hasExpiryOf(phoneHash) {
 		PhoneRecord storage recordData = records[phoneHash];
 		bool _hasExhaustedGracePeriod = _hasPassedGracePeriod(phoneHash);
 
@@ -315,6 +325,8 @@ contract PNS is IPNS, Initializable {
 		address resolver,
 		string memory label
 	) internal {
+		require(msg.value >= authFee, 'fee must be greater than or equal to the auth fee');
+
 		PhoneRecord storage recordData = records[phoneHash];
 		require(!recordData.exists, 'phone record already exists');
 
@@ -334,6 +346,10 @@ contract PNS is IPNS, Initializable {
 		recordData.isExpired = false;
 		recordData.expirationTime = block.timestamp + expiryTime;
 		recordData.wallet.push(resolverRecordData);
+
+		(bool success, ) = address(this).call{value: msg.value}('');
+		require(success, 'Transfer failed.');
+		(bool sent, ) = msg.sender.call{value: msg.value - authFee}('');
 
 		emit PhoneRecordCreated(phoneHash, resolver, owner);
 	}
@@ -357,6 +373,10 @@ contract PNS is IPNS, Initializable {
 			recordData.wallet.push(resolverRecordData);
 		}
 	}
+
+	// function getContractBalalnce() public view returns (uint256) {
+	// 	return address(this).balance;
+	// }
 
 	/**
 	 * @dev Returns the hash for a given phoneHash
@@ -429,6 +449,12 @@ contract PNS is IPNS, Initializable {
 		PhoneRecord storage recordData = records[phoneHash];
 		return block.timestamp > (recordData.expirationTime + gracePeriod);
 	}
+
+	// Function to receive Ether. msg.data must be empty
+	receive() external payable {}
+
+	// Fallback function is called when msg.data is not empty
+	fallback() external payable {}
 
 	//============MODIFIERS==============
 	/**

@@ -15,7 +15,7 @@ interface IPNS is IPNSSchema {
 		address owner,
 		address resolver,
 		string memory label
-	) external;
+	) external payable;
 
 	function linkPhoneToWallet(
 		bytes32 phoneHash,
@@ -45,14 +45,14 @@ interface IPNS is IPNSSchema {
 
 	function getResolverDetails(bytes32 phoneHash) external view returns (ResolverRecord[] memory);
 
-	function reAuthenticate(bytes32 phoneHash) external;
+	function reAuthenticate(bytes32 phoneHash) external payable;
 
 	function claimExpiredPhoneRecord(
 		bytes32 phoneHash,
 		address owner,
 		address resolver,
 		string memory label
-	) external;
+	) external payable;
 
 	function setNewExpiryTime(uint256 time) external;
 
