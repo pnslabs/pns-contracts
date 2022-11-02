@@ -14,6 +14,8 @@ describe('PNS Expire', () => {
   const label1 = 'ETH';
   const label2 = 'BTC';
   const address = '0xcD058D84F922450591AD59303AA2B4A864da19e6';
+  const authFee = ethers.utils.parseEther('12');
+  const authFee2 = ethers.utils.parseEther('0.9');
 
   before(async function () {
     const { pnsContract: _pnsContract, adminAddress: _adminAddress } = await deployContract();
@@ -22,10 +24,9 @@ describe('PNS Expire', () => {
   });
 
   it('should create a new record and emit an event', async function () {
-    await expect(pnsContract.setPhoneRecord(phoneNumber, adminAddress, adminAddress, label1)).to.emit(
-      pnsContract,
-      'PhoneRecordCreated',
-    );
+    await expect(
+      pnsContract.setPhoneRecord(phoneNumber, adminAddress, adminAddress, label1, { value: authFee }),
+    ).to.emit(pnsContract, 'PhoneRecordCreated');
   });
 
   it('admin can set a new expiry time and it emits the expected event', async () => {
@@ -42,7 +43,7 @@ describe('PNS Expire', () => {
   });
 
   it('reverts with an error when attempting to reAuthenticate a phone record that is not in grace period', async () => {
-    await expect(pnsContract.reAuthenticate(phoneNumber)).to.be.revertedWith(
+    await expect(pnsContract.reAuthenticate(phoneNumber, { value: authFee })).to.be.revertedWith(
       'only a phone record currently in grace period can be re-authenticated',
     );
   });
@@ -55,13 +56,22 @@ describe('PNS Expire', () => {
     expect(getRecord[6]).to.equal(false);
   });
 
+  it('should throw error when reauthenticating a record with less fee', async function () {
+    await expect(pnsContract.reAuthenticate(phoneNumber, { value: authFee2 })).to.be.revertedWith(
+      'msg.value must be greater than or equal to authFee',
+    );
+  });
+
   it('successfully reAuthenticates an unexpired phone record that is in grace period, and emits an event', async () => {
-    await expect(pnsContract.reAuthenticate(phoneNumber)).to.emit(pnsContract, 'PhoneRecordAuthenticated');
+    await expect(pnsContract.reAuthenticate(phoneNumber, { value: authFee })).to.emit(
+      pnsContract,
+      'PhoneRecordAuthenticated',
+    );
   });
 
   it('reverts with an error when attempting to claim an unexpired phone record', async () => {
     await expect(
-      pnsContract.claimExpiredPhoneRecord(phoneNumber, adminAddress, adminAddress, label1),
+      pnsContract.claimExpiredPhoneRecord(phoneNumber, adminAddress, adminAddress, label1, { value: authFee }),
     ).to.be.revertedWith('only an expired phone record can be claimed');
   });
 
@@ -73,11 +83,16 @@ describe('PNS Expire', () => {
     expect(getRecord[6]).to.equal(true);
   });
 
+  it('should throw error when claiming a record with less fee', async function () {
+    await expect(
+      pnsContract.claimExpiredPhoneRecord(phoneNumber, adminAddress, adminAddress, label1, { value: authFee2 }),
+    ).to.be.revertedWith('fee must be greater than or equal to the auth fee');
+  });
+
   it('successfully claims an expired phone record, and emits an event', async () => {
-    await expect(pnsContract.claimExpiredPhoneRecord(phoneNumber, address, address, label2)).to.emit(
-      pnsContract,
-      'PhoneRecordCreated',
-    );
+    await expect(
+      pnsContract.claimExpiredPhoneRecord(phoneNumber, address, address, label2, { value: authFee }),
+    ).to.emit(pnsContract, 'PhoneRecordCreated');
   });
 
   it('successfully deletes the previous record, and sets a new one when record is claimed.', async () => {

@@ -9,6 +9,7 @@ describe('PNS Record Owner', () => {
   const phoneNumber = keccak256('07084462591');
   const label = 'ETH';
   const address = '0xcD058D84F922450591AD59303AA2B4A864da19e6';
+  const authFee = ethers.utils.parseEther('1');
 
   before(async function () {
     const { pnsContract: _pnsContract } = await deployContract();
@@ -16,7 +17,7 @@ describe('PNS Record Owner', () => {
   });
 
   it('should create a new record and emit an event', async function () {
-    await expect(pnsContract.setPhoneRecord(phoneNumber, address, address, label)).to.emit(
+    await expect(pnsContract.setPhoneRecord(phoneNumber, address, address, label, { value: authFee })).to.emit(
       pnsContract,
       'PhoneRecordCreated',
     );

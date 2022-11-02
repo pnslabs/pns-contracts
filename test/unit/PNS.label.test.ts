@@ -12,6 +12,7 @@ describe('PNS Label linking', () => {
   const label1 = 'ETH';
   const label2 = 'BTC';
   let resolverCreatedLength = 0;
+  const authFee = ethers.utils.parseEther('1');
 
   before(async function () {
     const { pnsContract: _pnsContract, adminAddress: _adminAddress } = await deployContract();
@@ -30,10 +31,9 @@ describe('PNS Label linking', () => {
   // });
 
   it('should create a new record and emit an event', async function () {
-    await expect(pnsContract.setPhoneRecord(phoneNumber1, adminAddress, adminAddress, label1)).to.emit(
-      pnsContract,
-      'PhoneRecordCreated',
-    );
+    await expect(
+      pnsContract.setPhoneRecord(phoneNumber1, adminAddress, adminAddress, label1, { value: authFee }),
+    ).to.emit(pnsContract, 'PhoneRecordCreated');
     resolverCreatedLength++;
   });
 
