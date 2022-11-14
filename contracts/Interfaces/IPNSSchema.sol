@@ -23,6 +23,7 @@ interface IPNSSchema {
         bool exists;
         bool isInGracePeriod;
         bool isExpired;
+        bool isVerified;
         uint256 expirationTime;
     }
 

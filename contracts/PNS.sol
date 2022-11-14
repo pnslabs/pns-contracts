@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
-import './Interfaces/IPNS.sol';
 
+import './Interfaces/IPNS.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+
 
 /**
  * @title The contract for phone number service.
@@ -15,6 +17,12 @@ contract PNS is IPNS, Initializable {
 	uint256 private expiryTime;
 	/// Grace period value
 	uint256 private gracePeriod;
+
+	/// the guardian layer address that updates verification state 
+	address public guardianVerifier;
+
+    /// Chainlink Oracle (Ether)
+    AggregatorV3Interface private constant ETH_CHAINLINK = AggregatorV3Interface(0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419);
 
 	/// Mapping state to store resolver record
 	mapping(string => ResolverRecord) resolverRecordMapping;
@@ -84,7 +92,7 @@ contract PNS is IPNS, Initializable {
 	 * @param newAdmin The new admin address.
 	 * @param admin The admin who made the call.
 	 */
-	event AdminAdded(address newAdmin, address admin);
+	event AdminAdded(address indexed newAdmin, address admin);
 
 	/**
 	 * @dev contract initializer function. This function exist because the contract is upgradable.
@@ -93,6 +101,8 @@ contract PNS is IPNS, Initializable {
 		admins[msg.sender] = Admin(msg.sender, block.timestamp, true);
 		expiryTime = 365 days;
 		gracePeriod = 60 days;
+		//defualt - TODO: make initalizable 
+		guardianVerifier = msg.sender;
 	}
 
 	/**
@@ -155,6 +165,21 @@ contract PNS is IPNS, Initializable {
 		return records[phoneHash].exists;
 	}
 
+	function isRecordVerified(bytes32 phoneHash) public view returns (bool) {
+		return records[phoneHash].isVerified;
+	}
+
+	 /**
+     * @dev Returns the ETH price in DAI using chainlink
+     */
+    function getEtherPrice() public view returns (uint256) {
+        (uint80 roundID, int256 price, , , uint80 answeredInRound) = ETH_CHAINLINK.latestRoundData();
+        require(answeredInRound >= roundID, "FSDNetwork::getEtherPrice: Chainlink Price Stale");
+        require(price != 0, "FSDNetwork::getEtherPrice: Chainlink Malfunction");
+        // Chainlink returns 8 decimal places so we convert
+        return uint256(price) * (10**10);
+    }
+	
 	/**
 	 * @dev Transfers ownership of a phoneHash to a new address. May only be called by the current owner of the phoneHash.
 	 * @param phoneHash The phoneHash to transfer ownership of.
@@ -260,6 +285,13 @@ contract PNS is IPNS, Initializable {
 		)
 	{
 		return (admins[admin].user, admins[admin].createdAt, admins[admin].exists);
+	}
+
+	/**
+	 * @notice updates user athentication state once authenticated
+	 */
+	function updateVerification(address user, bool status) public onlyGuardianVerifier{
+
 	}
 
 	/**
@@ -407,7 +439,7 @@ contract PNS is IPNS, Initializable {
 	 * @param phoneHash The specified phoneHash.
 	 */
 	function _getResolverDetails(bytes32 phoneHash) internal view returns (ResolverRecord[] memory) {
-		PhoneRecord storage recordData = records[phoneHash];
+		PhoneRecord memory recordData = records[phoneHash];
 		require(recordData.exists, 'phone record not found');
 		return recordData.wallet;
 	}
@@ -417,8 +449,7 @@ contract PNS is IPNS, Initializable {
 	 * @param phoneHash The specified phoneHash.
 	 */
 	function _hasPassedExpiryTime(bytes32 phoneHash) internal view hasExpiryOf(phoneHash) returns (bool) {
-		PhoneRecord storage recordData = records[phoneHash];
-		return block.timestamp > recordData.expirationTime;
+		return block.timestamp > records[phoneHash].expirationTime;
 	}
 
 	/**
@@ -426,8 +457,7 @@ contract PNS is IPNS, Initializable {
 	 * @param phoneHash The specified phoneHash.
 	 */
 	function _hasPassedGracePeriod(bytes32 phoneHash) internal view hasExpiryOf(phoneHash) returns (bool) {
-		PhoneRecord storage recordData = records[phoneHash];
-		return block.timestamp > (recordData.expirationTime + gracePeriod);
+		return block.timestamp > (records[phoneHash].expirationTime + gracePeriod);
 	}
 
 	//============MODIFIERS==============
@@ -446,8 +476,7 @@ contract PNS is IPNS, Initializable {
 	 * @param phoneHash The phoneHash of the record to be compared.
 	 */
 	modifier hasExpiryOf(bytes32 phoneHash) {
-		PhoneRecord storage recordData = records[phoneHash];
-		require(recordData.expirationTime > 0, 'phone expiry record not found');
+		require(records[phoneHash].expirationTime > 0, 'phone expiry record not found');
 		_;
 	}
 
@@ -486,6 +515,14 @@ contract PNS is IPNS, Initializable {
 	 */
 	modifier isAdmin() {
 		require(admins[msg.sender].exists, 'caller is not an admin');
+		_;
+	}
+
+	/**
+	 * @dev Permits modifications only by an guardian Layer Address.
+	 */
+	modifier onlyGuardianVerifier() {
+		require(msg.sender == guardianVerifier, 'onlyGuardianVerifier: ');
 		_;
 	}
 }
