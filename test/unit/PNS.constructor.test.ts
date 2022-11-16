@@ -1,7 +1,7 @@
 import { ethers } from 'hardhat';
 
 const { expect } = require('chai');
-const { deployContract } = require('../../helper-hardhat-config');
+const { deployContract } = require('../../scripts/deploy-helpers');
 
 describe('PNS Constructor', () => {
   let pnsContract;

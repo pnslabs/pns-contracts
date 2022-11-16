@@ -2,7 +2,7 @@ import { ethers } from 'hardhat';
 
 const { assert, expect } = require('chai');
 const { keccak256 } = require('../../utils/util');
-const { deployContract } = require('../../helper-hardhat-config');
+const { deployContract } = require('../../scripts/deploy-helpers');
 
 describe('PNS Label linking', () => {
   let pnsContract;
