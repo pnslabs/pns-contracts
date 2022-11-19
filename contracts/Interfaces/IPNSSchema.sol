@@ -27,9 +27,9 @@ interface IPNSSchema {
         uint256 expirationTime;
     }
 
-    struct Admin {
-        address user;
-        uint256 createdAt;
-        bool exists;
-    }
+    // struct Admin {
+    //     address user;
+    //     uint256 createdAt;
+    //     bool exists;
+    // }
 }

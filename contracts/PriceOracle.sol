@@ -22,7 +22,7 @@ contract PriceOracle {
    /**
      * @dev Returns the ETH price in DAI using chainlink
      */
-    function getEtherPrice() public view returns (uint256) {
+    function getEtherPrice() internal view returns (uint256) {
         (uint80 roundID, int256 price, , , uint80 answeredInRound) = priceFeed.latestRoundData();
         require(answeredInRound >= roundID, "getEtherPrice: Chainlink Price Stale");
         require(price != 0, "getEtherPrice: Chainlink Malfunction");
