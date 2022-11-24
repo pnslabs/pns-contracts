@@ -323,7 +323,7 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable, Mult
      * @dev Updates the expiry time of a phone record.
      * @param time The new expiry time in seconds.
      */
-    function setNewExpiryTime(uint256 time) external  onlySystemRoles {
+    function setExpiryTime(uint256 time) external  onlySystemRoles {
         expiryTime = time;
         emit ExpiryTimeUpdated(time, msg.sender);
     }
@@ -332,9 +332,19 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable, Mult
      * @dev Updates the grace period.
      * @param time The new grace period in seconds.
      */
-    function setNewGracePeriod(uint256 time) external onlySystemRoles  {
+    function setGracePeriod(uint256 time) external onlySystemRoles  {
         gracePeriod = time;
         emit GracePeriodUpdated(time, msg.sender);
+    }
+    
+    /**
+     * @notice updates guardian layer address
+     */
+    function setGuardianVerifier(address _guardianVerifier)
+        public
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        guardianVerifier = _guardianVerifier;
     }
 
     function _setPhoneRecord(
