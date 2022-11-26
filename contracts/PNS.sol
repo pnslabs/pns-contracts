@@ -6,12 +6,11 @@ pragma solidity 0.8.9;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol";
+
 
 // ==========  Internal imports    ==========
 import "./Interfaces/IPNS.sol";
 import "./PriceOracle.sol";
-
 
 
 /**
@@ -20,15 +19,23 @@ import "./PriceOracle.sol";
  * @notice You can only interact with the public functions and state definitions.
  * @dev The interface IPNS is inherited which inherits IPNSSchema.
  */
-contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable, MulticallUpgradeable{
+contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable{
 
     /// Expiry time value
-    uint256 private expiryTime;
+    uint256 public expiryTime;
     /// Grace period value
-    uint256 private gracePeriod;
+    uint256 public gracePeriod;
+    /// registry cost 
+    uint256 public registryCost;
+    /// registry renew cost
+    uint256 public registryRenewCost;
+    //TODO: pack in struct
 
     /// the guardian layer address that updates verification state
     address public guardianVerifier;
+
+    /// Create a new role identifier for the minter role
+    bytes32 public constant MAINTAINER_ROLE = keccak256("MAINTAINER_ROLE");
 
     /// Mapping state to store resolver record
     mapping(string => ResolverRecord) resolverRecordMapping;
@@ -36,9 +43,7 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable, Mult
     /// Mapping state to store mobile phone number record that will be linked to a resolver
     mapping(bytes32 => PhoneRecord) records;
 
-    /// Create a new role identifier for the minter role
-    bytes32 public constant MAINTAINER_ROLE = keccak256("MAINTAINER_ROLE");
-
+  
     /**
      * @dev logs the event when a phoneHash record is created.
      * @param phoneHash The phoneHash to be linked to the record.
@@ -98,9 +103,12 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable, Mult
      */
     function initialize() external initializer {
 		__AccessControl_init();
-
+        
+        //set oracle constant
         expiryTime = 365 days;
         gracePeriod = 60 days;
+        registryCost = 2;  //registry cost $2 
+        registryRenewCost = 3;  //registry cost $1 
 
         guardianVerifier = msg.sender;
 		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -281,26 +289,13 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable, Mult
     /**
      * @notice updates user athentication state once authenticated
      */
-    function updateVerification(address user, bool status)
+    function setVerificationStatus(bytes32 phoneHash, bool status)
         public
         onlyGuardianVerifier
-    {}
-
-    /**
-     * @dev Gets the current expiry time of a phone record.
-     * @return uint256 The current expiry time in seconds.
-     */
-    function getExpiryTime() external view returns (uint256) {
-        return expiryTime;
+    {
+        records[phoneHash].isVerified = status;
     }
 
-    /**
-     * @dev Gets the current grace period.
-     * @return uint256 The current grace period in seconds.
-     */
-    function getGracePeriod() external view returns (uint256) {
-        return gracePeriod;
-    }
 
     /**
      * @dev Gets the current version of the smart contract.
@@ -318,6 +313,18 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable, Mult
         records[phoneHash].owner = owner;
         return phoneHash;
     }
+
+    //TODO: update doc
+    function setRegistryCost(uint256 newCost) external onlySystemRoles
+    {
+      registryCost = newCost;
+    }
+
+    function setRegistryRenewCost(uint256 newRenewCost) external onlySystemRoles
+    {
+      registryRenewCost = newRenewCost;
+    }
+
 
 	/**
      * @dev Updates the expiry time of a phone record.
@@ -444,9 +451,25 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable, Mult
         );
     }
 
+
+    //TODO: Complete
     /**
      * @dev Returns an existing resolver for the specified phone number phoneHash.
+     * @param usdAmount The specified phoneHash.
+     * @return uint
+     */
+    function getUSDinETH(uint256 usdAmount)
+        internal
+        view
+        returns (uint256)
+    {
+        
+    }
+
+     /**
+     * @dev Calculate the 
      * @param phoneHash The specified phoneHash.
+     * @return ResolverRecord
      */
     function _getResolverDetails(bytes32 phoneHash)
         internal
@@ -457,6 +480,7 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable, Mult
         require(recordData.exists, "phone record not found");
         return recordData.wallet;
     }
+
 
     /**
      * @dev Returns the expiry state of an existing phone record.
