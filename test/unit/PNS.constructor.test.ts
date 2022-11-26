@@ -12,9 +12,11 @@ describe('PNS Constructor', () => {
     pnsContract = _pnsContract;
     adminAddress = _adminAddress;
   });
+ 
 
-  it('should successfully add an admin address in constructor', async function () {
-    const admin = await pnsContract.getAdmin(adminAddress);
-    expect(admin[2]).to.equal(true);
-  });
+  //TODO rewwrite to OZ RBAC
+  // it('should successfully add an admin address in constructor', async function () {
+  //   const admin = await pnsContract.getAdmin(adminAddress);
+  //   expect(admin[2]).to.equal(true);
+  // });
 });
