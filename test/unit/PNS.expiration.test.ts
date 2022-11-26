@@ -29,11 +29,11 @@ describe('PNS Expire', () => {
   });
 
   it('admin can set a new expiry time and it emits the expected event', async () => {
-    await expect(pnsContract.setNewExpiryTime(twoYearsInSeconds)).to.emit(pnsContract, 'ExpiryTimeUpdated');
+    await expect(pnsContract.setExpiryTime(twoYearsInSeconds)).to.emit(pnsContract, 'ExpiryTimeUpdated');
   });
 
   it('admin can set a new grace period and it emits the expected event', async () => {
-    await expect(pnsContract.setNewGracePeriod(thirtyDaysInSeconds)).to.emit(pnsContract, 'GracePeriodUpdated');
+    await expect(pnsContract.setGracePeriod(thirtyDaysInSeconds)).to.emit(pnsContract, 'GracePeriodUpdated');
   });
 
   it('gets returns the expiration time of the phone record', async () => {
