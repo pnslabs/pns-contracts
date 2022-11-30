@@ -29,7 +29,6 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable{
     uint256 public registryCost;
     /// registry renew cost
     uint256 public registryRenewCost;
-    //TODO: pack in struct
 
     /// the guardian layer address that updates verification state
     address public guardianVerifier;
@@ -50,53 +49,54 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable{
      * @param wallet The resolver (address) of the record
      * @param owner The address of the owner
      */
-    event PhoneRecordCreated(bytes32 phoneHash, address wallet, address owner);
+    event PhoneRecordCreated(bytes32 indexed phoneHash, address indexed wallet, address indexed owner);
 
     /**
      * @dev logs when there is a transfer of ownership of a phoneHash to a new address
      * @param phoneHash The phoneHash of the record to be updated.
      * @param owner The address of the owner
      */
-    event Transfer(bytes32 phoneHash, address owner);
+    event Transfer(bytes32 indexed phoneHash, address indexed owner);
 
     /**
      * @dev logs when a resolver address is linked to a specified phoneHash.
      * @param phoneHash The phoneHash of the record to be linked.
      * @param wallet The address of the resolver.
      */
-    event PhoneLinked(bytes32 phoneHash, address wallet);
+    event PhoneLinked(bytes32 indexed phoneHash, address indexed  wallet);
 
     /**
      * @dev logs when phone record has entered a grace period.
      * @param phoneHash The phoneHash of the record.
      */
-    event PhoneRecordEnteredGracePeriod(bytes32 phoneHash);
+    event PhoneRecordEnteredGracePeriod(bytes32 indexed phoneHash);
 
     /**
      * @dev logs when phone record has expired.
      * @param phoneHash The phoneHash of the record.
      */
-    event PhoneRecordExpired(bytes32 phoneHash);
+    event PhoneRecordExpired(bytes32 indexed phoneHash);
 
     /**
      * @dev logs when phone record is re-authenticated.
      * @param phoneHash The phoneHash of the record.
      */
-    event PhoneRecordAuthenticated(bytes32 phoneHash);
+    event PhoneRecordAuthenticated(bytes32 indexed phoneHash);
 
     /**
      * @dev logs when phone record is claimed.
+     * @param updater Who made the call
      * @param expiryTime The new expiry time in seconds.
-     * @param updater Who made the call
      */
-    event ExpiryTimeUpdated(uint256 expiryTime, address indexed updater);
+    event ExpiryTimeUpdated(address indexed updater, uint256 expiryTime);
 
     /**
      * @dev logs when phone record is claimed.
-     * @param gracePeriod The new grace period in seconds.
      * @param updater Who made the call
+     * @param gracePeriod The new grace period in seconds.
+     *
      */
-    event GracePeriodUpdated(uint256 gracePeriod, address indexed updater);
+    event GracePeriodUpdated( address indexed updater, uint256 gracePeriod);
 
     /**
      * @dev contract initializer function. This function exist because the contract is upgradable.
@@ -332,7 +332,7 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable{
      */
     function setExpiryTime(uint256 time) external  onlySystemRoles {
         expiryTime = time;
-        emit ExpiryTimeUpdated(time, msg.sender);
+        emit ExpiryTimeUpdated(msg.sender, time);
     }
 
     /**
@@ -341,7 +341,7 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable{
      */
     function setGracePeriod(uint256 time) external onlySystemRoles  {
         gracePeriod = time;
-        emit GracePeriodUpdated(time, msg.sender);
+        emit GracePeriodUpdated(msg.sender, time);
     }
     
     /**
