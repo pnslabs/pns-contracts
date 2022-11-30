@@ -1,4 +1,4 @@
-import { ethers } from 'hardhat';
+import { ethers, upgrades } from 'hardhat';
 
 async function deployContract() {
   let adminAccount;
@@ -8,11 +8,21 @@ async function deployContract() {
 
   const PNSContract = await ethers.getContractFactory('PNS');
 
-  const pnsContract = await PNSContract.deploy();
+  const pnsContract = await upgrades.deployProxy(PNSContract, [], { initializer: 'initialize' });
+  await pnsContract.deployed();
 
   return { pnsContract, adminAddress };
 }
 
+async function deployUpgradedContract(pnsContract) {
+  const PNSV2TestContract = await ethers.getContractFactory('PNSV2Test');
+
+  const upgradedPNSContract = await upgrades.upgradeProxy(pnsContract, PNSV2TestContract);
+
+  return { upgradedPNSContract };
+}
+
 module.exports = {
   deployContract,
+  deployUpgradedContract,
 };

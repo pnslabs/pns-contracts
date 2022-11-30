@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.9;
-import "./IPNSSchema.sol";
+import './IPNSSchema.sol';
 
 /**
  * @title Interface for the PNS contract.
@@ -10,69 +10,68 @@ import "./IPNSSchema.sol";
  * @dev All function call interfaces are defined here.
  */
 interface IPNS is IPNSSchema {
-    function setPhoneRecord(
-        bytes32 phoneHash,
-        address owner,
-        address resolver,
-        string memory label
-    ) external;
+	function setPhoneRecord(
+		bytes32 phoneHash,
+		address owner,
+		address resolver,
+		string memory label
+	) external;
 
-    function linkPhoneToWallet(
-        bytes32 phoneHash,
-        address resolver,
-        string memory label
-    ) external;
+	function linkPhoneToWallet(
+		bytes32 phoneHash,
+		address resolver,
+		string memory label
+	) external;
 
-    function setOwner(bytes32 phoneHash, address owner) external;
+	function setOwner(bytes32 phoneHash, address owner) external;
 
-    function recordExists(bytes32 phoneHash) external view returns (bool);
+	function recordExists(bytes32 phoneHash) external view returns (bool);
 
-    function getOwner(bytes32 phoneHash) external view returns (address);
+	function getOwner(bytes32 phoneHash) external view returns (address);
 
-    function getRecord(bytes32 phoneHash)
-        external
-        view
-        returns (
-            address owner,
-            ResolverRecord[] memory,
-            bytes32,
-            uint256 createdAt,
-            bool exists,
-            bool isInGracePeriod,
-            bool isExpired,
-            uint256 expirataionTime
-        );
+	function getRecord(bytes32 phoneHash)
+		external
+		view
+		returns (
+			address owner,
+			ResolverRecord[] memory,
+			bytes32,
+			uint256 createdAt,
+			bool exists,
+			bool isInGracePeriod,
+			bool isExpired,
+			uint256 expirataionTime
+		);
 
-    function getResolverDetails(bytes32 phoneHash)
-        external
-        view
-        returns (ResolverRecord[] memory);
+	function getResolverDetails(bytes32 phoneHash) external view returns (ResolverRecord[] memory);
 
-    function reAuthenticate(bytes32 phoneHash) external;
+	function reAuthenticate(bytes32 phoneHash) external;
 
-    function claimExpiredPhoneRecord(
-        bytes32 phoneHash,
-        address owner,
-        address resolver,
-        string memory label
-    ) external;
+	function claimExpiredPhoneRecord(
+		bytes32 phoneHash,
+		address owner,
+		address resolver,
+		string memory label
+	) external;
 
-    function setNewExpiryTime(uint256 time) external;
+	function setNewExpiryTime(uint256 time) external;
 
-    function setNewGracePeriod(uint256 time) external;
+	function setNewGracePeriod(uint256 time) external;
 
-    function getExpiryTime() external view returns (uint256);
+	function getExpiryTime() external view returns (uint256);
 
-    function getGracePeriod() external view returns (uint256);
+	function getGracePeriod() external view returns (uint256);
 
-    function addAdmin(address newAdmin) external;
+	function addAdmin(address newAdmin) external;
 
-    function getAdmin(address admin)
-        external
-        view
-        returns (
-            address user,
-            uint256 createdAt,
-            bool exists
-        );
+	function getAdmin(address admin)
+		external
+		view
+		returns (
+			address user,
+			uint256 createdAt,
+			bool exists
+		);
+
+	function getVersion() external view returns (uint32 version);
 }
