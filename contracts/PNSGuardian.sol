@@ -62,7 +62,7 @@ contract PNSGuardian is IPNSSchema {
     /**
     * @notice gets user verification state
         */
-    function getVerificationStatus(bytes32 phoneHash){
+    function getVerificationStatus(bytes32 phoneHash) external view returns (bool) {
         return verificationRecords[phoneHash].isVerified;
     }
 
