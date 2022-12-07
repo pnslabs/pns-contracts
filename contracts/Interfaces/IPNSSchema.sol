@@ -26,6 +26,13 @@ interface IPNSSchema {
         bool isVerified;
         uint256 expirationTime;
     }
+    struct VerificationRecord {
+        address owner;
+        bytes32 phoneHash;
+        uint256 verifiedAt;
+        bool exists;
+        bool isVerified;
+    }
 
     // struct Admin {
     //     address user;
