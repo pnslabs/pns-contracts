@@ -54,24 +54,9 @@ interface IPNS is IPNSSchema {
 		string memory label
 	) external;
 
-	function setNewExpiryTime(uint256 time) external;
+	function setExpiryTime(uint256 time) external;
 
-	function setNewGracePeriod(uint256 time) external;
-
-	function getExpiryTime() external view returns (uint256);
-
-	function getGracePeriod() external view returns (uint256);
-
-	function addAdmin(address newAdmin) external;
-
-	function getAdmin(address admin)
-		external
-		view
-		returns (
-			address user,
-			uint256 createdAt,
-			bool exists
-		);
+	function setGracePeriod(uint256 time) external;
 
 	function getVersion() external view returns (uint32 version);
 }

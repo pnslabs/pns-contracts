@@ -15,9 +15,9 @@ async function deployContract() {
 }
 
 async function deployUpgradedContract(pnsContract) {
-  const PNSV2TestContract = await ethers.getContractFactory('PNSV2Test');
+  const PNSV2MockContract = await ethers.getContractFactory('PNSV2Mock');
 
-  const upgradedPNSContract = await upgrades.upgradeProxy(pnsContract, PNSV2TestContract);
+  const upgradedPNSContract = await upgrades.upgradeProxy(pnsContract, PNSV2MockContract);
 
   return { upgradedPNSContract };
 }

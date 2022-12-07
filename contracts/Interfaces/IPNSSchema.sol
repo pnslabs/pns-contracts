@@ -23,12 +23,13 @@ interface IPNSSchema {
         bool exists;
         bool isInGracePeriod;
         bool isExpired;
+        bool isVerified;
         uint256 expirationTime;
     }
 
-    struct Admin {
-        address user;
-        uint256 createdAt;
-        bool exists;
-    }
+    // struct Admin {
+    //     address user;
+    //     uint256 createdAt;
+    //     bool exists;
+    // }
 }
