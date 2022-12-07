@@ -13,7 +13,6 @@ import './IPNSSchema.sol';
 interface IPNS is IPNSSchema {
     function setPhoneRecord(
         bytes32 phoneHash,
-        address owner,
         address resolver,
         string memory label
     ) external;

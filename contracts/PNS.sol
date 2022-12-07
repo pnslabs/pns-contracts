@@ -11,7 +11,7 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 // ==========  Internal imports    ==========
 import "./Interfaces/IPNS.sol";
 import "./PriceOracle.sol";
-import "./PNSGuardian.sol";
+import "./Interfaces/IPNSGuardian.sol";
 
 
 /**
@@ -31,7 +31,7 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable {
     /// registry renew cost
     uint256 public registryRenewCost;
 
-    PNSGuardian public guardianContract;
+    IPNSGuardian public guardianContract;
 
     /// Create a new role identifier for the minter role
     bytes32 public constant MAINTAINER_ROLE = keccak256("MAINTAINER_ROLE");
@@ -103,7 +103,7 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable {
      */
     function initialize(address _pnsGuardian) external initializer {
         __AccessControl_init();
-        guardianContract = PNSGuardian(_pnsGuardian);
+        guardianContract = IPNSGuardian(_pnsGuardian);
 
         //set oracle constant
         expiryTime = 365 days;
@@ -118,7 +118,6 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable {
     /**
      * @dev Sets the record for a phoneHash.
      * @param phoneHash The phoneHash to update.
-     * @param owner The address of the new owner.
      * @param resolver The address the phone number resolves to.
      * @param label The specified label of the resolver.
      */
@@ -145,6 +144,7 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable {
         bool exists,
         bool isInGracePeriod,
         bool isExpired,
+        bool isVerified,
         uint256 expirationTime
     )
     {
@@ -348,9 +348,8 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable {
         address owner,
         address resolver,
         string memory label
-    ) internal {
-        pnsGuardian.onlyVerified(phoneHash);
-        pnsGuardian.onlyVerifiedOwner(phoneHash, msg.sender);
+    ) onlyVerified(phoneHash) onlyVerifiedOwner(phoneHash) internal {
+
 
         PhoneRecord storage recordData = records[phoneHash];
         require(!recordData.exists, "phone record already exists");
@@ -366,7 +365,7 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable {
             resolverRecordData.exists = true;
         }
         recordData.phoneHash = phoneHash;
-        recordData.owner = owner;
+        recordData.owner = msg.sender;
         recordData.createdAt = block.timestamp;
         recordData.exists = true;
         recordData.isInGracePeriod = false;
@@ -374,7 +373,7 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable {
         recordData.expirationTime = block.timestamp + expiryTime;
         recordData.wallet.push(resolverRecordData);
 
-        emit PhoneRecordCreated(phoneHash, resolver, owner);
+        emit PhoneRecordCreated(phoneHash, resolver, msg.sender);
     }
 
     function _linkphoneHashToWallet(
@@ -431,7 +430,7 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable {
         require(recordData.exists, "phone record not found");
         bool _isInGracePeriod = _hasPassedExpiryTime(phoneHash);
         bool _isExpired = _hasPassedGracePeriod(phoneHash);
-        bool _isVerified = pnsGuardian.getVerificationStatus(phoneHash);
+        bool _isVerified = guardianContract.getVerificationStatus(phoneHash);
 
         return (
         recordData.owner,
@@ -556,6 +555,18 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable {
         }
         _;
     }
+
+    modifier onlyVerified(bytes32 phoneHash) {
+        VerificationRecord memory verificationRecord = guardianContract.getVerificationRecord(phoneHash);
+        require(verificationRecord.isVerified, "phone record is not verified");
+        _;
+    }
+    modifier onlyVerifiedOwner(bytes32 phoneHash) {
+        VerificationRecord memory verificationRecord = guardianContract.getVerificationRecord(phoneHash);
+        require(verificationRecord.owner == msg.sender, "caller is not verified owner");
+        _;
+    }
+
     modifier onlySystemRoles(){
         require(hasRole(MAINTAINER_ROLE, msg.sender) || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "not allowed to execute function.");
         _;

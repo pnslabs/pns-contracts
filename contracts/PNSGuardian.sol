@@ -42,7 +42,7 @@ contract PNSGuardian is IPNSSchema {
     /**
  * @notice updates user authentication state once authenticated
      */
-    function setVerificationStatus(bytes32 phoneHash, bool status, bytes32 hashedMessage, uint8 _v, bytes32 _r, bytes32 _s)
+    function setVerificationStatus(bytes32 phoneHash, bool status, bytes32 _hashedMessage, uint8 _v, bytes32 _r, bytes32 _s)
     public
     onlyGuardianVerifier
     {
@@ -66,13 +66,13 @@ contract PNSGuardian is IPNSSchema {
         return verificationRecords[phoneHash].isVerified;
     }
 
-    modifier onlyVerified(bytes32 phoneHash) {
-        require(verificationRecords[phoneHash].isVerified, "onlyVerified: ");
-        _;
+    /**
+    * @notice gets user verification records
+        */
+    function getVerificationRecord(bytes32 phoneHash) external view returns (VerificationRecord memory) {
+        return verificationRecords[phoneHash];
     }
-    modifier onlyVerifiedOwner(bytes32 phoneHash) {
-        require(verificationRecords[phoneHash].owner == msg.sender, "onlyVerifiedOwner: ");
-        _;
-    }
+
+
 
 }
