@@ -3,6 +3,7 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import "./Interfaces/IPNSSchema.sol";
 import "./PNS.sol";
@@ -13,6 +14,7 @@ import "./PNS.sol";
 /// @author  PNS core team
 /// @notice The PNS Guardian is responsible for authenticating the records created in PNS registry
 contract PNSGuardian is IPNSSchema, Initializable, AccessControlUpgradeable {
+
     /// the guardian layer address that updates verification state
     address public guardianVerifier;
 
@@ -64,13 +66,13 @@ contract PNSGuardian is IPNSSchema, Initializable, AccessControlUpgradeable {
     /**
  * @notice updates user authentication state once authenticated
      */
-    function setVerificationStatus(bytes32 phoneHash, bool status, bytes32 _hashedMessage, uint8 _v, bytes32 _r, bytes32 _s)
+    function setVerificationStatus(bytes32 phoneHash, bytes32 _hashedMessage, bool status, bytes memory _signature)
     public
     onlyGuardianVerifier
     {
         bytes memory prefix = "\x19Ethereum Signed Message:\n32";
         bytes32 prefixedHashMessage = keccak256(abi.encodePacked(prefix, _hashedMessage));
-        address signer = ecrecover(prefixedHashMessage, _v, _r, _s);
+        address signer = ECDSA.recover(prefixedHashMessage, _signature);
 
         verificationRecords[phoneHash] = VerificationRecord({
         owner : signer,
@@ -79,6 +81,7 @@ contract PNSGuardian is IPNSSchema, Initializable, AccessControlUpgradeable {
         exists : true,
         isVerified : status
         });
+        emit PhoneVerified(signer, phoneHash, block.timestamp);
     }
 
     /**

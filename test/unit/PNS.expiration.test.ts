@@ -1,12 +1,13 @@
-import { network, ethers } from 'hardhat';
+import {network, ethers} from 'hardhat';
 
-const { expect, assert } = require('chai');
-const { keccak256 } = require('../../utils/util');
-const { deployContract } = require('../../scripts/deploy-helpers');
+const {expect, assert} = require('chai');
+const {keccak256} = require('../../utils/util');
+const {deployContract} = require('../../scripts/deploy-helpers');
 
 describe('PNS Expire', () => {
   let pnsContract;
   let adminAddress;
+  let pnsGuardianContract;
   const phoneNumber = keccak256('07084462591');
   const oneYearInSeconds = 31536000;
   const twoYearsInSeconds = 63072000;
@@ -14,15 +15,36 @@ describe('PNS Expire', () => {
   const label1 = 'ETH';
   const label2 = 'BTC';
   const address = '0xcD058D84F922450591AD59303AA2B4A864da19e6';
+  const status = true;
+  const signer = ethers.provider.getSigner();
+  const otp = '123456';
+
+  let message = ethers.utils.solidityPack(["bytes32", "uint256"], [phoneNumber, otp]);
+  const hashedMessage = ethers.utils.keccak256(message);
+  let signature;
+
 
   before(async function () {
-    const { pnsContract: _pnsContract, adminAddress: _adminAddress } = await deployContract();
+    signature = await signer.signMessage(ethers.utils.arrayify(hashedMessage));
+    const {
+      pnsContract: _pnsContract,
+      adminAddress: _adminAddress,
+      pnsGuardianContract: _pnsGuardianContract
+    } = await deployContract();
     pnsContract = _pnsContract;
     adminAddress = _adminAddress;
+    pnsGuardianContract = _pnsGuardianContract;
+  });
+
+  it("should verify the phone number", async () => {
+    await expect(pnsGuardianContract.setVerificationStatus(phoneNumber, hashedMessage, status, signature)).to.emit(
+      pnsGuardianContract,
+      'PhoneVerified',
+    );
   });
 
   it('should create a new record and emit an event', async function () {
-    await expect(pnsContract.setPhoneRecord(phoneNumber, adminAddress, adminAddress, label1)).to.emit(
+    await expect(pnsContract.setPhoneRecord(phoneNumber, adminAddress, label1)).to.emit(
       pnsContract,
       'PhoneRecordCreated',
     );

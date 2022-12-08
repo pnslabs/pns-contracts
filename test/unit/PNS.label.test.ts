@@ -30,7 +30,7 @@ describe('PNS Label linking', () => {
   // });
 
   it('should create a new record and emit an event', async function () {
-    await expect(pnsContract.setPhoneRecord(phoneNumber1, adminAddress, adminAddress, label1)).to.emit(
+    await expect(pnsContract.setPhoneRecord(phoneNumber1, adminAddress, label1)).to.emit(
       pnsContract,
       'PhoneRecordCreated',
     );

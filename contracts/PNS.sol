@@ -101,7 +101,7 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable {
     /**
      * @dev contract initializer function. This function exist because the contract is upgradable.
      */
-    function initialize(address _guardianVerifier) external initializer {
+    function initialize(address _guardianContract) external initializer {
         __AccessControl_init();
 
 
@@ -112,7 +112,7 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable {
         //registry cost $2
         registryRenewCost = 3;
         //registry cost $1
-        guardianContract = IPNSGuardian(_guardianVerifier);
+        guardianContract = IPNSGuardian(_guardianContract);
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
@@ -366,7 +366,7 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable {
             resolverRecordData.exists = true;
         }
         recordData.phoneHash = phoneHash;
-        recordData.owner = msg.sender;
+        recordData.owner = owner;
         recordData.createdAt = block.timestamp;
         recordData.exists = true;
         recordData.isInGracePeriod = false;
@@ -374,7 +374,7 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable {
         recordData.expirationTime = block.timestamp + expiryTime;
         recordData.wallet.push(resolverRecordData);
 
-        emit PhoneRecordCreated(phoneHash, resolver, msg.sender);
+        emit PhoneRecordCreated(phoneHash, resolver, owner);
     }
 
     function _linkphoneHashToWallet(
