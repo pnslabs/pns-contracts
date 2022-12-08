@@ -11,6 +11,7 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 // ==========  Internal imports    ==========
 import "./Interfaces/IPNS.sol";
 import "./PriceOracle.sol";
+import "./Interfaces/IPNSGuardian.sol";
 
 
 /**
@@ -19,19 +20,18 @@ import "./PriceOracle.sol";
  * @notice You can only interact with the public functions and state definitions.
  * @dev The interface IPNS is inherited which inherits IPNSSchema.
  */
-contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable{
+contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable {
 
     /// Expiry time value
     uint256 public expiryTime;
     /// Grace period value
     uint256 public gracePeriod;
-    /// registry cost 
+    /// registry cost
     uint256 public registryCost;
     /// registry renew cost
     uint256 public registryRenewCost;
 
-    /// the guardian layer address that updates verification state
-    address public guardianVerifier;
+    IPNSGuardian public guardianContract;
 
     /// Create a new role identifier for the minter role
     bytes32 public constant MAINTAINER_ROLE = keccak256("MAINTAINER_ROLE");
@@ -42,7 +42,7 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable{
     /// Mapping state to store mobile phone number record that will be linked to a resolver
     mapping(bytes32 => PhoneRecord) records;
 
-  
+
     /**
      * @dev logs the event when a phoneHash record is created.
      * @param phoneHash The phoneHash to be linked to the record.
@@ -63,7 +63,7 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable{
      * @param phoneHash The phoneHash of the record to be linked.
      * @param wallet The address of the resolver.
      */
-    event PhoneLinked(bytes32 indexed phoneHash, address indexed  wallet);
+    event PhoneLinked(bytes32 indexed phoneHash, address indexed wallet);
 
     /**
      * @dev logs when phone record has entered a grace period.
@@ -81,7 +81,7 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable{
      * @dev logs when phone record is re-authenticated.
      * @param phoneHash The phoneHash of the record.
      */
-    event PhoneRecordAuthenticated(bytes32 indexed phoneHash);
+    event PhoneRecordRenewed(bytes32 indexed phoneHash);
 
     /**
      * @dev logs when phone record is claimed.
@@ -96,38 +96,38 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable{
      * @param gracePeriod The new grace period in seconds.
      *
      */
-    event GracePeriodUpdated( address indexed updater, uint256 gracePeriod);
+    event GracePeriodUpdated(address indexed updater, uint256 gracePeriod);
 
     /**
      * @dev contract initializer function. This function exist because the contract is upgradable.
      */
-    function initialize() external initializer {
-		__AccessControl_init();
-        
+    function initialize(address _guardianContract) external initializer {
+        __AccessControl_init();
+
+
         //set oracle constant
         expiryTime = 365 days;
         gracePeriod = 60 days;
-        registryCost = 2;  //registry cost $2 
-        registryRenewCost = 3;  //registry cost $1 
-
-        guardianVerifier = msg.sender;
-		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        registryCost = 2;
+        //registry cost $2
+        registryRenewCost = 3;
+        //registry cost $1
+        guardianContract = IPNSGuardian(_guardianContract);
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     /**
      * @dev Sets the record for a phoneHash.
      * @param phoneHash The phoneHash to update.
-     * @param owner The address of the new owner.
      * @param resolver The address the phone number resolves to.
      * @param label The specified label of the resolver.
      */
     function setPhoneRecord(
         bytes32 phoneHash,
-        address owner,
         address resolver,
         string memory label
     ) external virtual {
-        return _setPhoneRecord(phoneHash, owner, resolver, label);
+        return _setPhoneRecord(phoneHash, msg.sender, resolver, label);
     }
 
     /**
@@ -135,18 +135,19 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable{
      * @param phoneHash The specified phoneHash.
      */
     function getRecord(bytes32 phoneHash)
-        external
-        view
-        returns (
-            address owner,
-            ResolverRecord[] memory,
-            bytes32,
-            uint256 createdAt,
-            bool exists,
-            bool isInGracePeriod,
-            bool isExpired,
-            uint256 expirationTime
-        )
+    external
+    view
+    returns (
+        address owner,
+        ResolverRecord[] memory,
+        bytes32,
+        uint256 createdAt,
+        bool exists,
+        bool isInGracePeriod,
+        bool isExpired,
+        bool isVerified,
+        uint256 expirationTime
+    )
     {
         return _getRecord(phoneHash);
     }
@@ -179,16 +180,16 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable{
 
 
     /**
-     * @dev Transfers ownership of a phoneHash to a new address. May only be called by the current owner of the phoneHash.
+     * @dev Transfers ownership of a phoneHash to a new address. Can only be called by the current owner of the phoneHash.
      * @param phoneHash The phoneHash to transfer ownership of.
      * @param owner The address of the new owner.
      */
     function setOwner(bytes32 phoneHash, address owner)
-        public
-        virtual
-        authorised(phoneHash)
-        expired(phoneHash)
-        authenticated(phoneHash)
+    public
+    virtual
+    authorised(phoneHash)
+    expired(phoneHash)
+    authenticated(phoneHash)
     {
         _setOwner(phoneHash, owner);
         emit Transfer(phoneHash, owner);
@@ -205,11 +206,11 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable{
         address resolver,
         string memory label
     )
-        public
-        virtual
-        authorised(phoneHash)
-        expired(phoneHash)
-        authenticated(phoneHash)
+    public
+    virtual
+    authorised(phoneHash)
+    expired(phoneHash)
+    authenticated(phoneHash)
     {
         _linkphoneHashToWallet(phoneHash, resolver, label);
         emit PhoneLinked(phoneHash, resolver);
@@ -220,40 +221,40 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable{
      * @param phoneHash The specified phoneHash.
      */
     function getResolverDetails(bytes32 phoneHash)
-        external
-        view
-        returns (ResolverRecord[] memory resolver)
+    external
+    view
+    returns (ResolverRecord[] memory resolver)
     {
         return _getResolverDetails(phoneHash);
     }
 
     /**
-     * @dev Re authenticates a phone record.
+     * @dev Renew a phone record.
      * @param phoneHash The phoneHash.
      */
-    function reAuthenticate(bytes32 phoneHash)
-        external
-        virtual
-        authorised(phoneHash)
-        hasExpiryOf(phoneHash)
+    function renew(bytes32 phoneHash)
+    external
+    virtual
+    authorised(phoneHash)
+    hasExpiryOf(phoneHash)
     {
         PhoneRecord storage recordData = records[phoneHash];
         bool _timeHasPassedExpiryTime = _hasPassedExpiryTime(phoneHash);
         bool _hasExhaustedGracePeriod = _hasPassedGracePeriod(phoneHash);
         require(
             recordData.exists,
-            "only an existing phone record can be re-authenticated"
+            "only an existing phone record can be renewed"
         );
         require(
             _timeHasPassedExpiryTime && !_hasExhaustedGracePeriod,
-            "only a phone record currently in grace period can be re-authenticated"
+            "only a phone record currently in grace period can be renewed"
         );
 
         recordData.isInGracePeriod = false;
         recordData.isExpired = false;
         recordData.expirationTime = block.timestamp + expiryTime;
 
-        emit PhoneRecordAuthenticated(phoneHash);
+        emit PhoneRecordRenewed(phoneHash);
     }
 
     /**
@@ -286,16 +287,6 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable{
         return _setPhoneRecord(phoneHash, owner, resolver, label);
     }
 
-    /**
-     * @notice updates user athentication state once authenticated
-     */
-    function setVerificationStatus(bytes32 phoneHash, bool status)
-        public
-        onlyGuardianVerifier
-    {
-        records[phoneHash].isVerified = status;
-    }
-
 
     /**
      * @dev Gets the current version of the smart contract.
@@ -306,10 +297,18 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable{
     }
 
     function _setOwner(bytes32 phoneHash, address owner)
-        internal
-        virtual
-        returns (bytes32)
+    internal
+    virtual
+    returns (bytes32)
     {
+        require(
+            owner != address(0x0),
+            "cannot set owner to the zero address"
+        );
+        require(
+            owner != address(this),
+            "cannot set owner to the registry address"
+        );
         records[phoneHash].owner = owner;
         return phoneHash;
     }
@@ -317,20 +316,20 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable{
     //TODO: update doc
     function setRegistryCost(uint256 newCost) external onlySystemRoles
     {
-      registryCost = newCost;
+        registryCost = newCost;
     }
 
     function setRegistryRenewCost(uint256 newRenewCost) external onlySystemRoles
     {
-      registryRenewCost = newRenewCost;
+        registryRenewCost = newRenewCost;
     }
 
 
-	/**
+    /**
      * @dev Updates the expiry time of a phone record.
      * @param time The new expiry time in seconds.
      */
-    function setExpiryTime(uint256 time) external  onlySystemRoles {
+    function setExpiryTime(uint256 time) external onlySystemRoles {
         expiryTime = time;
         emit ExpiryTimeUpdated(msg.sender, time);
     }
@@ -339,32 +338,25 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable{
      * @dev Updates the grace period.
      * @param time The new grace period in seconds.
      */
-    function setGracePeriod(uint256 time) external onlySystemRoles  {
+    function setGracePeriod(uint256 time) external onlySystemRoles {
         gracePeriod = time;
         emit GracePeriodUpdated(msg.sender, time);
     }
-    
-    /**
-     * @notice updates guardian layer address
-     */
-    function setGuardianVerifier(address _guardianVerifier)
-        public
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
-        guardianVerifier = _guardianVerifier;
-    }
+
 
     function _setPhoneRecord(
         bytes32 phoneHash,
         address owner,
         address resolver,
         string memory label
-    ) internal {
+    ) onlyVerified(phoneHash) onlyVerifiedOwner(phoneHash) internal {
+
+
         PhoneRecord storage recordData = records[phoneHash];
         require(!recordData.exists, "phone record already exists");
 
         ResolverRecord storage resolverRecordData = resolverRecordMapping[
-            label
+        label
         ];
 
         if (!resolverRecordData.exists) {
@@ -391,7 +383,7 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable{
         string memory label
     ) internal {
         ResolverRecord storage resolverRecordData = resolverRecordMapping[
-            label
+        label
         ];
         PhoneRecord storage recordData = records[phoneHash];
         require(recordData.exists, "phone record not found");
@@ -421,33 +413,36 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable{
      * @param phoneHash The specified phoneHash.
      */
     function _getRecord(bytes32 phoneHash)
-        internal
-        view
-        returns (
-            address owner,
-            ResolverRecord[] memory,
-            bytes32,
-            uint256 createdAt,
-            bool exists,
-            bool isInGracePeriod,
-            bool isExpired,
-            uint256 expirationTime
-        )
+    internal
+    view
+    returns (
+        address owner,
+        ResolverRecord[] memory,
+        bytes32,
+        uint256 createdAt,
+        bool exists,
+        bool isInGracePeriod,
+        bool isExpired,
+        bool isVerified,
+        uint256 expirationTime
+    )
     {
         PhoneRecord storage recordData = records[phoneHash];
         require(recordData.exists, "phone record not found");
         bool _isInGracePeriod = _hasPassedExpiryTime(phoneHash);
         bool _isExpired = _hasPassedGracePeriod(phoneHash);
+        bool _isVerified = guardianContract.getVerificationStatus(phoneHash);
 
         return (
-            recordData.owner,
-            recordData.wallet,
-            recordData.phoneHash,
-            recordData.createdAt,
-            recordData.exists,
-            _isInGracePeriod,
-            _isExpired,
-            recordData.expirationTime
+        recordData.owner,
+        recordData.wallet,
+        recordData.phoneHash,
+        recordData.createdAt,
+        recordData.exists,
+        _isInGracePeriod,
+        _isExpired,
+        _isVerified,
+        recordData.expirationTime
         );
     }
 
@@ -459,22 +454,22 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable{
      * @return uint
      */
     function getUSDinETH(uint256 usdAmount)
-        internal
-        view
-        returns (uint256)
+    internal
+    view
+    returns (uint256)
     {
-        
+
     }
 
-     /**
-     * @dev Calculate the 
+    /**
+    * @dev Calculate the
      * @param phoneHash The specified phoneHash.
      * @return ResolverRecord
      */
     function _getResolverDetails(bytes32 phoneHash)
-        internal
-        view
-        returns (ResolverRecord[] memory)
+    internal
+    view
+    returns (ResolverRecord[] memory)
     {
         PhoneRecord memory recordData = records[phoneHash];
         require(recordData.exists, "phone record not found");
@@ -487,10 +482,10 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable{
      * @param phoneHash The specified phoneHash.
      */
     function _hasPassedExpiryTime(bytes32 phoneHash)
-        internal
-        view
-        hasExpiryOf(phoneHash)
-        returns (bool)
+    internal
+    view
+    hasExpiryOf(phoneHash)
+    returns (bool)
     {
         return block.timestamp > records[phoneHash].expirationTime;
     }
@@ -500,13 +495,13 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable{
      * @param phoneHash The specified phoneHash.
      */
     function _hasPassedGracePeriod(bytes32 phoneHash)
-        internal
-        view
-        hasExpiryOf(phoneHash)
-        returns (bool)
+    internal
+    view
+    hasExpiryOf(phoneHash)
+    returns (bool)
     {
         return
-            block.timestamp > (records[phoneHash].expirationTime + gracePeriod);
+        block.timestamp > (records[phoneHash].expirationTime + gracePeriod);
     }
 
     //============MODIFIERS==============
@@ -557,22 +552,25 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable{
             recordData.isInGracePeriod = false;
             recordData.isExpired = true;
             emit PhoneRecordExpired(phoneHash);
-            revert("phone record has expired, please re-authenticate");
+            revert("phone record has expired, please renew");
         }
         _;
     }
 
-    /**
-     * @dev Permits modifications only by an guardian Layer Address.
-     */
-    modifier onlyGuardianVerifier() {
-        require(msg.sender == guardianVerifier, "onlyGuardianVerifier: ");
+    modifier onlyVerified(bytes32 phoneHash) {
+        VerificationRecord memory verificationRecord = guardianContract.getVerificationRecord(phoneHash);
+        require(verificationRecord.isVerified, "phone record is not verified");
+        _;
+    }
+    modifier onlyVerifiedOwner(bytes32 phoneHash) {
+        VerificationRecord memory verificationRecord = guardianContract.getVerificationRecord(phoneHash);
+        require(verificationRecord.owner == msg.sender, "caller is not verified owner");
         _;
     }
 
-	modifier onlySystemRoles(){
-		 require(hasRole(MAINTAINER_ROLE, msg.sender) || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "not allowed to execute function.");
-		_;
-	}
+    modifier onlySystemRoles(){
+        require(hasRole(MAINTAINER_ROLE, msg.sender) || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "not allowed to execute function.");
+        _;
+    }
 
 }

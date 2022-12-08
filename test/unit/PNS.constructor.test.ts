@@ -1,7 +1,7 @@
 import { ethers } from 'hardhat';
 
 const { expect } = require('chai');
-const { deployContract } = require('../../scripts/deploy-helpers');
+const { deployContract } = require('../../scripts/deploy');
 
 describe('PNS Constructor', () => {
   let pnsContract;
@@ -12,7 +12,7 @@ describe('PNS Constructor', () => {
     pnsContract = _pnsContract;
     adminAddress = _adminAddress;
   });
- 
+
 
   //TODO rewwrite to OZ RBAC
   // it('should successfully add an admin address in constructor', async function () {
