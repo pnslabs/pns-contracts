@@ -1,8 +1,8 @@
-import {network, ethers} from 'hardhat';
+import { network, ethers } from 'hardhat';
 
-const {expect, assert} = require('chai');
-const {keccak256} = require('../../utils/util');
-const {deployContract} = require('../../scripts/deploy-helpers');
+const { expect, assert } = require('chai');
+const { keccak256 } = require('../../utils/util');
+const { deployContract } = require('../../scripts/deploy-helpers');
 
 describe('PNS Expire', () => {
   let pnsContract;
@@ -19,24 +19,23 @@ describe('PNS Expire', () => {
   const signer = ethers.provider.getSigner();
   const otp = '123456';
 
-  let message = ethers.utils.solidityPack(["bytes32", "uint256"], [phoneNumber, otp]);
+  let message = ethers.utils.solidityPack(['bytes32', 'uint256'], [phoneNumber, otp]);
   const hashedMessage = ethers.utils.keccak256(message);
   let signature;
-
 
   before(async function () {
     signature = await signer.signMessage(ethers.utils.arrayify(hashedMessage));
     const {
       pnsContract: _pnsContract,
       adminAddress: _adminAddress,
-      pnsGuardianContract: _pnsGuardianContract
+      pnsGuardianContract: _pnsGuardianContract,
     } = await deployContract();
     pnsContract = _pnsContract;
     adminAddress = _adminAddress;
     pnsGuardianContract = _pnsGuardianContract;
   });
 
-  it("should verify the phone number", async () => {
+  it('should verify the phone number', async () => {
     await expect(pnsGuardianContract.setVerificationStatus(phoneNumber, hashedMessage, status, signature)).to.emit(
       pnsGuardianContract,
       'PhoneVerified',
@@ -65,7 +64,7 @@ describe('PNS Expire', () => {
 
   it('reverts with an error when attempting to renew a phone record that is not in grace period', async () => {
     await expect(pnsContract.renew(phoneNumber)).to.be.revertedWith(
-      'only a phone record currently in grace period can be re-authenticated',
+      'only a phone record currently in grace period can be renewed',
     );
   });
 
@@ -78,7 +77,7 @@ describe('PNS Expire', () => {
   });
 
   it('successfully renews an unexpired phone record that is in grace period, and emits an event', async () => {
-    await expect(pnsContract.renew(phoneNumber)).to.emit(pnsContract, 'PhoneRecordAuthenticated');
+    await expect(pnsContract.renew(phoneNumber)).to.emit(pnsContract, 'PhoneRecordRenewed');
   });
 
   it('reverts with an error when attempting to claim an unexpired phone record', async () => {
