@@ -41,8 +41,8 @@ describe('PNS Expire', () => {
     expect(Number(phoneRecord[7])).to.be.greaterThan(0);
   });
 
-  it('reverts with an error when attempting to reAuthenticate a phone record that is not in grace period', async () => {
-    await expect(pnsContract.reAuthenticate(phoneNumber)).to.be.revertedWith(
+  it('reverts with an error when attempting to renew a phone record that is not in grace period', async () => {
+    await expect(pnsContract.renew(phoneNumber)).to.be.revertedWith(
       'only a phone record currently in grace period can be re-authenticated',
     );
   });
@@ -55,8 +55,8 @@ describe('PNS Expire', () => {
     expect(getRecord[6]).to.equal(false);
   });
 
-  it('successfully reAuthenticates an unexpired phone record that is in grace period, and emits an event', async () => {
-    await expect(pnsContract.reAuthenticate(phoneNumber)).to.emit(pnsContract, 'PhoneRecordAuthenticated');
+  it('successfully renews an unexpired phone record that is in grace period, and emits an event', async () => {
+    await expect(pnsContract.renew(phoneNumber)).to.emit(pnsContract, 'PhoneRecordAuthenticated');
   });
 
   it('reverts with an error when attempting to claim an unexpired phone record', async () => {
