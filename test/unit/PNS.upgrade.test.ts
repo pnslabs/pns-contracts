@@ -1,5 +1,5 @@
 const { assert } = require('chai');
-const { deployContract, deployUpgradedContract } = require('../../scripts/deploy-helpers');
+const { deployContract, deployUpgradedContract } = require('../../scripts/deploy');
 
 describe('PNS Contract Upgrade', () => {
   let pnsContract;

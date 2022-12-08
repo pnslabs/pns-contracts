@@ -2,7 +2,7 @@ import { network, ethers } from 'hardhat';
 
 const { expect, assert } = require('chai');
 const { keccak256 } = require('../../utils/util');
-const { deployContract } = require('../../scripts/deploy-helpers');
+const { deployContract } = require('../../scripts/deploy');
 
 describe('PNS Expire', () => {
   let pnsContract;
