@@ -1,17 +1,36 @@
 import { ethers, upgrades } from 'hardhat';
 
-async function main() {
-  let pns;
+async function deployContract() {
+  let adminAccount;
 
-  const PNS = await ethers.getContractFactory('PNS');
-  console.log('Deploying PNS...');
+  [adminAccount] = await ethers.getSigners();
+  const adminAddress = adminAccount.address;
 
-  pns = await upgrades.deployProxy(PNS, [], { initializer: 'initialize' });
-  await pns.deployed();
-  console.log('PNS Contract Deployed to', pns.address);
+  const PNSContract = await ethers.getContractFactory('PNS');
+
+  const PNSGuardianContract = await ethers.getContractFactory('PNSGuardian');
+
+  const pnsGuardianContract = await upgrades.deployProxy(PNSGuardianContract, [adminAddress], { initializer: 'initialize' });
+  await pnsGuardianContract.deployed();
+
+  await pnsGuardianContract.setGuardianVerifier(adminAddress);
+  console.log('PNS Guardian Contract Deployed to', pnsGuardianContract.address, 'PNS Guardian verifier set to', adminAddress);
+
+  const pnsContract = await upgrades.deployProxy(PNSContract, [pnsGuardianContract.address], { initializer: 'initialize' });
+  await pnsContract.deployed();
+
+  return { pnsContract, adminAddress, pnsGuardianContract };
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+async function deployUpgradedContract(pnsContract) {
+  const PNSV2MockContract = await ethers.getContractFactory('PNSV2Mock');
+
+  const upgradedPNSContract = await upgrades.upgradeProxy(pnsContract, PNSV2MockContract);
+
+  return { upgradedPNSContract };
+}
+
+module.exports = {
+  deployContract,
+  deployUpgradedContract,
+};

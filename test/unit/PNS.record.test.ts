@@ -1,31 +1,52 @@
-import { ethers } from 'hardhat';
+import {ethers} from 'hardhat';
 
-const { assert, expect } = require('chai');
-const { keccak256 } = require('../../utils/util');
-const { deployContract } = require('../../helper-hardhat-config');
+const {assert, expect} = require('chai');
+const {keccak256} = require('../../utils/util');
+const {deployContract} = require('../../scripts/deploy');
 
 describe('PNS Record', () => {
   let pnsContract;
   let adminAddress;
+  let pnsGuardianContract;
   const phoneNumber1 = keccak256('07084462591');
   const phoneNumber2 = keccak256('08084442592');
   const label = 'ETH';
+  const status = true;
+  const signer = ethers.provider.getSigner();
+  const otp = '123456';
+
+  let message = ethers.utils.solidityPack(['bytes32', 'uint256'], [phoneNumber1, otp]);
+  const hashedMessage = ethers.utils.keccak256(message);
+  let signature;
 
   before(async function () {
-    const { pnsContract: _pnsContract, adminAddress: _adminAddress } = await deployContract();
+    signature = await signer.signMessage(ethers.utils.arrayify(hashedMessage));
+    const {
+      pnsContract: _pnsContract,
+      adminAddress: _adminAddress,
+      pnsGuardianContract: _pnsGuardianContract,
+    } = await deployContract();
     pnsContract = _pnsContract;
     adminAddress = _adminAddress;
+    pnsGuardianContract = _pnsGuardianContract;
+  });
+
+  it('should verify the phone number', async () => {
+    await expect(pnsGuardianContract.setVerificationStatus(phoneNumber1, hashedMessage, status, signature)).to.emit(
+      pnsGuardianContract,
+      'PhoneVerified',
+    );
   });
 
   it('creates a new record', async function () {
-    await expect(pnsContract.setPhoneRecord(phoneNumber1, adminAddress, adminAddress, label)).to.emit(
+    await expect(pnsContract.setPhoneRecord(phoneNumber1, adminAddress, label)).to.emit(
       pnsContract,
       'PhoneRecordCreated',
     );
   });
 
   it('should throw error when creating a record with an existing phone', async function () {
-    await expect(pnsContract.setPhoneRecord(phoneNumber1, adminAddress, adminAddress, label)).to.be.revertedWith(
+    await expect(pnsContract.setPhoneRecord(phoneNumber1, adminAddress, label)).to.be.revertedWith(
       'phone record already exists',
     );
   });

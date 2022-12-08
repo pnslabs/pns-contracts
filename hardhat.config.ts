@@ -17,9 +17,16 @@ module.exports = {
     ],
     optimizer: {
       enabled: true,
-      runs: 1,
+      runs: 200,
     },
   },
+  contractSizer: {
+    alphaSort: true,
+    disambiguatePaths: false,
+    runOnCompile: true,
+    strict: true,
+  },
+
   networks: {
     hardhat: {
       mining: {
@@ -30,10 +37,17 @@ module.exports = {
       //   blockNumber: 14622817,
       // },
     },
-    localhost: {
+    localhost: { //truffle
       url: `http://127.0.0.1:8545`,
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
       gasPrice: parseInt(`${utils.parseUnits('132', 'gwei')}`),
     },
+  },
+  gasReporter: {
+    enabled: process.env.REPORT_GAS !== undefined,
+    currency: 'USD',
+  },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY,
   },
 };
