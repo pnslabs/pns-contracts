@@ -6,7 +6,6 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
 import './Interfaces/IPNSSchema.sol';
-import './PNS.sol';
 
 /// @title Handles the authentication of the PNS registry
 /// @author  PNS core team

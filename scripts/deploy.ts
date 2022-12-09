@@ -6,7 +6,7 @@ async function deployContract() {
   [adminAccount] = await ethers.getSigners();
   const adminAddress = adminAccount.address;
 
-  const PNSContract = await ethers.getContractFactory('PNS');
+  const PNSContractRegistry = await ethers.getContractFactory('PNSRegistry');
 
   const PNSGuardianContract = await ethers.getContractFactory('PNSGuardian');
 
@@ -16,7 +16,7 @@ async function deployContract() {
   await pnsGuardianContract.setGuardianVerifier(adminAddress);
   console.log('PNS Guardian Contract Deployed to', pnsGuardianContract.address, 'PNS Guardian verifier set to', adminAddress);
 
-  const pnsContract = await upgrades.deployProxy(PNSContract, [pnsGuardianContract.address], { initializer: 'initialize' });
+  const pnsContract = await upgrades.deployProxy(PNSContractRegistry, [pnsGuardianContract.address], { initializer: 'initialize' });
   await pnsContract.deployed();
 
   return { pnsContract, adminAddress, pnsGuardianContract };

@@ -12,6 +12,7 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 import "./Interfaces/IPNS.sol";
 import "./PriceOracle.sol";
 import "./Interfaces/IPNSGuardian.sol";
+import "./Interfaces/IPNSRegistry.sol";
 
 
 /**
@@ -20,7 +21,7 @@ import "./Interfaces/IPNSGuardian.sol";
  * @notice You can only interact with the public functions and state definitions.
  * @dev The interface IPNS is inherited which inherits IPNSSchema.
  */
-contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable {
+contract PNSRegistry is IPNSRegistry, Initializable, PriceOracle, AccessControlUpgradeable {
 
     /// Expiry time value
     uint256 public expiryTime;
@@ -130,50 +131,6 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable {
         return _setPhoneRecord(phoneHash, msg.sender, resolver, label);
     }
 
-    /**
-     * @dev Returns the resolver details of the specified phoneHash.
-     * @param phoneHash The specified phoneHash.
-     */
-    function getRecord(bytes32 phoneHash)
-    external
-    view
-    returns (
-        address owner,
-        ResolverRecord[] memory,
-        bytes32,
-        uint256 createdAt,
-        bool exists,
-        bool isInGracePeriod,
-        bool isExpired,
-        bool isVerified,
-        uint256 expirationTime
-    )
-    {
-        return _getRecord(phoneHash);
-    }
-
-    /**
-     * @dev Returns the address that owns the specified phone number.
-     * @param phoneHash The specified phoneHash.
-     * @return address of the owner.
-     */
-    function getOwner(bytes32 phoneHash) public view virtual returns (address) {
-        address addr = records[phoneHash].owner;
-        if (addr == address(this)) {
-            return address(0x0);
-        }
-        return addr;
-    }
-
-    /**
-     * @dev Returns whether a record has been imported to the registry.
-     * @param phoneHash The specified phoneHash.
-     * @return Bool if record exists
-     */
-    function recordExists(bytes32 phoneHash) public view returns (bool) {
-        return records[phoneHash].exists;
-    }
-
     function isRecordVerified(bytes32 phoneHash) public view returns (bool) {
         return records[phoneHash].isVerified;
     }
@@ -216,17 +173,6 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable {
         emit PhoneLinked(phoneHash, resolver);
     }
 
-    /**
-     * @dev Returns an existing label for the specified phone number phoneHash.
-     * @param phoneHash The specified phoneHash.
-     */
-    function getResolverDetails(bytes32 phoneHash)
-    external
-    view
-    returns (ResolverRecord[] memory resolver)
-    {
-        return _getResolverDetails(phoneHash);
-    }
 
     /**
      * @dev Renew a phone record.
@@ -459,21 +405,6 @@ contract PNS is IPNS, Initializable, PriceOracle, AccessControlUpgradeable {
     returns (uint256)
     {
 
-    }
-
-    /**
-    * @dev Calculate the
-     * @param phoneHash The specified phoneHash.
-     * @return ResolverRecord
-     */
-    function _getResolverDetails(bytes32 phoneHash)
-    internal
-    view
-    returns (ResolverRecord[] memory)
-    {
-        PhoneRecord memory recordData = records[phoneHash];
-        require(recordData.exists, "phone record not found");
-        return recordData.wallet;
     }
 
 
