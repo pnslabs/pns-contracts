@@ -11,27 +11,26 @@ import './IPNSSchema.sol';
  * @dev All function call interfaces are defined here.
  */
 interface IPNSResolver is IPNSSchema {
+	function getOwner(bytes32 phoneHash) external view returns (address);
 
-    function getOwner(bytes32 phoneHash) external view returns (address);
+	function getRecord(bytes32 phoneHash)
+		external
+		view
+		returns (
+			address owner,
+			ResolverRecord[] memory,
+			bytes32,
+			uint256 createdAt,
+			bool exists,
+			bool isInGracePeriod,
+			bool isExpired,
+			bool isVerified,
+			uint256 expirationTime
+		);
 
-    function getRecord(bytes32 phoneHash)
-    external
-    view
-    returns (
-        address owner,
-        ResolverRecord[] memory,
-        bytes32,
-        uint256 createdAt,
-        bool exists,
-        bool isInGracePeriod,
-        bool isExpired,
-        bool isVerified,
-        uint256 expirationTime
-    );
+	function getResolverDetails(bytes32 phoneHash) external view returns (ResolverRecord[] memory);
 
-    function getResolverDetails(bytes32 phoneHash) external view returns (ResolverRecord[] memory);
+	function recordExists(bytes32 phoneHash) external view returns (bool);
 
-    function recordExists(bytes32 phoneHash) external view returns (bool);
-
-    function getVersion() external view returns (uint32 version);
+	function getVersion() external view returns (uint32 version);
 }
