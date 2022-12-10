@@ -9,10 +9,11 @@ async function deployContract() {
   let registryCost = 10;
   let registryRenewCost = 5;
 
-
+  console.log(hre.network.name, 'network name');
 
   [adminAccount] = await ethers.getSigners();
   const adminAddress = adminAccount.address;
+  console.log(adminAddress, "address")
 
   const PNSRegistryContract = await ethers.getContractFactory('PNSRegistry');
 
@@ -45,6 +46,7 @@ async function deployContract() {
   } else {
     priceOracleContract = await upgrades.deployProxy(PriceOracleContract, [chainlink_price_feeds.BSC_MAINNET], { initializer: 'initialize' });
   }
+
   await priceOracleContract.deployed();
 
   console.log('Price Oracle Contract Deployed to', priceOracleContract.address);
@@ -56,6 +58,8 @@ async function deployContract() {
   console.log('PNS Registry Contract Deployed to', pnsRegistryContract.address);
   await pnsRegistryContract.updateRegistryCost(registryCost);
   await pnsRegistryContract.updateRegistryRenewCost(registryRenewCost);
+
+  console.log('Registry Cost set to', registryCost, 'Registry Renew Cost set to', registryRenewCost);
 
   const pnsResolverContract = await upgrades.deployProxy(PNSResolverContract, [pnsGuardianContract.address, pnsRegistryContract.address], { initializer: 'initialize' });
   await pnsResolverContract.deployed();
