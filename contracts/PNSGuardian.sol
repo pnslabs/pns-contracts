@@ -10,7 +10,7 @@ import './Interfaces/IPNSSchema.sol';
 /// @title Handles the authentication of the PNS registry
 /// @author  PNS core team
 /// @notice The PNS Guardian is responsible for authenticating the records created in PNS registry
-contract PNSGuardian is IPNSSchema, Initializable, AccessControlUpgradeable {
+abstract contract PNSGuardian is IPNSSchema, Initializable, AccessControlUpgradeable {
 	/// the guardian layer address that updates verification state
 	address public guardianVerifier;
 
@@ -27,23 +27,6 @@ contract PNSGuardian is IPNSSchema, Initializable, AccessControlUpgradeable {
 	 * @param verifiedAt The address of the owner
 	 */
 	event PhoneVerified(address indexed owner, bytes32 indexed phoneHash, uint256 verifiedAt);
-
-	/*
-	 * @dev contract initializer function. This function exist because the contract is upgradable.
-	 */
-	function initialize(address _guardianVerifier) external initializer {
-		__AccessControl_init();
-		guardianVerifier = _guardianVerifier;
-		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-	}
-
-	/**
-	 * @dev Permits modifications only by an guardian Layer Address.
-	 */
-	modifier onlyGuardianVerifier() {
-		require(msg.sender == guardianVerifier, 'onlyGuardianVerifier: ');
-		_;
-	}
 
 	/**
 	 * @notice updates guardian layer address
@@ -87,6 +70,14 @@ contract PNSGuardian is IPNSSchema, Initializable, AccessControlUpgradeable {
 	 */
 	function getVerificationRecord(bytes32 phoneHash) external view returns (VerificationRecord memory) {
 		return verificationRecords[phoneHash];
+	}
+
+	/**
+	 * @dev Permits modifications only by an guardian Layer Address.
+	 */
+	modifier onlyGuardianVerifier() {
+		require(msg.sender == guardianVerifier, 'onlyGuardianVerifier: not allowed ');
+		_;
 	}
 
 	modifier onlySystemRoles() {
