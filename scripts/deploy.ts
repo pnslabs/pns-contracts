@@ -1,7 +1,15 @@
 import { ethers, upgrades } from 'hardhat';
+import hre from 'hardhat';
+import { chainlink_price_feeds } from './constants';
+
 
 async function deployContract() {
   let adminAccount;
+  let priceOracleContract;
+  let registryCost = 10;
+  let registryRenewCost = 5;
+
+
 
   [adminAccount] = await ethers.getSigners();
   const adminAddress = adminAccount.address;
@@ -12,16 +20,42 @@ async function deployContract() {
 
   const PNSResolverContract = await ethers.getContractFactory('PNSResolver');
 
+  const PriceOracleContract = await ethers.getContractFactory('PriceOracle');
+
   const pnsGuardianContract = await upgrades.deployProxy(PNSGuardianContract, [adminAddress], { initializer: 'initialize' });
   await pnsGuardianContract.deployed();
 
   await pnsGuardianContract.setGuardianVerifier(adminAddress);
   console.log('PNS Guardian Contract Deployed to', pnsGuardianContract.address, 'PNS Guardian verifier set to', adminAddress);
 
-  const pnsRegistryContract = await upgrades.deployProxy(PNSRegistryContract, [pnsGuardianContract.address], { initializer: 'initialize' });
+  if (hre.network.name === 'ethereum_mainnet') {
+    priceOracleContract = await upgrades.deployProxy(PriceOracleContract, [chainlink_price_feeds.ETHEREUM_MAINNET], { initializer: 'initialize' });
+
+  } else if (hre.network.name === 'bnb_mainnet') {
+    priceOracleContract = await upgrades.deployProxy(PriceOracleContract, [chainlink_price_feeds.BSC_MAINNET], { initializer: 'initialize' });
+
+  } else if (hre.network.name === 'polygon_mainnet') {
+    priceOracleContract = await upgrades.deployProxy(PriceOracleContract, [chainlink_price_feeds.MATIC_MAINNET], { initializer: 'initialize' });
+  } else if (hre.network.name === 'ethereum_goerli') {
+    priceOracleContract = await upgrades.deployProxy(PriceOracleContract, [chainlink_price_feeds.ETHEREUM_GOERLI], { initializer: 'initialize' });
+  } else if (hre.network.name === 'bnb_testnet') {
+    priceOracleContract = await upgrades.deployProxy(PriceOracleContract, [chainlink_price_feeds.BSC_TESTNET], { initializer: 'initialize' });
+  } else if (hre.network.name === 'polygon_mumbai') {
+    priceOracleContract = await upgrades.deployProxy(PriceOracleContract, [chainlink_price_feeds.MATIC_MUMBAI], { initializer: 'initialize' });
+  } else {
+    priceOracleContract = await upgrades.deployProxy(PriceOracleContract, [chainlink_price_feeds.BSC_MAINNET], { initializer: 'initialize' });
+  }
+  await priceOracleContract.deployed();
+
+  console.log('Price Oracle Contract Deployed to', priceOracleContract.address);
+
+
+  const pnsRegistryContract = await upgrades.deployProxy(PNSRegistryContract, [pnsGuardianContract.address, priceOracleContract.address], { initializer: 'initialize' });
   await pnsRegistryContract.deployed();
 
   console.log('PNS Registry Contract Deployed to', pnsRegistryContract.address);
+  await pnsRegistryContract.updateRegistryCost(registryCost);
+  await pnsRegistryContract.updateRegistryRenewCost(registryRenewCost);
 
   const pnsResolverContract = await upgrades.deployProxy(PNSResolverContract, [pnsGuardianContract.address, pnsRegistryContract.address], { initializer: 'initialize' });
   await pnsResolverContract.deployed();
@@ -31,6 +65,7 @@ async function deployContract() {
 
   return { pnsRegistryContract, adminAddress, pnsGuardianContract, pnsResolverContract };
 }
+
 
 async function deployUpgradedContract(pnsRegistryContract) {
   const PNSV2MockContract = await ethers.getContractFactory('PNSV2Mock');
@@ -45,3 +80,8 @@ module.exports = {
   deployContract,
   deployUpgradedContract,
 };
+
+deployContract().then(() => process.exit(0)).catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

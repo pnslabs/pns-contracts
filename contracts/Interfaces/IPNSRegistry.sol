@@ -15,7 +15,7 @@ interface IPNSRegistry is IPNSSchema {
         bytes32 phoneHash,
         address resolver,
         string memory label
-    ) external;
+    ) external payable;
 
     function linkPhoneToWallet(
         bytes32 phoneHash,
@@ -25,14 +25,14 @@ interface IPNSRegistry is IPNSSchema {
 
     function setOwner(bytes32 phoneHash, address owner) external;
 
-    function renew(bytes32 phoneHash) external;
+    function renew(bytes32 phoneHash) external payable;
 
     function claimExpiredPhoneRecord(
         bytes32 phoneHash,
         address owner,
         address resolver,
         string memory label
-    ) external;
+    ) external payable;
 
     function setExpiryTime(uint256 time) external;
 
@@ -42,5 +42,10 @@ interface IPNSRegistry is IPNSSchema {
 
     function setGracePeriod(uint256 time) external;
 
+    function updateRegistryCost(uint256 _registryCost) external;
+
+    function updateRenewalCost(uint256 _renewalCost) external;
+
     function getVersion() external view returns (uint32 version);
+
 }

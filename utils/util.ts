@@ -1,20 +1,6 @@
 const Web3 = require("web3");
 const web3 = new Web3("http://localhost:8545");
 
-const upgradeContract = async (
-  account,
-  proxy,
-  newImplementationAddress,
-  proxyAdminContract,
-) => {
-  if (proxyAdminContract) {
-    proxyAdminContract.upgrade(proxy.address, newImplementationAddress, {
-      from: account,
-    });
-  } else {
-    proxy.upgradeTo(newImplementationAddress, { from: account });
-  }
-};
 
 const keccak256 = (...args) => {
   args = args.map((arg) => {
@@ -39,6 +25,5 @@ const keccak256 = (...args) => {
 };
 
 module.exports = {
-  upgradeContract,
   keccak256,
 };
