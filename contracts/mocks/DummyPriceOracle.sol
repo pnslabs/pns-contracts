@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
-// SPDX-License-Identifier: MIT
 pragma solidity >=0.8.9;
 
-contract DummyOracle {
+contract DummyPriceOracle {
 	int256 value;
 
 	constructor(int256 _value) public {
