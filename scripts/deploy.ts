@@ -6,9 +6,11 @@ async function deployContract() {
   [adminAccount] = await ethers.getSigners();
   const adminAddress = adminAccount.address;
 
-  const PNSContractRegistry = await ethers.getContractFactory('PNSRegistry');
+  const PNSRegistryContract = await ethers.getContractFactory('PNSRegistry');
 
   const PNSGuardianContract = await ethers.getContractFactory('PNSGuardian');
+
+  const PNSResolverContract = await ethers.getContractFactory('PNSResolver');
 
   const pnsGuardianContract = await upgrades.deployProxy(PNSGuardianContract, [adminAddress], { initializer: 'initialize' });
   await pnsGuardianContract.deployed();
@@ -16,19 +18,28 @@ async function deployContract() {
   await pnsGuardianContract.setGuardianVerifier(adminAddress);
   console.log('PNS Guardian Contract Deployed to', pnsGuardianContract.address, 'PNS Guardian verifier set to', adminAddress);
 
-  const pnsContract = await upgrades.deployProxy(PNSContractRegistry, [pnsGuardianContract.address], { initializer: 'initialize' });
-  await pnsContract.deployed();
+  const pnsRegistryContract = await upgrades.deployProxy(PNSRegistryContract, [pnsGuardianContract.address], { initializer: 'initialize' });
+  await pnsRegistryContract.deployed();
 
-  return { pnsContract, adminAddress, pnsGuardianContract };
+  console.log('PNS Registry Contract Deployed to', pnsRegistryContract.address);
+
+  const pnsResolverContract = await upgrades.deployProxy(PNSResolverContract, [pnsGuardianContract.address, pnsRegistryContract.address], { initializer: 'initialize' });
+  await pnsResolverContract.deployed();
+
+  console.log('PNS Resolver Contract Deployed to', pnsResolverContract.address);
+
+
+  return { pnsRegistryContract, adminAddress, pnsGuardianContract, pnsResolverContract };
 }
 
-async function deployUpgradedContract(pnsContract) {
+async function deployUpgradedContract(pnsRegistryContract) {
   const PNSV2MockContract = await ethers.getContractFactory('PNSV2Mock');
 
-  const upgradedPNSContract = await upgrades.upgradeProxy(pnsContract, PNSV2MockContract);
+  const upgradedPNSRegistryContract = await upgrades.upgradeProxy(pnsRegistryContract, PNSV2MockContract);
 
-  return { upgradedPNSContract };
+  return { upgradedPNSRegistryContract };
 }
+
 
 module.exports = {
   deployContract,

@@ -5,7 +5,8 @@ const {keccak256} = require('../../utils/util');
 const {deployContract} = require('../../scripts/deploy');
 
 describe('PNS Record', () => {
-  let pnsContract;
+  let pnsRegistryContract;
+  let pnsResolverContract;
   let adminAddress;
   let pnsGuardianContract;
   const phoneNumber1 = keccak256('07084462591');
@@ -22,13 +23,15 @@ describe('PNS Record', () => {
   before(async function () {
     signature = await signer.signMessage(ethers.utils.arrayify(hashedMessage));
     const {
-      pnsContract: _pnsContract,
+      pnsRegistryContract: _pnsRegistryContract,
       adminAddress: _adminAddress,
       pnsGuardianContract: _pnsGuardianContract,
+      pnsResolverContract: _pnsResolverContract,
     } = await deployContract();
-    pnsContract = _pnsContract;
+    pnsRegistryContract = _pnsRegistryContract;
     adminAddress = _adminAddress;
     pnsGuardianContract = _pnsGuardianContract;
+    pnsResolverContract = _pnsResolverContract;
   });
 
   it('should verify the phone number', async () => {
@@ -39,32 +42,32 @@ describe('PNS Record', () => {
   });
 
   it('creates a new record', async function () {
-    await expect(pnsContract.setPhoneRecord(phoneNumber1, adminAddress, label)).to.emit(
-      pnsContract,
+    await expect(pnsRegistryContract.setPhoneRecord(phoneNumber1, adminAddress, label)).to.emit(
+      pnsRegistryContract,
       'PhoneRecordCreated',
     );
   });
 
   it('should throw error when creating a record with an existing phone', async function () {
-    await expect(pnsContract.setPhoneRecord(phoneNumber1, adminAddress, label)).to.be.revertedWith(
+    await expect(pnsRegistryContract.setPhoneRecord(phoneNumber1, adminAddress, label)).to.be.revertedWith(
       'phone record already exists',
     );
   });
 
   it('verifies that new recorded created exist', async () => {
-    const phoneRecordExist = await pnsContract.recordExists(phoneNumber1);
+    const phoneRecordExist = await pnsResolverContract.recordExists(phoneNumber1);
 
     assert.equal(phoneRecordExist, true);
   });
 
   it('should return false if record does not exist', async () => {
-    const phoneRecordExist = await pnsContract.recordExists(phoneNumber2);
+    const phoneRecordExist = await pnsRegistryContract.recordExists(phoneNumber2);
 
     assert.equal(phoneRecordExist, false);
   });
 
   it('ties the correct owner to record', async () => {
-    const phoneRecord = await pnsContract.getRecord(phoneNumber1);
+    const phoneRecord = await pnsResolverContract.getRecord(phoneNumber1);
     assert.equal(phoneRecord.owner, adminAddress);
   });
 });

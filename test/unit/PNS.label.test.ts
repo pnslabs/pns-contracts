@@ -5,7 +5,8 @@ const { keccak256 } = require('../../utils/util');
 const { deployContract } = require('../../scripts/deploy');
 
 describe('PNS Label linking', () => {
-  let pnsContract;
+  let pnsRegistryContract;
+  let pnsResolverContract;
   let adminAddress;
   let pnsGuardianContract;
   const phoneNumber1 = keccak256('07084462591');
@@ -24,11 +25,13 @@ describe('PNS Label linking', () => {
   before(async function () {
     signature = await signer.signMessage(ethers.utils.arrayify(hashedMessage));
     const {
-      pnsContract: _pnsContract,
+      pnsRegistryContract: _pnsRegistryContract,
       adminAddress: _adminAddress,
       pnsGuardianContract: _pnsGuardianContract,
+      pnsResolverContract: _pnsResolverContract,
     } = await deployContract();
-    pnsContract = _pnsContract;
+    pnsRegistryContract = _pnsRegistryContract;
+    pnsResolverContract = _pnsResolverContract;
     adminAddress = _adminAddress;
     pnsGuardianContract = _pnsGuardianContract;
   });
@@ -43,38 +46,38 @@ describe('PNS Label linking', () => {
   //   ).to.be.revertedWith('caller is not authorised');
   // });
   it('should verify the phone number', async () => {
-    await expect(pnsGuardianContract.setVerificationStatus(phoneNumber1, hashedMessage, status, signature)).to.emit(
+    await expect(pnsRegistryContract.setVerificationStatus(phoneNumber1, hashedMessage, status, signature)).to.emit(
       pnsGuardianContract,
       'PhoneVerified',
     );
   });
 
   it('should create a new record and emit an event', async function () {
-    await expect(pnsContract.setPhoneRecord(phoneNumber1, adminAddress, label1)).to.emit(
-      pnsContract,
+    await expect(pnsRegistryContract.setPhoneRecord(phoneNumber1, adminAddress, label1)).to.emit(
+      pnsRegistryContract,
       'PhoneRecordCreated',
     );
     resolverCreatedLength++;
   });
 
   it('should link a new resolver to a phone record and emit an event', async () => {
-    await expect(pnsContract.linkPhoneToWallet(phoneNumber1, adminAddress, label2)).to.emit(pnsContract, 'PhoneLinked');
+    await expect(pnsRegistryContract.linkPhoneToWallet(phoneNumber1, adminAddress, label2)).to.emit(pnsRegistryContract, 'PhoneLinked');
     resolverCreatedLength++;
   });
 
   it('verifies that all previously created resolvers exists', async () => {
-    const resolvers = await pnsContract.getResolverDetails(phoneNumber1);
+    const resolvers = await pnsResolverContract.getResolverDetails(phoneNumber1);
     const wallets = resolvers.length;
 
     assert.equal(wallets, resolverCreatedLength);
   });
 
   it('should throw an error if phone record of a resolver does not exist', async () => {
-    await expect(pnsContract.getResolverDetails(phoneNumber2)).to.be.revertedWith('phone record not found');
+    await expect(pnsResolverContract.getResolverDetails(phoneNumber2)).to.be.revertedWith('phone record not found');
   });
 
   it('should get the details of a specific resolver', async () => {
-    const resolvers = await pnsContract.getResolverDetails(phoneNumber1);
+    const resolvers = await pnsResolverContract.getResolverDetails(phoneNumber1);
     const firstLabel = resolvers[0][2];
     const secondLabel = resolvers[1][2];
 

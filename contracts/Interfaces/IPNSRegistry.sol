@@ -36,6 +36,10 @@ interface IPNSRegistry is IPNSSchema {
 
     function setExpiryTime(uint256 time) external;
 
+    function getExpiryTime() external view returns (uint256);
+
+    function getGracePeriod() external view returns (uint256);
+
     function setGracePeriod(uint256 time) external;
 
     function getVersion() external view returns (uint32 version);

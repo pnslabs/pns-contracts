@@ -5,7 +5,7 @@ const { keccak256 } = require('../../utils/util');
 const { deployContract } = require('../../scripts/deploy');
 
 describe('PNS Expire', () => {
-  let pnsContract;
+  let pnsRegistryContract;
   let adminAddress;
   let pnsGuardianContract;
   const phoneNumber = keccak256('07084462591');
@@ -21,17 +21,17 @@ describe('PNS Expire', () => {
   before(async function () {
     signature = await signer.signMessage(ethers.utils.arrayify(hashedMessage));
     const {
-      pnsContract: _pnsContract,
+      pnsRegistryContract: _pnsRegistryContract,
       adminAddress: _adminAddress,
       pnsGuardianContract: _pnsGuardianContract,
     } = await deployContract();
-    pnsContract = _pnsContract;
+    pnsRegistryContract = _pnsGuardianContract;
     adminAddress = _adminAddress;
     pnsGuardianContract = _pnsGuardianContract;
   });
 
   it('reverts with an error when attempting to set a phone record that is not verified', async () => {
-    await expect(pnsContract.setPhoneRecord(phoneNumber, adminAddress, label1)).to.be.revertedWith(
+    await expect(pnsRegistryContract.setPhoneRecord(phoneNumber, adminAddress, label1)).to.be.revertedWith(
       'phone record is not verified',
     );
   });

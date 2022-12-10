@@ -4,19 +4,19 @@ const { expect } = require('chai');
 const { deployContract } = require('../../scripts/deploy');
 
 describe('PNS Constructor', () => {
-  let pnsContract;
+  let pnsRegistryContract;
   let adminAddress;
 
   before(async function () {
-    const { pnsContract: _pnsContract, adminAddress: _adminAddress } = await deployContract();
-    pnsContract = _pnsContract;
+    const { pnsRegistryContract: _pnsRegistryContract, adminAddress: _adminAddress } = await deployContract();
+    pnsRegistryContract = _pnsRegistryContract;
     adminAddress = _adminAddress;
   });
 
 
   //TODO rewwrite to OZ RBAC
   // it('should successfully add an admin address in constructor', async function () {
-  //   const admin = await pnsContract.getAdmin(adminAddress);
+  //   const admin = await pnsRegistryContract.getAdmin(adminAddress);
   //   expect(admin[2]).to.equal(true);
   // });
 });
