@@ -28,9 +28,19 @@ module.exports = {
   },
 
   networks: {
-    localhost: { //truffle
+    hardhat: {
+      mining: {
+        auto: true,
+      },
+      // forking: {
+      //   url: 'https://mainnet.infura.io/v3/93c3c3bccee54144aa42c29ad05ef4f5',
+      //   blockNumber: 14622817,
+      // },
+    },
+    localhost: {
+      //truffle
       url: `http://127.0.0.1:8545`,
-      accounts: [`0x${process.env.PRIVATE_KEY_GANACHE}`],
+      accounts: process.env.PRIVATE_KEY_GANACHE !== undefined ? [process.env.PRIVATE_KEY_GANACHE] : [],
       allowUnlimitedContractSize: true,
       gasPrice: parseInt(`${utils.parseUnits('132', 'gwei')}`),
       blockGasLimit: 12000000,
@@ -46,7 +56,7 @@ module.exports = {
       gasPrice: parseInt(`${utils.parseUnits('132', 'gwei')}`),
       blockGasLimit: 12000000,
     },
-   bnb_mainnet: {
+    bnb_mainnet: {
       url: `https://bsc-dataseed.binance.org/`,
       accounts: [`0x${process.env.PRIVATE_KEY}`],
       gasPrice: parseInt(`${utils.parseUnits('132', 'gwei')}`),
@@ -62,12 +72,12 @@ module.exports = {
       url: `https://polygon-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
       accounts: [`0x${process.env.PRIVATE_KEY}`],
       gasPrice: parseInt(`${utils.parseUnits('132', 'gwei')}`),
-   },
+    },
     polygon_testnet: {
       url: `https://polygon-mumbai.infura.io/v3/${process.env.INFURA_API_KEY}`,
       accounts: [`0x${process.env.PRIVATE_KEY}`],
       gasPrice: parseInt(`${utils.parseUnits('132', 'gwei')}`),
-    }
+    },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
