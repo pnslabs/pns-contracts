@@ -9,19 +9,18 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 
 
 // ==========  Internal imports    ==========
-import "./Interfaces/IPNS.sol";
-import "./PriceOracle.sol";
 import "./Interfaces/IPNSGuardian.sol";
 import "./Interfaces/IPNSRegistry.sol";
+import "./PriceOracle.sol";
 
 
 /**
  * @title The contract for phone number service.
  * @author PNS foundation core
  * @notice You can only interact with the public functions and state definitions.
- * @dev The interface IPNS is inherited which inherits IPNSSchema.
+ * @dev The interface IPNSRegistry is inherited which inherits IPNSSchema.
  */
-contract PNSRegistry is IPNSRegistry, Initializable, PriceOracle, AccessControlUpgradeable {
+contract PNSRegistry is IPNSSchema, Initializable, AccessControlUpgradeable {
 
     /// Expiry time value
     uint256 public expiryTime;
@@ -33,6 +32,8 @@ contract PNSRegistry is IPNSRegistry, Initializable, PriceOracle, AccessControlU
     uint256 public registryRenewCost;
 
     IPNSGuardian public guardianContract;
+
+    PriceOracle public priceOracleContract;
 
     /// Create a new role identifier for the minter role
     bytes32 public constant MAINTAINER_ROLE = keccak256("MAINTAINER_ROLE");
@@ -102,20 +103,25 @@ contract PNSRegistry is IPNSRegistry, Initializable, PriceOracle, AccessControlU
     /**
      * @dev contract initializer function. This function exist because the contract is upgradable.
      */
-    function initialize(address _guardianContract) external initializer {
+    function initialize(address _guardianContract, address _aggregatorV3Address, uint256 _registryCost, uint256 _registryRenewCost) external initializer {
         __AccessControl_init();
 
 
         //set oracle constant
         expiryTime = 365 days;
         gracePeriod = 60 days;
-        registryCost = 2;
+        registryCost = getEtherAmountInUSD(_registryCost);
         //registry cost $2
-        registryRenewCost = 3;
+        registryRenewCost = getEtherAmountInUSD(_registryRenewCost);
         //registry cost $1
         guardianContract = IPNSGuardian(_guardianContract);
+
+        priceOracleContract = PriceOracle(_aggregatorV3Address);
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
+
+    // TODO: add a function to update the price oracle contract address
+    // TODO: add a function to update the registry and renew cost
 
     /**
      * @dev Sets the record for a phoneHash.
@@ -179,11 +185,12 @@ contract PNSRegistry is IPNSRegistry, Initializable, PriceOracle, AccessControlU
      * @param phoneHash The phoneHash.
      */
     function renew(bytes32 phoneHash)
-    external
+    external payable
     virtual
     authorised(phoneHash)
     hasExpiryOf(phoneHash)
     {
+        require(msg.value >= registryRenewCost, 'fee must be greater than or equal to the registry renewal fee');
         PhoneRecord storage recordData = records[phoneHash];
         bool _timeHasPassedExpiryTime = _hasPassedExpiryTime(phoneHash);
         bool _hasExhaustedGracePeriod = _hasPassedGracePeriod(phoneHash);
@@ -200,7 +207,12 @@ contract PNSRegistry is IPNSRegistry, Initializable, PriceOracle, AccessControlU
         recordData.isExpired = false;
         recordData.expirationTime = block.timestamp + expiryTime;
 
-        emit PhoneRecordRenewed(phoneHash);
+        (bool success, ) = address(this).call{value: msg.value}('');
+        require(success, 'Transfer failed.');
+        (bool sent, ) = msg.sender.call{value: msg.value - registryRenewCost}('');
+
+
+    emit PhoneRecordRenewed(phoneHash);
     }
 
     /**
@@ -215,7 +227,7 @@ contract PNSRegistry is IPNSRegistry, Initializable, PriceOracle, AccessControlU
         address owner,
         address resolver,
         string memory label
-    ) external virtual hasExpiryOf(phoneHash) {
+    ) external payable virtual hasExpiryOf(phoneHash) {
         PhoneRecord storage recordData = records[phoneHash];
         bool _hasExhaustedGracePeriod = _hasPassedGracePeriod(phoneHash);
 
@@ -271,6 +283,8 @@ contract PNSRegistry is IPNSRegistry, Initializable, PriceOracle, AccessControlU
     }
 
 
+
+
     /**
      * @dev Updates the expiry time of a phone record.
      * @param time The new expiry time in seconds.
@@ -278,6 +292,10 @@ contract PNSRegistry is IPNSRegistry, Initializable, PriceOracle, AccessControlU
     function setExpiryTime(uint256 time) external onlySystemRoles {
         expiryTime = time;
         emit ExpiryTimeUpdated(msg.sender, time);
+    }
+
+    function getExpiryTime() external view returns (uint256) {
+        return expiryTime;
     }
 
     /**
@@ -289,6 +307,10 @@ contract PNSRegistry is IPNSRegistry, Initializable, PriceOracle, AccessControlU
         emit GracePeriodUpdated(msg.sender, time);
     }
 
+    function getGracePeriod() external view returns (uint256) {
+        return gracePeriod;
+    }
+
 
     function _setPhoneRecord(
         bytes32 phoneHash,
@@ -297,6 +319,7 @@ contract PNSRegistry is IPNSRegistry, Initializable, PriceOracle, AccessControlU
         string memory label
     ) onlyVerified(phoneHash) onlyVerifiedOwner(phoneHash) internal {
 
+        require(msg.value >= registryCost, 'fee must be greater than or equal to the auth fee');
 
         PhoneRecord storage recordData = records[phoneHash];
         require(!recordData.exists, "phone record already exists");
@@ -319,6 +342,10 @@ contract PNSRegistry is IPNSRegistry, Initializable, PriceOracle, AccessControlU
         recordData.isExpired = false;
         recordData.expirationTime = block.timestamp + expiryTime;
         recordData.wallet.push(resolverRecordData);
+
+        (bool success, ) = address(this).call{value: msg.value}('');
+        require(success, 'Transfer failed.');
+        (bool sent, ) = msg.sender.call{value: msg.value - registryCost}('');
 
         emit PhoneRecordCreated(phoneHash, resolver, owner);
     }
@@ -393,18 +420,14 @@ contract PNSRegistry is IPNSRegistry, Initializable, PriceOracle, AccessControlU
     }
 
 
-    //TODO: Complete
-    /**
-     * @dev Returns an existing resolver for the specified phone number phoneHash.
-     * @param usdAmount The specified phoneHash.
-     * @return uint
-     */
-    function getUSDinETH(uint256 usdAmount)
+    function getEtherAmountInUSD(uint256 usdAmount)
     internal
     view
     returns (uint256)
     {
-
+        uint256 ethPrice = priceOracleContract.getEtherPriceInUSD();
+        uint256 ethAmount = (usdAmount * 10**18) / ethPrice;
+        return ethAmount;
     }
 
 

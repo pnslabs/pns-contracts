@@ -11,6 +11,7 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 // ==========  Internal imports    ==========
 import "./Interfaces/IPNSResolver.sol";
 import "./Interfaces/IPNSGuardian.sol";
+import "./Interfaces/IPNSRegistry.sol";
 
 
 
@@ -20,9 +21,10 @@ import "./Interfaces/IPNSGuardian.sol";
  * @notice You can only interact with the public functions and state definitions.
  * @dev The interface IPNSResolver is inherited which inherits IPNSSchema.
  */
-contract PNSResolver is IPNSResolver, Initializable, AccessControlUpgradeable {
+contract PNSResolver is IPNSSchema, Initializable, AccessControlUpgradeable {
 
     IPNSGuardian public guardianContract;
+    IPNSRegistry public registryContract;
 
     /// Mapping state to store resolver record
     mapping(string => ResolverRecord) resolverRecordMapping;
@@ -34,9 +36,10 @@ contract PNSResolver is IPNSResolver, Initializable, AccessControlUpgradeable {
     /**
      * @dev contract initializer function. This function exist because the contract is upgradable.
      */
-    function initialize(address _guardianContract) external initializer {
+    function initialize(address _guardianContract, address _registryContract) external initializer {
         __AccessControl_init();
         guardianContract = IPNSGuardian(_guardianContract);
+        registryContract = IPNSRegistry(_registryContract);
     }
 
     /**
@@ -179,6 +182,7 @@ contract PNSResolver is IPNSResolver, Initializable, AccessControlUpgradeable {
     hasExpiryOf(phoneHash)
     returns (bool)
     {
+        uint256 gracePeriod = registryContract.getGracePeriod();
         return
         block.timestamp > (records[phoneHash].expirationTime + gracePeriod);
     }
