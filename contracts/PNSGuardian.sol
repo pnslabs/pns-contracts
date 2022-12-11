@@ -38,6 +38,7 @@ abstract contract PNSGuardian is IPNSSchema, Initializable, AccessControlUpgrade
 	/**
 	 * @notice updates user authentication state once authenticated
 	 */
+    // TODO: Protect the function against replay attacks
 	function setVerificationStatus(
 		bytes32 phoneHash,
 		bytes32 _hashedMessage,
