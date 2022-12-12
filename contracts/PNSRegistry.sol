@@ -27,8 +27,6 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, PNSGuardian {
     /// registry renew cost
     uint256 public registryRenewCost;
 
-    // IPNSGuardian public guardianContract;
-
     address priceFeed;
 
     /// Create a new role identifier for the minter role
@@ -106,10 +104,8 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, PNSGuardian {
         gracePeriod = 60 days;
 
         priceFeed = _priceAggregator;
+        this.setGuardianVerifier(_guardianVerifier);
 
-        //registry cost $1
-
-        guardianVerifier = _guardianVerifier;
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
@@ -185,7 +181,9 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, PNSGuardian {
 
         emit PhoneRecordRenewed(phoneHash);
     }
-
+    function verifyUser(bytes32 phoneHash, bytes32 hashedMessage, bool status, bytes memory signature) external {
+        this.setVerificationStatus(phoneHash, hashedMessage,  status, signature);
+    }
     /**
      * @dev Claims an already existing but expired phone record, and sets a completely new resolver.
 	 * @param phoneHash The phoneHash.

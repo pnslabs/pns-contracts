@@ -31,14 +31,13 @@ abstract contract PNSGuardian is IPNSSchema, Initializable, AccessControlUpgrade
 	/**
 	 * @notice updates guardian layer address
 	 */
-	function setGuardianVerifier(address _guardianVerifier) public onlySystemRoles {
+	function setGuardianVerifier(address _guardianVerifier) external onlySystemRoles {
 		guardianVerifier = _guardianVerifier;
 	}
 
 	/**
 	 * @notice updates user authentication state once authenticated
 	 */
-    // TODO: Protect the function against replay attacks
 	function setVerificationStatus(
 		bytes32 phoneHash,
 		bytes32 _hashedMessage,
