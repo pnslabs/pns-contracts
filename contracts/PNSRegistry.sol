@@ -161,7 +161,8 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, PNSGuardian {
 	 * @param phoneHash The phoneHash.
 	 */
     function renew(bytes32 phoneHash) external payable virtual authorised(phoneHash) hasExpiryOf(phoneHash) {
-        require(msg.value >= registryRenewCost, 'fee must be greater than or equal to the registry renewal fee');
+
+        require(msg.value >= convertAmountToETH(registryRenewCost), 'fee must be greater than or equal to the registry renewal fee');
         PhoneRecord storage recordData = records[phoneHash];
         bool _timeHasPassedExpiryTime = _hasPassedExpiryTime(phoneHash);
         bool _hasExhaustedGracePeriod = _hasPassedGracePeriod(phoneHash);
@@ -175,7 +176,12 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, PNSGuardian {
         (bool success,) = address(this).call{value : msg.value}('');
 
         require(success, 'Transfer failed.');
-        (bool sent,) = msg.sender.call{value : msg.value - registryRenewCost}('');
+
+        if (msg.value > convertAmountToETH(registryRenewCost)) {
+            (bool sent,) = msg.sender.call{value : msg.value - convertAmountToETH(registryRenewCost)}('');
+            require(sent, 'Transfer failed.');
+        }
+
 
         emit PhoneRecordRenewed(phoneHash);
     }
@@ -242,11 +248,11 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, PNSGuardian {
     }
 
     function setRegistryCost(uint256 _registryCost) external onlySystemRoles {
-        registryCost = convertAmountToETH(_registryCost);
+        registryCost = _registryCost;
     }
 
     function setRegistryRenewCost(uint256 _registryRenewCost) external onlySystemRoles {
-        registryRenewCost = convertAmountToETH(_registryRenewCost);
+        registryRenewCost = _registryRenewCost;
     }
 
     function getGracePeriod() external view returns (uint256) {
@@ -259,7 +265,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, PNSGuardian {
         address resolver,
         string memory label
     ) internal onlyVerified(phoneHash) onlyVerifiedOwner(phoneHash) {
-        require(msg.value >= registryCost, 'fee must be greater than or equal to the registryCost fee');
+        require(msg.value >= convertAmountToETH(registryCost), 'fee must be greater than or equal to the registryCost fee');
 
         PhoneRecord storage recordData = records[phoneHash];
         require(!recordData.exists, 'phone record already exists');
@@ -284,7 +290,11 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, PNSGuardian {
         (bool success,) = address(this).call{value : msg.value}('');
 
         require(success, 'Transfer failed.');
-        (bool sent,) = msg.sender.call{value : msg.value - registryCost }('');
+
+        if (msg.value > convertAmountToETH(registryCost)) {
+            (bool sent,) = msg.sender.call{value : msg.value - convertAmountToETH(registryCost)}('');
+            require(sent, 'Transfer failed.');
+        }
 
         emit PhoneRecordCreated(phoneHash, resolver, owner);
     }

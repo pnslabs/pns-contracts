@@ -1,5 +1,6 @@
 import { ethers, upgrades } from 'hardhat';
 import hre from 'hardhat';
+
 // import { chainlink_price_feeds } from './constants';
 
 async function deployContract() {
@@ -16,11 +17,9 @@ async function deployContract() {
 
   const PNSRegistryContract = await ethers.getContractFactory('PNSRegistry');
 
-  // const PNSGuardianContract = await ethers.getContractFactory('PNSGuardian');
+  const PNSGuardianContract = await ethers.getContractFactory('PNSGuardian');
 
   const PNSResolverContract = await ethers.getContractFactory('PNSResolver');
-
-  const PriceOracleContract = await ethers.getContractFactory('DummyPriceOracle');
 
   // const pnsGuardianContract = await upgrades.deployProxy(PNSGuardianContract, [adminAddress], { initializer: 'initialize' });
   // await pnsGuardianContract.deployed();
