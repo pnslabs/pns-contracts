@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
+pragma experimental ABIEncoderV2;
 
 //  ==========  External imports    ==========
 
@@ -17,152 +18,93 @@ import './Interfaces/IPNSRegistry.sol';
  * @notice You can only interact with the public functions and state definitions.
  * @dev The interface IPNSResolver is inherited which inherits IPNSSchema.
  */
-contract PNSResolver is IPNSSchema, Initializable, AccessControlUpgradeable {
-    IPNSRegistry public registryContract;
+contract PNSResolver is IPNSSchema, Initializable {
+	IPNSRegistry public PNSRegistry;
 
-    /**
-     * @dev contract initializer function. This function exist because the contract is upgradable.
+	/**
+	 * @dev contract initializer function. This function exist because the contract is upgradable.
 	 */
-    function initialize(address _PNSRegistry) external initializer {
-        __AccessControl_init();
-        registryContract = IPNSRegistry(_PNSRegistry);
-    }
+	function initialize(IPNSRegistry _PNSRegistry) external initializer {
+		PNSRegistry = _PNSRegistry;
+	}
 
-    /**
-     * @dev Returns the resolver details of the specified phoneHash.
-	 * @param phoneHash The specified phoneHash.
-	 */
-    function getRecord(bytes32 phoneHash)
-    external
-    view
-    returns (
-        address owner,
-        ResolverRecord[] memory,
-        bytes32,
-        uint256 createdAt,
-        bool exists,
-        bool isInGracePeriod,
-        bool isExpired,
-        bool isVerified,
-        uint256 expirationTime
-    )
-    {
-        return _getRecord(phoneHash);
-    }
-
-    /**
-     * @dev Returns the address that owns the specified phone number.
+	/**
+	 * @dev Returns the address that owns the specified phone number.
 	 * @param phoneHash The specified phoneHash.
 	 * @return address of the owner.
 	 */
-    function getOwner(bytes32 phoneHash) public view virtual returns (address) {
-        PhoneRecord[] memory records = registryContract.getRecordsMapping();
-        address addr = records[phoneHash].owner;
-        if (addr == address(this)) {
-            return address(0x0);
-        }
-        return addr;
-    }
+	function getOwner(bytes32 phoneHash) public view virtual returns (address) {
+		PhoneRecord memory recordData = _getRecord(phoneHash);
+		return recordData.owner;
+	}
 
-    /**
-     * @dev Returns whether a record has been imported to the registry.
+	/**
+	 * @dev Returns whether a record has been imported to the registry.
 	 * @param phoneHash The specified phoneHash.
 	 * @return Bool if record exists
 	 */
-    function recordExists(bytes32 phoneHash) public view returns (bool) {
-        PhoneRecord memory records = registryContract.getRecordsMapping();
-        return records[phoneHash].exists;
-    }
+	function recordExists(bytes32 phoneHash) public view returns (bool) {
+		PhoneRecord memory recordData = _getRecord(phoneHash);
+		return recordData.exists;
+	}
 
-    /**
-     * @dev Returns an existing label for the specified phone number phoneHash.
+	/**
+	 * @dev Returns an existing label for the specified phone number phoneHash.
 	 * @param phoneHash The specified phoneHash.
 	 */
-    function getResolverDetails(bytes32 phoneHash) external view returns (ResolverRecord[] memory resolver) {
-        return _getResolverDetails(phoneHash);
-    }
+	function getResolverDetails(bytes32 phoneHash) external view returns (ResolverRecord[] memory resolver) {
+		return _getResolverDetails(phoneHash);
+	}
 
-    function getVersion() external view virtual returns (uint32) {
-        return 1;
-    }
+	function getVersion() external view virtual returns (uint32) {
+		return 1;
+	}
 
-    /**
-     * @dev Returns the address that owns the specified phone number phoneHash.
+	/**
+	 * @dev Returns the address that owns the specified phone number phoneHash.
 	 * @param phoneHash The specified phoneHash.
 	 */
-    function _getRecord(bytes32 phoneHash)
-    internal
-    view
-    returns (
-        address owner,
-        ResolverRecord[] memory,
-        bytes32,
-        uint256 createdAt,
-        bool exists,
-        bool isInGracePeriod,
-        bool isExpired,
-        bool isVerified,
-        uint256 expirationTime
-    )
-    {
-        PhoneRecord memory records = registryContract.getRecordsMapping();
-        PhoneRecord memory recordData = records[phoneHash];
-        require(recordData.exists, 'phone record not found');
-        bool _isInGracePeriod = _hasPassedExpiryTime(phoneHash);
-        bool _isExpired = _hasPassedGracePeriod(phoneHash);
-        bool _isVerified = registryContract.getVerificationStatus(phoneHash);
+	function _getRecord(bytes32 phoneHash) internal view returns (PhoneRecord memory) {
+		return PNSRegistry.getRecord(phoneHash);
+	}
 
-        return (
-        recordData.owner,
-        recordData.wallet,
-        recordData.phoneHash,
-        recordData.createdAt,
-        recordData.exists,
-        _isInGracePeriod,
-        _isExpired,
-        _isVerified,
-        recordData.expirationTime
-        );
-    }
-
-    /**
-     * @dev Calculate the
+	/**
+	 * @dev Calculate the
 	 * @param phoneHash The specified phoneHash.
 	 * @return ResolverRecord
 	 */
-    function _getResolverDetails(bytes32 phoneHash) internal view returns (ResolverRecord[] memory) {
-        PhoneRecord memory records = registryContract.getRecordsMapping();
-        PhoneRecord memory recordData = records[phoneHash];
-        require(recordData.exists, 'phone record not found');
-        return recordData.wallet;
-    }
+	function _getResolverDetails(bytes32 phoneHash) internal view returns (ResolverRecord[] memory) {
+		PhoneRecord memory recordData = _getRecord(phoneHash);
+		require(recordData.exists, 'phone record not found');
+		return recordData.wallet;
+	}
 
-    /**
-     * @dev Returns the expiry state of an existing phone record.
+	/**
+	 * @dev Returns the expiry state of an existing phone record.
 	 * @param phoneHash The specified phoneHash.
 	 */
-    function _hasPassedExpiryTime(bytes32 phoneHash) internal view hasExpiryOf(phoneHash) returns (bool) {
-        PhoneRecord memory records = registryContract.getRecordsMapping();
-        return block.timestamp > records[phoneHash].expirationTime;
-    }
+	function _hasPassedExpiryTime(bytes32 phoneHash) internal view hasExpiryOf(phoneHash) returns (bool) {
+		PhoneRecord memory recordData = _getRecord(phoneHash);
+		return block.timestamp > recordData.expirationTime;
+	}
 
-    /**
-     * @dev Returns the grace period state of an existing phone record.
+	/**
+	 * @dev Returns the grace period state of an existing phone record.
 	 * @param phoneHash The specified phoneHash.
 	 */
-    function _hasPassedGracePeriod(bytes32 phoneHash) internal view hasExpiryOf(phoneHash) returns (bool) {
-        PhoneRecord memory records = registryContract.getRecordsMapping();
-        uint256 gracePeriod = registryContract.getGracePeriod();
-        return block.timestamp > (records[phoneHash].expirationTime + gracePeriod);
-    }
+	function _hasPassedGracePeriod(bytes32 phoneHash) internal view hasExpiryOf(phoneHash) returns (bool) {
+		uint256 gracePeriod = PNSRegistry.getGracePeriod();
+		PhoneRecord memory recordData = _getRecord(phoneHash);
+		return block.timestamp > (recordData.expirationTime + gracePeriod);
+	}
 
-    /**
-     * @dev Permits the function to run only if expiry of record is found
+	/**
+	 * @dev Permits the function to run only if expiry of record is found
 	 * @param phoneHash The phoneHash of the record to be compared.
 	 */
-    modifier hasExpiryOf(bytes32 phoneHash) {
-        PhoneRecord memory records = registryContract.getRecordsMapping();
-        require(records[phoneHash].expirationTime > 0, 'phone expiry record not found');
-        _;
-    }
+	modifier hasExpiryOf(bytes32 phoneHash) {
+		PhoneRecord memory recordData = _getRecord(phoneHash);
+		require(recordData.expirationTime > 0, 'phone expiry record not found');
+		_;
+	}
 }

@@ -14,8 +14,8 @@ abstract contract PNSGuardian is IPNSSchema, Initializable, AccessControlUpgrade
 	/// the guardian layer address that updates verification state
 	address public guardianVerifier;
 
-	/// Mapping state to store verification record
-	mapping(bytes32 => VerificationRecord) public verificationRecords;
+	/// Mapping state to store mobile phone number record that will be linked to a resolver
+	mapping(bytes32 => PhoneRecord) public records;
 
 	/// Create a new role identifier for the minter role
 	bytes32 public constant MAINTAINER_ROLE = keccak256('MAINTAINER_ROLE');
@@ -48,13 +48,13 @@ abstract contract PNSGuardian is IPNSSchema, Initializable, AccessControlUpgrade
 		bytes32 prefixedHashMessage = keccak256(abi.encodePacked(prefix, _hashedMessage));
 		address signer = ECDSA.recover(prefixedHashMessage, _signature);
 
-		verificationRecords[phoneHash] = VerificationRecord({
-			owner: signer,
-			phoneHash: phoneHash,
-			verifiedAt: block.timestamp,
-			exists: true,
-			isVerified: status
-		});
+		PhoneRecord storage recordData = records[phoneHash];
+		recordData.owner = signer;
+		recordData.phoneHash = phoneHash;
+		recordData.verifiedAt = block.timestamp;
+		recordData.exists = true;
+		recordData.isVerified = status;
+
 		emit PhoneVerified(signer, phoneHash, block.timestamp);
 	}
 
@@ -62,14 +62,26 @@ abstract contract PNSGuardian is IPNSSchema, Initializable, AccessControlUpgrade
 	 * @notice gets user verification state
 	 */
 	function getVerificationStatus(bytes32 phoneHash) external view returns (bool) {
-		return verificationRecords[phoneHash].isVerified;
+		return records[phoneHash].isVerified;
+	}
+
+	function _getVerificationRecord(bytes32 phoneHash) internal view returns (VerificationRecord memory) {
+		PhoneRecord memory recordData = records[phoneHash];
+		VerificationRecord memory verificationRecordData = VerificationRecord({
+			owner: recordData.owner,
+			phoneHash: recordData.phoneHash,
+			verifiedAt: recordData.verifiedAt,
+			exists: recordData.exists,
+			isVerified: recordData.isVerified
+		});
+		return verificationRecordData;
 	}
 
 	/**
 	 * @notice gets user verification records
 	 */
 	function getVerificationRecord(bytes32 phoneHash) external view returns (VerificationRecord memory) {
-		return verificationRecords[phoneHash];
+		return _getVerificationRecord(phoneHash);
 	}
 
 	/**

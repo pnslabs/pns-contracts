@@ -11,13 +11,16 @@ import './IPNSSchema.sol';
  * @dev All function call interfaces are defined here.
  */
 interface IPNSGuardian is IPNSSchema {
-    function setVerificationStatus(bytes32 phoneHash, bool status, bytes32 _hashedMessage, uint8 _v, bytes32 _r, bytes32 _s)
-    external;
+	function setVerificationStatus(
+		bytes32 phoneHash,
+		bytes32 _hashedMessage,
+		bool status,
+		bytes memory _signature
+	) external;
 
-    function setGuardianVerifier(address _guardianVerifier) external;
+	function setGuardianVerifier(address _guardianVerifier) external;
 
-    function getVerificationStatus(bytes32 phoneHash) external view returns (bool);
-    function getVerificationRecord(bytes32 phoneHash) external view returns (VerificationRecord memory);
+	function getVerificationStatus(bytes32 phoneHash) external view returns (bool);
 
-
+	function getVerificationRecord(bytes32 phoneHash) external view returns (VerificationRecord memory);
 }

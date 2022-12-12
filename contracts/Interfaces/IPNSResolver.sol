@@ -13,20 +13,7 @@ import './IPNSSchema.sol';
 interface IPNSResolver is IPNSSchema {
 	function getOwner(bytes32 phoneHash) external view returns (address);
 
-	function getRecord(bytes32 phoneHash)
-		external
-		view
-		returns (
-			address owner,
-			ResolverRecord[] memory,
-			bytes32,
-			uint256 createdAt,
-			bool exists,
-			bool isInGracePeriod,
-			bool isExpired,
-			bool isVerified,
-			uint256 expirationTime
-		);
+	function getRecord(bytes32 phoneHash) external view returns (PhoneRecord memory);
 
 	function getResolverDetails(bytes32 phoneHash) external view returns (ResolverRecord[] memory);
 

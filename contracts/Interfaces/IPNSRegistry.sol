@@ -11,52 +11,59 @@ import './IPNSGuardian.sol';
  * @dev All function call interfaces are defined here.
  */
 interface IPNSRegistry is IPNSGuardian {
-    function setPhoneRecord(
-        bytes32 phoneHash,
-        address resolver,
-        string memory label
-    ) external payable;
+	function setPhoneRecord(
+		bytes32 phoneHash,
+		address resolver,
+		string memory label
+	) external payable;
 
-    function linkPhoneToWallet(
-        bytes32 phoneHash,
-        address resolver,
-        string memory label
-    ) external;
+	function linkPhoneToWallet(
+		bytes32 phoneHash,
+		address resolver,
+		string memory label
+	) external;
 
-    function setOwner(bytes32 phoneHash, address owner) external;
+	function setOwner(bytes32 phoneHash, address owner) external;
 
-    function renew(bytes32 phoneHash) external payable;
+	function getRecord(bytes32 phoneHash) external view returns (PhoneRecord memory);
 
-    function claimExpiredPhoneRecord(
-        bytes32 phoneHash,
-        address owner,
-        address resolver,
-        string memory label
-    ) external payable;
+	function renew(bytes32 phoneHash) external payable;
 
-    function setExpiryTime(uint256 time) external;
+	function claimExpiredPhoneRecord(
+		bytes32 phoneHash,
+		address owner,
+		address resolver,
+		string memory label
+	) external payable;
 
-    function isRecordVerified(bytes32 phoneHash) external view returns (bool);
+	function setExpiryTime(uint256 time) external;
 
-    function getExpiryTime() external view returns (uint256);
+	function isRecordVerified(bytes32 phoneHash) external view returns (bool);
 
-    function getGracePeriod() external view returns (uint256);
+	function getExpiryTime() external view returns (uint256);
 
-    function setGracePeriod(uint256 time) external;
+	function getGracePeriod() external view returns (uint256);
 
-    function setRegistryCost(uint256 _registryCost) external;
+	function setGracePeriod(uint256 time) external;
 
-    function setRegistryRenewCost(uint256 _renewalCost) external;
+	function setRegistryCost(uint256 _registryCost) external;
 
-    function verifyPhone(bytes32 phoneHash, bytes32 hashedMessage, bool status, bytes memory signature) external;
+	function setRegistryRenewCost(uint256 _renewalCost) external;
 
-    function setGuardianAddress(address guardianAddress) external;
+	function verifyPhone(
+		bytes32 phoneHash,
+		bytes32 hashedMessage,
+		bool status,
+		bytes memory signature
+	) external;
 
-    function getRecordsMapping() external view returns (PhoneRecord [] memory);
+	function setGuardianAddress(address guardianAddress) external;
 
-    function getPhoneVerificationStatus(bytes32 phoneHash) external view returns (bool);
+	function getRecordsMapping() external view returns (PhoneRecord[] memory);
 
-    function withdraw(address _recipient, uint256 amount) external;
+	function getPhoneVerificationStatus(bytes32 phoneHash) external view returns (bool);
 
-    function getVersion() external view returns (uint32 version);
+	function withdraw(address _recipient, uint256 amount) external;
+
+	function getVersion() external view returns (uint32 version);
 }
