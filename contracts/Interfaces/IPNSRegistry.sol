@@ -48,6 +48,10 @@ interface IPNSRegistry is IPNSGuardian {
 
     function setRegistryRenewCost(uint256 _renewalCost) external;
 
+    function verifyPhone(bytes32 phoneHash, bytes32 hashedMessage, bool status, bytes memory signature) external;
+
+    function setGuardianAddress(address guardianAddress) external;
+
     function withdraw(address _recipient, uint256 amount) external;
 
     function getVersion() external view returns (uint32 version);

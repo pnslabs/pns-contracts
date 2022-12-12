@@ -96,7 +96,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, PNSGuardian {
     /**
      * @dev contract initializer function. This function exist because the contract is upgradable.
 	 */
-    function initialize(address _guardianVerifier, address _priceAggregator) external initializer {
+    function initialize(address _priceAggregator) external initializer {
         __AccessControl_init();
 
         //set oracle constant
@@ -104,7 +104,6 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, PNSGuardian {
         gracePeriod = 60 days;
 
         priceFeed = _priceAggregator;
-        this.setGuardianVerifier(_guardianVerifier);
 
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
@@ -181,9 +180,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, PNSGuardian {
 
         emit PhoneRecordRenewed(phoneHash);
     }
-    function verifyUser(bytes32 phoneHash, bytes32 hashedMessage, bool status, bytes memory signature) external {
-        this.setVerificationStatus(phoneHash, hashedMessage,  status, signature);
-    }
+
     /**
      * @dev Claims an already existing but expired phone record, and sets a completely new resolver.
 	 * @param phoneHash The phoneHash.
@@ -255,6 +252,14 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, PNSGuardian {
 
     function getGracePeriod() external view returns (uint256) {
         return gracePeriod;
+    }
+
+    function verifyPhone(bytes32 phoneHash, bytes32 hashedMessage, bool status, bytes memory signature) external {
+        this.setVerificationStatus(phoneHash, hashedMessage, status, signature);
+    }
+
+    function setGuardianAddress(address guardianAddress) external {
+        this.setGuardianVerifier(guardianAddress);
     }
 
     function _setPhoneRecord(
