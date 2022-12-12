@@ -5,6 +5,7 @@
     "clean": "hardhat clean",
     "deploy": "npx hardhat run scripts/deploy.ts",
     "commit": "git-cz",
+    "prettify": "npx prettier '**/*.{json,sol,md,ts}' --write",
     "compile": "hardhat compile",
     "coverage": "cross-env CODE_COVERAGE=true hardhat coverage --solcoverjs ./.solcover.js --temp artifacts --testfiles \"./test/**/*.ts\"",
     "test": "npx hardhat test",
