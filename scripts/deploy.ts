@@ -58,7 +58,7 @@ async function deployContract() {
   //   });
   // }
 
-  await priceOracleContract.deployed();
+  priceOracleContract = await PriceOracleContract.deploy(2);
 
   console.log('Price Oracle Contract Deployed to', priceOracleContract.address);
 
