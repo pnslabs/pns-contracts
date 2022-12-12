@@ -6,11 +6,12 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
 import './Interfaces/IPNSSchema.sol';
+import './Interfaces/IPNSRegistry.sol';
 
 /// @title Handles the authentication of the PNS registry
 /// @author  PNS core team
 /// @notice The PNS Guardian is responsible for authenticating the records created in PNS registry
-abstract contract PNSGuardian is IPNSSchema, Initializable, AccessControlUpgradeable {
+abstract contract PNSGuardian is IPNSSchema, IPNSRegistry, Initializable, AccessControlUpgradeable {
 	/// the guardian layer address that updates verification state
 	address public guardianVerifier;
 
