@@ -61,7 +61,10 @@ describe('PNS Label linking', () => {
   });
 
   it('should link a new resolver to a phone record and emit an event', async () => {
-    await expect(pnsRegistryContract.linkPhoneToWallet(phoneNumber1, adminAddress, label2)).to.emit(pnsRegistryContract, 'PhoneLinked');
+    await expect(pnsRegistryContract.linkPhoneToWallet(phoneNumber1, adminAddress, label2)).to.emit(
+      pnsRegistryContract,
+      'PhoneLinked',
+    );
     resolverCreatedLength++;
   });
 

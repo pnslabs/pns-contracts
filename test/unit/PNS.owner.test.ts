@@ -56,9 +56,7 @@ describe('PNS Record Owner', () => {
   });
 
   it('changes record owner and emits an event', async () => {
-    await expect(
-      pnsRegistryContract.setOwner(phoneNumber, address),
-    ).to.emit(pnsRegistryContract, 'Transfer');
+    await expect(pnsRegistryContract.setOwner(phoneNumber, address)).to.emit(pnsRegistryContract, 'Transfer');
   });
 
   it('gets newly transfered record owner', async () => {

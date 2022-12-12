@@ -25,7 +25,7 @@ describe('PNS Expire', () => {
   const hashedMessage = ethers.utils.keccak256(message);
   let signature;
 
-  before(async function() {
+  before(async function () {
     signature = await signer.signMessage(ethers.utils.arrayify(hashedMessage));
     const {
       pnsRegistryContract: _pnsRegistryContract,
@@ -46,7 +46,7 @@ describe('PNS Expire', () => {
     );
   });
 
-  it('should create a new record and emit an event', async function() {
+  it('should create a new record and emit an event', async function () {
     await expect(pnsRegistryContract.setPhoneRecord(phoneNumber, adminAddress, label1)).to.emit(
       pnsRegistryContract,
       'PhoneRecordCreated',
@@ -54,16 +54,22 @@ describe('PNS Expire', () => {
   });
 
   it('admin can set a new expiry time and it emits the expected event', async () => {
-    await expect(pnsRegistryContract.setExpiryTime(twoYearsInSeconds)).to.emit(pnsRegistryContract, 'ExpiryTimeUpdated');
+    await expect(pnsRegistryContract.setExpiryTime(twoYearsInSeconds)).to.emit(
+      pnsRegistryContract,
+      'ExpiryTimeUpdated',
+    );
   });
 
   it('admin can set a new grace period and it emits the expected event', async () => {
-    await expect(pnsRegistryContract.setGracePeriod(thirtyDaysInSeconds)).to.emit(pnsRegistryContract, 'GracePeriodUpdated');
+    await expect(pnsRegistryContract.setGracePeriod(thirtyDaysInSeconds)).to.emit(
+      pnsRegistryContract,
+      'GracePeriodUpdated',
+    );
   });
 
   it('gets returns the expiration time of the phone record', async () => {
     const phoneRecord = await pnsResolverContract.getRecord(phoneNumber);
-    console.log(phoneRecord, "phone record from the resolver");
+    console.log(phoneRecord, 'phone record from the resolver');
     expect(Number(phoneRecord[7])).to.be.greaterThan(0);
   });
 

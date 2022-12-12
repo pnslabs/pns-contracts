@@ -96,8 +96,8 @@ contract PNSRegistry is PNSGuardian {
 	/**
 	 * @dev contract initializer function. This function exist because the contract is upgradable.
 	 */
-    function initialize(address _priceAggregator) external initializer {
-        __AccessControl_init();
+	function initialize(address _priceAggregator) external initializer {
+		__AccessControl_init();
 
 		//set oracle constant
 		expiryTime = 365 days;
@@ -105,11 +105,11 @@ contract PNSRegistry is PNSGuardian {
 
 		priceFeed = _priceAggregator;
 
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-    }
+		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+	}
 
-    /**
-     * @dev Sets the record for a phoneHash.
+	/**
+	 * @dev Sets the record for a phoneHash.
 	 * @param phoneHash The phoneHash to update.
 	 * @param resolver The address the phone number resolves to.
 	 * @param label The specified label of the resolver.
@@ -167,25 +167,18 @@ contract PNSRegistry is PNSGuardian {
 		recordData.isExpired = false;
 		recordData.expirationTime = block.timestamp + expiryTime;
 
-		//handle refund
-		if (msg.value > registryRenewCost) {
-			(bool sent, ) = msg.sender.call{value: msg.value - registryRenewCost}('');
+		(bool success, ) = address(this).call{value: msg.value}('');
+		require(success, 'Transfer failed.');
+
+		if (msg.value > convertAmountToETH(registryRenewCost)) {
+			(bool sent, ) = msg.sender.call{value: msg.value - convertAmountToETH(registryRenewCost)}('');
+			require(sent, 'Transfer failed.');
 		}
+
 		emit PhoneRecordRenewed(phoneHash);
 	}
 
-        require(success, 'Transfer failed.');
-
-        if (msg.value > convertAmountToETH(registryRenewCost)) {
-            (bool sent,) = msg.sender.call{value : msg.value - convertAmountToETH(registryRenewCost)}('');
-            require(sent, 'Transfer failed.');
-        }
-
-
-        emit PhoneRecordRenewed(phoneHash);
-    }
-
-    /**
+	/**
      * @dev Claims an already existing but expired phone record, and sets a completely new resolver.
 	/**
 	 * @dev Claims an already existing but expired phone record, and sets a completely new resolver.
@@ -248,36 +241,42 @@ contract PNSRegistry is PNSGuardian {
 		emit GracePeriodUpdated(msg.sender, time);
 	}
 
-    function setRegistryCost(uint256 _registryCost) external onlySystemRoles {
-        registryCost = _registryCost;
-    }
+	function setRegistryCost(uint256 _registryCost) external onlySystemRoles {
+		registryCost = _registryCost;
+	}
 
-    function setRegistryRenewCost(uint256 _registryRenewCost) external onlySystemRoles {
-        registryRenewCost = _registryRenewCost;
-    }
+	function setRegistryRenewCost(uint256 _registryRenewCost) external onlySystemRoles {
+		registryRenewCost = _registryRenewCost;
+	}
 
 	function getGracePeriod() external view returns (uint256) {
 		return gracePeriod;
 	}
 
-    function verifyPhone(bytes32 phoneHash, bytes32 hashedMessage, bool status, bytes memory signature) external {
-        this.setVerificationStatus(phoneHash, hashedMessage, status, signature);
-    }
+	function verifyPhone(
+		bytes32 phoneHash,
+		bytes32 hashedMessage,
+		bool status,
+		bytes memory signature
+	) external {
+		this.setVerificationStatus(phoneHash, hashedMessage, status, signature);
+	}
 
-    function setGuardianAddress(address guardianAddress) external {
-        this.setGuardianVerifier(guardianAddress);
-    }
-    function getPhoneVerificationStatus(bytes32 phoneHash) external view returns (bool) {
-        return this.getVerificationStatus(phoneHash);
-    }
+	function setGuardianAddress(address guardianAddress) external {
+		this.setGuardianVerifier(guardianAddress);
+	}
 
-    function _setPhoneRecord(
-        bytes32 phoneHash,
-        address owner,
-        address resolver,
-        string memory label
-    ) internal onlyVerified(phoneHash) onlyVerifiedOwner(phoneHash) {
-        require(msg.value >= convertAmountToETH(registryCost), 'fee must be greater than or equal to the registryCost fee');
+	function getPhoneVerificationStatus(bytes32 phoneHash) external view returns (bool) {
+		return this.getVerificationStatus(phoneHash);
+	}
+
+	function _setPhoneRecord(
+		bytes32 phoneHash,
+		address owner,
+		address resolver,
+		string memory label
+	) internal onlyVerified(phoneHash) onlyVerifiedOwner(phoneHash) {
+		require(msg.value >= convertAmountToETH(registryCost), 'fee must be greater than or equal to the registryCost fee');
 
 		PhoneRecord storage recordData = records[phoneHash];
 		require(!recordData.exists, 'phone record already exists');
@@ -299,20 +298,16 @@ contract PNSRegistry is PNSGuardian {
 		recordData.expirationTime = block.timestamp + expiryTime;
 		recordData.wallet.push(resolverRecordData);
 
-		if (msg.value > registryCost) {
-			(bool sent, ) = msg.sender.call{value: msg.value - registryRenewCost}('');
+		(bool success, ) = address(this).call{value: msg.value}('');
+		require(success, 'Transfer failed.');
+
+		if (msg.value > convertAmountToETH(registryCost)) {
+			(bool sent, ) = msg.sender.call{value: msg.value - convertAmountToETH(registryCost)}('');
+			require(sent, 'Transfer failed.');
 		}
 		emit PhoneRecordCreated(phoneHash, resolver, owner);
 	}
 
-        require(success, 'Transfer failed.');
-
-        if (msg.value > convertAmountToETH(registryCost)) {
-            (bool sent,) = msg.sender.call{value : msg.value - convertAmountToETH(registryCost)}('');
-            require(sent, 'Transfer failed.');
-        }
-
-        recordsArray.push(recordData);
 	function _linkphoneHashToWallet(
 		bytes32 phoneHash,
 		address resolver,
@@ -342,29 +337,29 @@ contract PNSRegistry is PNSGuardian {
 		return keccak256(abi.encode(phoneHash));
 	}
 
-    function convertAmountToETH(uint256 usdAmount) internal view returns (uint256) {
-        uint256 ethPrice = uint256(getEtherPriceInUSD());
-        uint256 ethAmount = ((usdAmount) / ethPrice) * 1 ether;
-        return ethAmount;
-    }
+	function convertAmountToETH(uint256 usdAmount) internal view returns (uint256) {
+		uint256 ethPrice = uint256(getEtherPriceInUSD());
+		uint256 ethAmount = ((usdAmount) / ethPrice) * 1 ether;
+		return ethAmount;
+	}
 
-    /**
-     * @dev Returns the latest price
+	/**
+	 * @dev Returns the latest price
 	 */
 
-    function getEtherPriceInUSD() internal view returns (int256) {
-        (
-        ,
-        /*uint80 roundID*/
-        int256 price, /*uint startedAt*/ /*uint timeStamp*/ /*uint80 answeredInRound*/
-        ,
-        ,
+	function getEtherPriceInUSD() internal view returns (int256) {
+		(
+			,
+			/*uint80 roundID*/
+			int256 price, /*uint startedAt*/ /*uint timeStamp*/ /*uint80 answeredInRound*/
+			,
+			,
 
-        ) = AggregatorV3Interface(priceFeed).latestRoundData();
-        return price;
-    }
+		) = AggregatorV3Interface(priceFeed).latestRoundData();
+		return price;
+	}
 
-    /**
+	/**
      * @dev Returns the expiry state of an existing phone record.
 	/**
 	 * @dev Returns the PhoneRecord data of address that owns the specified phone number phoneHash.
@@ -397,28 +392,6 @@ contract PNSRegistry is PNSGuardian {
 				recordData.expirationTime,
 				recordData.createdAt
 			);
-	}
-
-	function convertAmountToETH(uint256 usdAmount) internal view returns (uint256) {
-		uint256 ethPrice = uint256(getEtherPriceInUSD());
-		uint256 ethAmount = ((usdAmount) / ethPrice) * 1 ether;
-		return ethAmount;
-	}
-
-	/**
-	 * @dev Returns the latest price
-	 */
-
-	function getEtherPriceInUSD() internal view returns (int256) {
-		(
-			,
-			/*uint80 roundID*/
-			int256 price, /*uint startedAt*/ /*uint timeStamp*/ /*uint80 answeredInRound*/
-			,
-			,
-
-		) = AggregatorV3Interface(priceFeed).latestRoundData();
-		return price;
 	}
 
 	/**

@@ -13,7 +13,6 @@ describe('PNS Constructor', () => {
     adminAddress = _adminAddress;
   });
 
-
   //TODO rewwrite to OZ RBAC
   // it('should successfully add an admin address in constructor', async function () {
   //   const admin = await pnsRegistryContract.getAdmin(adminAddress);
