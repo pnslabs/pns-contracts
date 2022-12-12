@@ -8,35 +8,31 @@ pragma solidity 0.8.9;
  * @dev All contract schemas are defined here.
  */
 interface IPNSSchema {
-    struct ResolverRecord {
-        address wallet;
-        uint256 createdAt;
-        string label;
-        bool exists;
-    }
+	struct ResolverRecord {
+		address wallet;
+		uint256 createdAt;
+		string label;
+		bool exists;
+	}
 
-    struct PhoneRecord {
-        address owner;
-        ResolverRecord[] wallet;
-        bytes32 phoneHash;
-        uint256 createdAt;
-        bool exists;
-        bool isInGracePeriod;
-        bool isExpired;
-        bool isVerified;
-        uint256 expirationTime;
-    }
-    struct VerificationRecord {
-        address owner;
-        bytes32 phoneHash;
-        uint256 verifiedAt;
-        bool exists;
-        bool isVerified;
-    }
+	struct PhoneRecord {
+		address owner;
+		ResolverRecord[] wallet;
+		bytes32 phoneHash;
+		uint256 createdAt;
+		bool exists;
+		bool isInGracePeriod;
+		bool isExpired;
+		bool isVerified;
+		uint256 expirationTime;
+		uint256 verifiedAt;
+	}
 
-    // struct Admin {
-    //     address user;
-    //     uint256 createdAt;
-    //     bool exists;
-    // }
+	struct VerificationRecord {
+		address owner;
+		bytes32 phoneHash;
+		uint256 verifiedAt;
+		bool exists;
+		bool isVerified;
+	}
 }

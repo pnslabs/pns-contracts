@@ -25,6 +25,8 @@ interface IPNSRegistry is IPNSGuardian {
 
 	function setOwner(bytes32 phoneHash, address owner) external;
 
+	function getRecord(bytes32 phoneHash) external view returns (PhoneRecord memory);
+
 	function renew(bytes32 phoneHash) external payable;
 
 	function claimExpiredPhoneRecord(
