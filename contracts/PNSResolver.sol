@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
+pragma experimental ABIEncoderV2;
 
 //  ==========  External imports    ==========
 
@@ -17,43 +18,14 @@ import './Interfaces/IPNSRegistry.sol';
  * @notice You can only interact with the public functions and state definitions.
  * @dev The interface IPNSResolver is inherited which inherits IPNSSchema.
  */
-contract PNSResolver is IPNSSchema, Initializable, AccessControlUpgradeable {
+contract PNSResolver is IPNSSchema, Initializable {
 	IPNSRegistry public PNSRegistry;
-
-	/// Mapping state to store resolver record
-	mapping(string => ResolverRecord) resolverRecordMapping;
-
-	/// Mapping state to store mobile phone number record that will be linked to a resolver
-	mapping(bytes32 => PhoneRecord) records;
 
 	/**
 	 * @dev contract initializer function. This function exist because the contract is upgradable.
 	 */
-	function initialize(address _PNSRegistry) external initializer {
-		__AccessControl_init();
-		PNSRegistry = IPNSRegistry(_PNSRegistry);
-	}
-
-	/**
-	 * @dev Returns the resolver details of the specified phoneHash.
-	 * @param phoneHash The specified phoneHash.
-	 */
-	function getRecord(bytes32 phoneHash)
-		external
-		view
-		returns (
-			address owner,
-			ResolverRecord[] memory,
-			bytes32,
-			uint256 createdAt,
-			bool exists,
-			bool isInGracePeriod,
-			bool isExpired,
-			bool isVerified,
-			uint256 expirationTime
-		)
-	{
-		return _getRecord(phoneHash);
+	function initialize(IPNSRegistry _PNSRegistry) external initializer {
+		PNSRegistry = _PNSRegistry;
 	}
 
 	/**
@@ -62,11 +34,8 @@ contract PNSResolver is IPNSSchema, Initializable, AccessControlUpgradeable {
 	 * @return address of the owner.
 	 */
 	function getOwner(bytes32 phoneHash) public view virtual returns (address) {
-		address addr = records[phoneHash].owner;
-		if (addr == address(this)) {
-			return address(0x0);
-		}
-		return addr;
+		PhoneRecord memory recordData = _getRecord(phoneHash);
+		return recordData.owner;
 	}
 
 	/**
@@ -75,7 +44,8 @@ contract PNSResolver is IPNSSchema, Initializable, AccessControlUpgradeable {
 	 * @return Bool if record exists
 	 */
 	function recordExists(bytes32 phoneHash) public view returns (bool) {
-		return records[phoneHash].exists;
+		PhoneRecord memory recordData = _getRecord(phoneHash);
+		return recordData.exists;
 	}
 
 	/**
@@ -94,38 +64,8 @@ contract PNSResolver is IPNSSchema, Initializable, AccessControlUpgradeable {
 	 * @dev Returns the address that owns the specified phone number phoneHash.
 	 * @param phoneHash The specified phoneHash.
 	 */
-	function _getRecord(bytes32 phoneHash)
-		internal
-		view
-		returns (
-			address owner,
-			ResolverRecord[] memory,
-			bytes32,
-			uint256 createdAt,
-			bool exists,
-			bool isInGracePeriod,
-			bool isExpired,
-			bool isVerified,
-			uint256 expirationTime
-		)
-	{
-		PhoneRecord storage recordData = records[phoneHash];
-		require(recordData.exists, 'phone record not found');
-		bool _isInGracePeriod = _hasPassedExpiryTime(phoneHash);
-		bool _isExpired = _hasPassedGracePeriod(phoneHash);
-		bool _isVerified = PNSRegistry.getVerificationStatus(phoneHash);
-
-		return (
-			recordData.owner,
-			recordData.wallet,
-			recordData.phoneHash,
-			recordData.createdAt,
-			recordData.exists,
-			_isInGracePeriod,
-			_isExpired,
-			_isVerified,
-			recordData.expirationTime
-		);
+	function _getRecord(bytes32 phoneHash) internal view returns (PhoneRecord memory) {
+		return PNSRegistry.getRecord(phoneHash);
 	}
 
 	/**
@@ -134,7 +74,7 @@ contract PNSResolver is IPNSSchema, Initializable, AccessControlUpgradeable {
 	 * @return ResolverRecord
 	 */
 	function _getResolverDetails(bytes32 phoneHash) internal view returns (ResolverRecord[] memory) {
-		PhoneRecord memory recordData = records[phoneHash];
+		PhoneRecord memory recordData = _getRecord(phoneHash);
 		require(recordData.exists, 'phone record not found');
 		return recordData.wallet;
 	}
@@ -144,7 +84,8 @@ contract PNSResolver is IPNSSchema, Initializable, AccessControlUpgradeable {
 	 * @param phoneHash The specified phoneHash.
 	 */
 	function _hasPassedExpiryTime(bytes32 phoneHash) internal view hasExpiryOf(phoneHash) returns (bool) {
-		return block.timestamp > records[phoneHash].expirationTime;
+		PhoneRecord memory recordData = _getRecord(phoneHash);
+		return block.timestamp > recordData.expirationTime;
 	}
 
 	/**
@@ -153,7 +94,8 @@ contract PNSResolver is IPNSSchema, Initializable, AccessControlUpgradeable {
 	 */
 	function _hasPassedGracePeriod(bytes32 phoneHash) internal view hasExpiryOf(phoneHash) returns (bool) {
 		uint256 gracePeriod = PNSRegistry.getGracePeriod();
-		return block.timestamp > (records[phoneHash].expirationTime + gracePeriod);
+		PhoneRecord memory recordData = _getRecord(phoneHash);
+		return block.timestamp > (recordData.expirationTime + gracePeriod);
 	}
 
 	/**
@@ -161,7 +103,8 @@ contract PNSResolver is IPNSSchema, Initializable, AccessControlUpgradeable {
 	 * @param phoneHash The phoneHash of the record to be compared.
 	 */
 	modifier hasExpiryOf(bytes32 phoneHash) {
-		require(records[phoneHash].expirationTime > 0, 'phone expiry record not found');
+		PhoneRecord memory recordData = _getRecord(phoneHash);
+		require(recordData.expirationTime > 0, 'phone expiry record not found');
 		_;
 	}
 }
