@@ -10,7 +10,7 @@ import '@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol';
 // ==========  Internal imports    ==========
 import './Interfaces/IPNSRegistry.sol';
 import './Interfaces/IPNSResolver.sol';
-import './PNSGuardian.sol';
+import './Interfaces/IPNSGuardian.sol';
 
 /**
  * @title The contract for phone number service Registry.
@@ -19,7 +19,7 @@ import './PNSGuardian.sol';
  * @dev The interface IPNSRegistry is inherited which inherits IPNSSchema.
  */
 
-contract PNSRegistry is PNSGuardian {
+contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	/// Expiry time value
 	uint256 public expiryTime;
 	/// Grace period value
@@ -32,16 +32,77 @@ contract PNSRegistry is PNSGuardian {
 	/// Oracle feed pricing
 	address priceFeed;
 
+	IPNSGuardian public pnsGuardianContract;
+
 	/// Create a new role identifier for the minter role
-	// bytes32 public constant MAINTAINER_ROLE = keccak256('MAINTAINER_ROLE');
+	bytes32 public constant MAINTAINER_ROLE = keccak256('MAINTAINER_ROLE');
 
 	/// Mapping state to store resolver record
 	mapping(string => ResolverRecord) resolverRecordMapping;
+	/// Mapping state to store mobile phone number record that will be linked to a resolver
+	mapping(bytes32 => PhoneRecord) public records;
+
+	mapping(bytes32 => ResolverRecord[]) phoneRecordResolvers;
+
+	/**
+	 * @dev logs the event when a phoneHash record is created.
+	 * @param phoneHash The phoneHash to be linked to the record.
+	 * @param wallet The resolver (address) of the record
+	 * @param owner The address of the owner
+	 */
+	event PhoneRecordCreated(bytes32 indexed phoneHash, address indexed wallet, address indexed owner);
+
+	/**
+	 * @dev logs when there is a transfer of ownership of a phoneHash to a new address
+	 * @param phoneHash The phoneHash of the record to be updated.
+	 * @param owner The address of the owner
+	 */
+	event Transfer(bytes32 indexed phoneHash, address indexed owner);
+
+	/**
+	 * @dev logs when a resolver address is linked to a specified phoneHash.
+	 * @param phoneHash The phoneHash of the record to be linked.
+	 * @param wallet The address of the resolver.
+	 */
+	event PhoneLinked(bytes32 indexed phoneHash, address indexed wallet);
+
+	/**
+	 * @dev logs when phone record has entered a grace period.
+	 * @param phoneHash The phoneHash of the record.
+	 */
+	event PhoneRecordEnteredGracePeriod(bytes32 indexed phoneHash);
+
+	/**
+	 * @dev logs when phone record has expired.
+	 * @param phoneHash The phoneHash of the record.
+	 */
+	event PhoneRecordExpired(bytes32 indexed phoneHash);
+
+	/**
+	 * @dev logs when phone record is re-authenticated.
+	 * @param phoneHash The phoneHash of the record.
+	 */
+	event PhoneRecordRenewed(bytes32 indexed phoneHash);
+
+	/**
+	 * @dev logs when phone record is claimed.
+	 * @param updater Who made the call
+	 * @param expiryTime The new expiry time in seconds.
+	 */
+	event ExpiryTimeUpdated(address indexed updater, uint256 expiryTime);
+
+	/**
+	 * @dev logs when phone record is claimed.
+	 * @param updater Who made the call
+	 * @param gracePeriod The new grace period in seconds.
+	 *
+	 */
+	event GracePeriodUpdated(address indexed updater, uint256 gracePeriod);
 
 	/**
 	 * @dev contract initializer function. This function exist because the contract is upgradable.
 	 */
-	function initialize(address _priceAggregator) external initializer {
+	function initialize(address _pnsGuardianContract, address _priceAggregator) external initializer {
 		__AccessControl_init();
 
 		//set oracle constant
@@ -50,7 +111,28 @@ contract PNSRegistry is PNSGuardian {
 
 		priceFeed = _priceAggregator;
 
+		pnsGuardianContract = IPNSGuardian(_pnsGuardianContract);
+
 		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+	}
+
+	function setPhoneRecordMapping(PhoneRecord memory recordData, bytes32 phoneHash) external {
+		_setPhoneRecordMapping(recordData, phoneHash);
+	}
+
+	function _setPhoneRecordMapping(PhoneRecord memory recordData, bytes32 phoneHash) internal {
+		PhoneRecord storage _recordData = records[phoneHash];
+		records[phoneHash] = PhoneRecord(
+			recordData.owner,
+			recordData.phoneHash,
+			recordData.createdAt,
+			recordData.exists,
+			recordData.isInGracePeriod,
+			recordData.isExpired,
+			recordData.isVerified,
+			recordData.expirationTime,
+			recordData.verifiedAt
+		);
 	}
 
 	/**
@@ -119,6 +201,7 @@ contract PNSRegistry is PNSGuardian {
 			(bool sent, ) = msg.sender.call{value: msg.value - convertAmountToETH(registryRenewCost)}('');
 			require(sent, 'Transfer failed.');
 		}
+		_setPhoneRecordMapping(recordData, phoneHash);
 
 		emit PhoneRecordRenewed(phoneHash);
 	}
@@ -204,15 +287,11 @@ contract PNSRegistry is PNSGuardian {
 		bool status,
 		bytes memory signature
 	) external {
-		this.setVerificationStatus(phoneHash, hashedMessage, status, signature);
+		pnsGuardianContract.setVerificationStatus(phoneHash, hashedMessage, status, signature);
 	}
 
 	function setGuardianAddress(address guardianAddress) external {
-		this.setGuardianVerifier(guardianAddress);
-	}
-
-	function getPhoneVerificationStatus(bytes32 phoneHash) external view returns (bool) {
-		return this.getVerificationStatus(phoneHash);
+		pnsGuardianContract.setGuardianVerifier(guardianAddress);
 	}
 
 	function _setPhoneRecord(
@@ -233,6 +312,7 @@ contract PNSRegistry is PNSGuardian {
 			resolverRecordData.createdAt = block.timestamp;
 			resolverRecordData.wallet = resolver;
 			resolverRecordData.exists = true;
+			phoneRecordResolvers[phoneHash].push(resolverRecordData);
 		}
 		recordData.phoneHash = phoneHash;
 		recordData.owner = owner;
@@ -241,7 +321,9 @@ contract PNSRegistry is PNSGuardian {
 		recordData.isInGracePeriod = false;
 		recordData.isExpired = false;
 		recordData.expirationTime = block.timestamp + expiryTime;
-		recordData.wallet.push(resolverRecordData);
+
+		// update mapping here
+		_setPhoneRecordMapping(recordData, phoneHash);
 
 		(bool success, ) = address(this).call{value: msg.value}('');
 		require(success, 'Transfer failed.');
@@ -268,9 +350,9 @@ contract PNSRegistry is PNSGuardian {
 			resolverRecordData.createdAt = block.timestamp;
 			resolverRecordData.wallet = resolver;
 			resolverRecordData.exists = true;
-
-			recordData.wallet.push(resolverRecordData);
+			phoneRecordResolvers[phoneHash].push(resolverRecordData);
 		}
+		_setPhoneRecordMapping(recordData, phoneHash);
 	}
 
 	/**
@@ -327,7 +409,6 @@ contract PNSRegistry is PNSGuardian {
 		return
 			PhoneRecord(
 				recordData.owner,
-				recordData.wallet,
 				recordData.phoneHash,
 				recordData.createdAt,
 				recordData.exists,
@@ -337,6 +418,14 @@ contract PNSRegistry is PNSGuardian {
 				recordData.expirationTime,
 				recordData.createdAt
 			);
+	}
+
+	function _getResolver(bytes32 phoneHash) internal view returns (ResolverRecord[] memory) {
+		return phoneRecordResolvers[phoneHash];
+	}
+
+	function getResolver(bytes32 phoneHash) external view returns (ResolverRecord[] memory) {
+		_getResolver(phoneHash);
 	}
 
 	/**
@@ -416,13 +505,18 @@ contract PNSRegistry is PNSGuardian {
 		}
 		_;
 	}
-
+	modifier onlySystemRoles() {
+		require(hasRole(MAINTAINER_ROLE, msg.sender) || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), 'not allowed to execute function');
+		_;
+	}
 	modifier onlyVerified(bytes32 phoneHash) {
-		require(this.getVerificationRecord(phoneHash).isVerified, 'phone record is not verified');
+		PhoneRecord memory recordData = _getRecord(phoneHash);
+		require(recordData.isVerified, 'phone record is not verified');
 		_;
 	}
 	modifier onlyVerifiedOwner(bytes32 phoneHash) virtual {
-		require(this.getVerificationRecord(phoneHash).owner == msg.sender, 'caller is not verified owner');
+		PhoneRecord memory recordData = _getRecord(phoneHash);
+		require(recordData.owner == msg.sender, 'caller is not verified owner');
 		_;
 	}
 }

@@ -11,12 +11,11 @@ import './Interfaces/IPNSRegistry.sol';
 /// @title Handles the authentication of the PNS registry
 /// @author  PNS core team
 /// @notice The PNS Guardian is responsible for authenticating the records created in PNS registry
-abstract contract PNSGuardian is IPNSSchema, IPNSRegistry, Initializable, AccessControlUpgradeable {
+contract PNSGuardian is IPNSSchema, Initializable, AccessControlUpgradeable {
 	/// the guardian layer address that updates verification state
-	address public guardianVerifier;
+	address public registryAddress;
 
-	/// Mapping state to store mobile phone number record that will be linked to a resolver
-	mapping(bytes32 => PhoneRecord) public records;
+	IPNSRegistry public registryContract;
 
 	/// Create a new role identifier for the minter role
 	bytes32 public constant MAINTAINER_ROLE = keccak256('MAINTAINER_ROLE');
@@ -30,10 +29,28 @@ abstract contract PNSGuardian is IPNSSchema, IPNSRegistry, Initializable, Access
 	event PhoneVerified(address indexed owner, bytes32 indexed phoneHash, uint256 verifiedAt);
 
 	/**
+	 * @dev contract initializer function. This function exist because the contract is upgradable.
+	 */
+	function initialize() external initializer {
+		__AccessControl_init();
+
+		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+	}
+
+	/**
 	 * @notice updates guardian layer address
 	 */
-	function setGuardianVerifier(address _guardianVerifier) external onlySystemRoles {
-		guardianVerifier = _guardianVerifier;
+	function setPNSRegistry(address _registryAddress) external onlySystemRoles {
+		registryAddress = _registryAddress;
+		registryContract = IPNSRegistry(registryAddress);
+	}
+
+	/**
+	 * @dev Returns the address that owns the specified phone number phoneHash.
+	 * @param phoneHash The specified phoneHash.
+	 */
+	function _getRecord(bytes32 phoneHash) internal view returns (PhoneRecord memory) {
+		return registryContract.getRecord(phoneHash);
 	}
 
 	/**
@@ -44,17 +61,22 @@ abstract contract PNSGuardian is IPNSSchema, IPNSRegistry, Initializable, Access
 		bytes32 _hashedMessage,
 		bool status,
 		bytes memory _signature
-	) public onlyGuardianVerifier {
+	) public onlyRegistryContract {
 		bytes memory prefix = '\x19Ethereum Signed Message:\n32';
 		bytes32 prefixedHashMessage = keccak256(abi.encodePacked(prefix, _hashedMessage));
 		address signer = ECDSA.recover(prefixedHashMessage, _signature);
 
-		PhoneRecord storage recordData = records[phoneHash];
-		recordData.owner = signer;
-		recordData.phoneHash = phoneHash;
-		recordData.verifiedAt = block.timestamp;
-		recordData.exists = true;
-		recordData.isVerified = status;
+		PhoneRecord memory recordData = _getRecord(phoneHash);
+
+		if (!recordData.exists) {
+			recordData.owner = signer;
+			recordData.phoneHash = phoneHash;
+			recordData.verifiedAt = block.timestamp;
+			recordData.exists = true;
+			recordData.isVerified = status;
+		}
+
+		registryContract.setPhoneRecordMapping(recordData, phoneHash);
 
 		emit PhoneVerified(signer, phoneHash, block.timestamp);
 	}
@@ -63,33 +85,15 @@ abstract contract PNSGuardian is IPNSSchema, IPNSRegistry, Initializable, Access
 	 * @notice gets user verification state
 	 */
 	function getVerificationStatus(bytes32 phoneHash) external view returns (bool) {
-		return records[phoneHash].isVerified;
-	}
-
-	function _getVerificationRecord(bytes32 phoneHash) internal view returns (VerificationRecord memory) {
-		PhoneRecord memory recordData = records[phoneHash];
-		VerificationRecord memory verificationRecordData = VerificationRecord({
-			owner: recordData.owner,
-			phoneHash: recordData.phoneHash,
-			verifiedAt: recordData.verifiedAt,
-			exists: recordData.exists,
-			isVerified: recordData.isVerified
-		});
-		return verificationRecordData;
-	}
-
-	/**
-	 * @notice gets user verification records
-	 */
-	function getVerificationRecord(bytes32 phoneHash) external view returns (VerificationRecord memory) {
-		return _getVerificationRecord(phoneHash);
+		PhoneRecord memory records = _getRecord(phoneHash);
+		return records.isVerified;
 	}
 
 	/**
 	 * @dev Permits modifications only by an guardian Layer Address.
 	 */
-	modifier onlyGuardianVerifier() {
-		require(msg.sender == guardianVerifier, 'onlyGuardianVerifier: not allowed ');
+	modifier onlyRegistryContract() {
+		require(msg.sender == registryAddress, 'Only Registry Contract: not allowed ');
 		_;
 	}
 

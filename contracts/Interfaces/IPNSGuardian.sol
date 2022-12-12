@@ -20,7 +20,7 @@ interface IPNSGuardian is IPNSSchema {
 
 	function setGuardianVerifier(address _guardianVerifier) external;
 
-	function getVerificationStatus(bytes32 phoneHash) external view returns (bool);
+	function setPNSRegistry(address _registryAddress) external;
 
-	function getVerificationRecord(bytes32 phoneHash) external view returns (VerificationRecord memory);
+	function getVerificationStatus(bytes32 phoneHash) external view returns (bool);
 }

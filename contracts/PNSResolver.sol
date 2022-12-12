@@ -49,11 +49,11 @@ contract PNSResolver is IPNSSchema, Initializable {
 	}
 
 	/**
-	 * @dev Returns an existing label for the specified phone number phoneHash.
+	 * @dev Returns an the resolver details for the specified phone number phoneHash.
 	 * @param phoneHash The specified phoneHash.
 	 */
 	function getResolverDetails(bytes32 phoneHash) external view returns (ResolverRecord[] memory resolver) {
-		return _getResolverDetails(phoneHash);
+		return PNSRegistry.getResolver(phoneHash);
 	}
 
 	function getVersion() external view virtual returns (uint32) {
@@ -66,17 +66,6 @@ contract PNSResolver is IPNSSchema, Initializable {
 	 */
 	function _getRecord(bytes32 phoneHash) internal view returns (PhoneRecord memory) {
 		return PNSRegistry.getRecord(phoneHash);
-	}
-
-	/**
-	 * @dev Calculate the
-	 * @param phoneHash The specified phoneHash.
-	 * @return ResolverRecord
-	 */
-	function _getResolverDetails(bytes32 phoneHash) internal view returns (ResolverRecord[] memory) {
-		PhoneRecord memory recordData = _getRecord(phoneHash);
-		require(recordData.exists, 'phone record not found');
-		return recordData.wallet;
 	}
 
 	/**

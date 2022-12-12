@@ -17,7 +17,6 @@ interface IPNSSchema {
 
 	struct PhoneRecord {
 		address owner;
-		ResolverRecord[] wallet;
 		bytes32 phoneHash;
 		uint256 createdAt;
 		bool exists;
@@ -26,13 +25,5 @@ interface IPNSSchema {
 		bool isVerified;
 		uint256 expirationTime;
 		uint256 verifiedAt;
-	}
-
-	struct VerificationRecord {
-		address owner;
-		bytes32 phoneHash;
-		uint256 verifiedAt;
-		bool exists;
-		bool isVerified;
 	}
 }
