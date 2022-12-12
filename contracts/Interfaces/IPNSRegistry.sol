@@ -52,6 +52,10 @@ interface IPNSRegistry is IPNSGuardian {
 
     function setGuardianAddress(address guardianAddress) external;
 
+    function getRecordsMapping() external view returns (PhoneRecord [] memory);
+
+    function getPhoneVerificationStatus(bytes32 phoneHash) external view returns (bool);
+
     function withdraw(address _recipient, uint256 amount) external;
 
     function getVersion() external view returns (uint32 version);

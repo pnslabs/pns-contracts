@@ -33,10 +33,13 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, PNSGuardian {
     // bytes32 public constant MAINTAINER_ROLE = keccak256('MAINTAINER_ROLE');
 
     /// Mapping state to store resolver record
-    mapping(string => ResolverRecord) resolverRecordMapping;
+    mapping(string => ResolverRecord) public resolverRecordMapping;
 
     /// Mapping state to store mobile phone number record that will be linked to a resolver
-    mapping(bytes32 => PhoneRecord) records;
+    mapping(bytes32 => PhoneRecord) public records;
+
+    // holds the array of all phone records
+    PhoneRecord[] public recordsArray;
 
     /**
      * @dev logs the event when a phoneHash record is created.
@@ -120,6 +123,10 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, PNSGuardian {
         string memory label
     ) external virtual {
         return _setPhoneRecord(phoneHash, msg.sender, resolver, label);
+    }
+    // return mapping of phoneHash to phone record
+    function getRecords() external view returns (PhoneRecord [] memory) {
+        return recordsArray;
     }
 
     function isRecordVerified(bytes32 phoneHash) public view returns (bool) {
@@ -261,6 +268,9 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, PNSGuardian {
     function setGuardianAddress(address guardianAddress) external {
         this.setGuardianVerifier(guardianAddress);
     }
+    function getPhoneVerificationStatus(bytes32 phoneHash) external view returns (bool) {
+        return this.getVerificationStatus(phoneHash);
+    }
 
     function _setPhoneRecord(
         bytes32 phoneHash,
@@ -299,6 +309,8 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, PNSGuardian {
             require(sent, 'Transfer failed.');
         }
 
+        recordsArray.push(recordData);
+
         emit PhoneRecordCreated(phoneHash, resolver, owner);
     }
 
@@ -329,44 +341,6 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, PNSGuardian {
 	 */
     function _hash(bytes32 phoneHash) internal pure returns (bytes32) {
         return keccak256(abi.encode(phoneHash));
-    }
-
-    /**
-     * @dev Returns the address that owns the specified phone number phoneHash.
-	 * @param phoneHash The specified phoneHash.
-	 */
-    function _getRecord(bytes32 phoneHash)
-    internal
-    view
-    returns (
-        address owner,
-        ResolverRecord[] memory,
-        bytes32,
-        uint256 createdAt,
-        bool exists,
-        bool isInGracePeriod,
-        bool isExpired,
-        bool isVerified,
-        uint256 expirationTime
-    )
-    {
-        PhoneRecord storage recordData = records[phoneHash];
-        require(recordData.exists, 'phone record not found');
-        bool _isInGracePeriod = _hasPassedExpiryTime(phoneHash);
-        bool _isExpired = _hasPassedGracePeriod(phoneHash);
-        bool _isVerified = false;
-
-        return (
-        recordData.owner,
-        recordData.wallet,
-        recordData.phoneHash,
-        recordData.createdAt,
-        recordData.exists,
-        _isInGracePeriod,
-        _isExpired,
-        _isVerified,
-        recordData.expirationTime
-        );
     }
 
     function convertAmountToETH(uint256 usdAmount) internal view returns (uint256) {
