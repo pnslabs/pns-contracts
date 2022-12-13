@@ -54,6 +54,8 @@ interface IPNSRegistry is IPNSSchema {
 
 	function setRegistryRenewCost(uint256 _renewalCost) external;
 
+	function getRecordMapping(bytes32 phoneHash) external view returns (PhoneRecord memory);
+
 	function verifyPhone(
 		bytes32 phoneHash,
 		bytes32 hashedMessage,

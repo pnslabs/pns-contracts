@@ -8,7 +8,7 @@
     "prettify": "npx prettier '**/*.{json,sol,md,ts}' --write",
     "compile": "hardhat compile",
     "coverage": "cross-env CODE_COVERAGE=true hardhat coverage --solcoverjs ./.solcover.js --temp artifacts --testfiles \"./test/**/*.ts\"",
-    "test": "npx hardhat test",
+    "test": "npx hardhat test --network localhost",
     "deploy:localhost": "npx hardhat run --network localhost scripts/deploy.ts",
     "prepare": "husky install"
   },

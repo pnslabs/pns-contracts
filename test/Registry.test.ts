@@ -6,6 +6,7 @@ const { deployContract } = require('../scripts/deploy');
 
 describe('PNS Registry', () => {
   let pnsRegistryContract;
+  let pnsResolverContract;
   let adminAddress;
   let balanceBeforeTx;
   const phoneNumber1 = keccak256('07084562591');

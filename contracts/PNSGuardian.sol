@@ -70,7 +70,7 @@ contract PNSGuardian is IPNSSchema, Initializable {
 		bytes32 prefixedHashMessage = keccak256(abi.encodePacked(prefix, _hashedMessage));
 		address signer = ECDSA.recover(prefixedHashMessage, _signature);
 
-		PhoneRecord memory recordData = _getRecord(phoneHash);
+		PhoneRecord memory recordData = registryContract.getRecordMapping(phoneHash);
 
 		if (!recordData.exists) {
 			recordData.owner = signer;

@@ -136,6 +136,10 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		_setPhoneRecordMapping(recordData, phoneHash);
 	}
 
+	function getRecordMapping(bytes32 phoneHash) external view returns (PhoneRecord memory) {
+		return records[phoneHash];
+	}
+
 	function _setPhoneRecordMapping(PhoneRecord memory recordData, bytes32 phoneHash) internal {
 		PhoneRecord storage _recordData = records[phoneHash];
 		_recordData.createdAt = recordData.createdAt;
@@ -293,6 +297,15 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 
 	function getGracePeriod() external view returns (uint256) {
 		return gracePeriod;
+	}
+
+	/**
+	 * @dev Returns whether a record has been imported to the registry.
+	 * @param phoneHash The specified phoneHash.
+	 * @return Bool if record exists
+	 */
+	function recordExists(bytes32 phoneHash) public view returns (bool) {
+		return records[phoneHash].exists;
 	}
 
 	function verifyPhone(
