@@ -100,6 +100,22 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	event GracePeriodUpdated(address indexed updater, uint256 gracePeriod);
 
 	/**
+	 * @dev logs when phone is verified.
+	 * @param phoneHash Phone number that was verified
+	 * @param status The verification status
+	 *
+	 */
+	event PhoneNumberVerified(bytes32 indexed phoneHash, bool status);
+
+	/**
+	 * @dev logs when funds is withdrawn from the smar contracts.
+	 * @param _recipient withdrawal recipient
+	 * @param amount Withdeawal amount
+	 *
+	 */
+	event WithdrawalSuccessful(address indexed _recipient, uint256 amount);
+
+	/**
 	 * @dev contract initializer function. This function exist because the contract is upgradable.
 	 */
 	function initialize(address _pnsGuardianContract, address _priceAggregator) external initializer {
@@ -122,17 +138,15 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 
 	function _setPhoneRecordMapping(PhoneRecord memory recordData, bytes32 phoneHash) internal {
 		PhoneRecord storage _recordData = records[phoneHash];
-		records[phoneHash] = PhoneRecord(
-			recordData.owner,
-			recordData.phoneHash,
-			recordData.createdAt,
-			recordData.exists,
-			recordData.isInGracePeriod,
-			recordData.isExpired,
-			recordData.isVerified,
-			recordData.expirationTime,
-			recordData.verifiedAt
-		);
+		_recordData.createdAt = recordData.createdAt;
+		_recordData.owner = recordData.owner;
+		_recordData.exists = recordData.exists;
+		_recordData.phoneHash = recordData.phoneHash;
+		_recordData.isInGracePeriod = recordData.isInGracePeriod;
+		_recordData.isExpired = recordData.isExpired;
+		_recordData.isVerified = recordData.isVerified;
+		_recordData.expirationTime = recordData.expirationTime;
+		_recordData.verifiedAt = recordData.verifiedAt;
 	}
 
 	/**
@@ -288,6 +302,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		bytes memory signature
 	) external {
 		pnsGuardianContract.setVerificationStatus(phoneHash, hashedMessage, status, signature);
+		emit PhoneNumberVerified(phoneHash, status);
 	}
 
 	function _setPhoneRecord(
@@ -450,6 +465,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		require(amount > 0, 'amount must be greater than zero');
 		(bool success, ) = _recipient.call{value: amount}('');
 		require(success, 'Transfer failed.');
+		emit WithdrawalSuccessful(_recipient, amount);
 	}
 
 	//============MODIFIERS==============
