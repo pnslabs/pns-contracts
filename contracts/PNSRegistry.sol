@@ -290,10 +290,6 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		pnsGuardianContract.setVerificationStatus(phoneHash, hashedMessage, status, signature);
 	}
 
-	function setGuardianAddress(address guardianAddress) external {
-		pnsGuardianContract.setGuardianVerifier(guardianAddress);
-	}
-
 	function _setPhoneRecord(
 		bytes32 phoneHash,
 		address owner,

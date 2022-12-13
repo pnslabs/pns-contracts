@@ -19,34 +19,71 @@ async function deployContract() {
 
   const PNSResolverContract = await ethers.getContractFactory('PNSResolver');
 
+  const PNSGuardianContract = await ethers.getContractFactory('PNSGuardian');
+
+  const pnsGuardianContract = await upgrades.deployProxy(PNSGuardianContract, [adminAddress], {
+    initializer: 'initialize',
+  });
+  await pnsGuardianContract.deployed();
+
+  console.log('PNS Guardian Contract Deployed to', pnsGuardianContract.address);
+
   if (hre.network.name === 'ethereum_mainnet') {
-    pnsRegistryContract = await upgrades.deployProxy(PNSRegistryContract, [chainlink_price_feeds.ETHEREUM_MAINNET], {
-      initializer: 'initialize',
-    });
+    pnsRegistryContract = await upgrades.deployProxy(
+      PNSRegistryContract,
+      [pnsGuardianContract.address, chainlink_price_feeds.ETHEREUM_MAINNET],
+      {
+        initializer: 'initialize',
+      },
+    );
   } else if (hre.network.name === 'bnb_mainnet') {
-    pnsRegistryContract = await upgrades.deployProxy(PNSRegistryContract, [chainlink_price_feeds.BSC_MAINNET], {
-      initializer: 'initialize',
-    });
+    pnsRegistryContract = await upgrades.deployProxy(
+      PNSRegistryContract,
+      [pnsGuardianContract.address, chainlink_price_feeds.BSC_MAINNET],
+      {
+        initializer: 'initialize',
+      },
+    );
   } else if (hre.network.name === 'polygon_mainnet') {
-    pnsRegistryContract = await upgrades.deployProxy(PNSRegistryContract, [chainlink_price_feeds.MATIC_MAINNET], {
-      initializer: 'initialize',
-    });
+    pnsRegistryContract = await upgrades.deployProxy(
+      PNSRegistryContract,
+      [pnsGuardianContract.address, chainlink_price_feeds.MATIC_MAINNET],
+      {
+        initializer: 'initialize',
+      },
+    );
   } else if (hre.network.name === 'ethereum_goerli') {
-    pnsRegistryContract = await upgrades.deployProxy(PNSRegistryContract, [chainlink_price_feeds.ETHEREUM_GOERLI], {
-      initializer: 'initialize',
-    });
+    pnsRegistryContract = await upgrades.deployProxy(
+      PNSRegistryContract,
+      [pnsGuardianContract.address, chainlink_price_feeds.ETHEREUM_GOERLI],
+      {
+        initializer: 'initialize',
+      },
+    );
   } else if (hre.network.name === 'bnb_testnet') {
-    pnsRegistryContract = await upgrades.deployProxy(PNSRegistryContract, [chainlink_price_feeds.BSC_TESTNET], {
-      initializer: 'initialize',
-    });
+    pnsRegistryContract = await upgrades.deployProxy(
+      PNSRegistryContract,
+      [pnsGuardianContract.address, chainlink_price_feeds.BSC_TESTNET],
+      {
+        initializer: 'initialize',
+      },
+    );
   } else if (hre.network.name === 'polygon_mumbai') {
-    pnsRegistryContract = await upgrades.deployProxy(PNSRegistryContract, [chainlink_price_feeds.MATIC_MUMBAI], {
-      initializer: 'initialize',
-    });
+    pnsRegistryContract = await upgrades.deployProxy(
+      PNSRegistryContract,
+      [pnsGuardianContract.address, chainlink_price_feeds.MATIC_MUMBAI],
+      {
+        initializer: 'initialize',
+      },
+    );
   } else {
-    pnsRegistryContract = await upgrades.deployProxy(PNSRegistryContract, [chainlink_price_feeds.BSC_MAINNET], {
-      initializer: 'initialize',
-    });
+    pnsRegistryContract = await upgrades.deployProxy(
+      PNSRegistryContract,
+      [pnsGuardianContract.address, chainlink_price_feeds.BSC_MAINNET],
+      {
+        initializer: 'initialize',
+      },
+    );
   }
   await pnsRegistryContract.deployed();
 
@@ -55,8 +92,8 @@ async function deployContract() {
   await pnsRegistryContract.setRegistryRenewCost(registryRenewCost);
   console.log('Registry Cost set to', registryCost, 'Registry Renew Cost set to', registryRenewCost);
 
-  await pnsRegistryContract.setGuardianVerifier(adminAddress);
-  console.log('Guardian Verifier set to', adminAddress);
+  await pnsGuardianContract.setPNSRegistry(pnsRegistryContract.address);
+  console.log('Registry contract set to', pnsRegistryContract.address);
 
   const pnsResolverContract = await upgrades.deployProxy(PNSResolverContract, [pnsRegistryContract.address], {
     initializer: 'initialize',

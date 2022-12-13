@@ -11,14 +11,13 @@ import './Interfaces/IPNSRegistry.sol';
 /// @title Handles the authentication of the PNS registry
 /// @author  PNS core team
 /// @notice The PNS Guardian is responsible for authenticating the records created in PNS registry
-contract PNSGuardian is IPNSSchema, Initializable, AccessControlUpgradeable {
+contract PNSGuardian is IPNSSchema, Initializable {
 	/// the guardian layer address that updates verification state
 	address public registryAddress;
 
 	IPNSRegistry public registryContract;
 
-	/// Create a new role identifier for the minter role
-	bytes32 public constant MAINTAINER_ROLE = keccak256('MAINTAINER_ROLE');
+	address public guardianVerifier;
 
 	/**
 	 * @dev logs the event when a phone record is verified.
@@ -31,18 +30,23 @@ contract PNSGuardian is IPNSSchema, Initializable, AccessControlUpgradeable {
 	/**
 	 * @dev contract initializer function. This function exist because the contract is upgradable.
 	 */
-	function initialize() external initializer {
-		__AccessControl_init();
+	function initialize(address _guardianVerifier) external initializer {
+		guardianVerifier = _guardianVerifier;
+	}
 
-		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+	/**
+	 * @notice updates registry layer address
+	 */
+	function setPNSRegistry(address _registryAddress) external onlyGuardianVerifier {
+		registryAddress = _registryAddress;
+		registryContract = IPNSRegistry(registryAddress);
 	}
 
 	/**
 	 * @notice updates guardian layer address
 	 */
-	function setPNSRegistry(address _registryAddress) external onlySystemRoles {
-		registryAddress = _registryAddress;
-		registryContract = IPNSRegistry(registryAddress);
+	function setGuardianVerifier(address _guardianVerifier) external onlyGuardianVerifier {
+		guardianVerifier = _guardianVerifier;
 	}
 
 	/**
@@ -97,8 +101,8 @@ contract PNSGuardian is IPNSSchema, Initializable, AccessControlUpgradeable {
 		_;
 	}
 
-	modifier onlySystemRoles() {
-		require(hasRole(MAINTAINER_ROLE, msg.sender) || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), 'not allowed to execute function');
+	modifier onlyGuardianVerifier() {
+		require(msg.sender == guardianVerifier, 'Only Guardian Verifier');
 		_;
 	}
 }
