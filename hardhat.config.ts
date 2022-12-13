@@ -5,6 +5,9 @@ import '@typechain/hardhat';
 import '@nomiclabs/hardhat-ethers';
 import '@openzeppelin/hardhat-upgrades';
 import { utils } from 'ethers';
+
+require('dotenv').config();
+
 // import { HardhatUserConfig, task } from 'hardhat/config';
 
 /** @type import('hardhat/config').HardhatUserConfig */
