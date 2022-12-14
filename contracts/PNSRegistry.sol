@@ -6,11 +6,13 @@ pragma solidity 0.8.9;
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 import '@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol';
+import 'hardhat/console.sol';
 
 // ==========  Internal imports    ==========
 import './Interfaces/IPNSRegistry.sol';
 import './Interfaces/IPNSResolver.sol';
 import './Interfaces/IPNSGuardian.sol';
+import './mocks/DummyPriceOracle.sol';
 
 /**
  * @title The contract for phone number service Registry.
@@ -30,7 +32,9 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	uint256 public registryRenewCost;
 
 	/// Oracle feed pricing
-	address priceFeed;
+	//AggregatorV3Interface public priceFeedContract;
+
+	DummyPriceOracle public priceFeedContract;
 
 	IPNSGuardian public pnsGuardianContract;
 
@@ -125,7 +129,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		expiryTime = 365 days;
 		gracePeriod = 60 days;
 
-		priceFeed = _priceAggregator;
+		priceFeedContract = DummyPriceOracle(_priceAggregator);
 
 		pnsGuardianContract = IPNSGuardian(_pnsGuardianContract);
 
@@ -201,7 +205,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	 * @param phoneHash The phoneHash.
 	 */
 	function renew(bytes32 phoneHash) external payable virtual authorised(phoneHash) hasExpiryOf(phoneHash) {
-		require(msg.value >= registryRenewCost, 'fee must be greater than or equal to the registry renewal fee');
+		require(msg.value >= registryRenewCost, 'insufficient balance');
 		PhoneRecord storage recordData = records[phoneHash];
 		bool _timeHasPassedExpiryTime = _hasPassedExpiryTime(phoneHash);
 		bool _hasExhaustedGracePeriod = _hasPassedGracePeriod(phoneHash);
@@ -314,6 +318,8 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		bool status,
 		bytes memory signature
 	) external {
+		PhoneRecord memory recordData = records[phoneHash];
+		require(!recordData.exists, 'phone record already exists');
 		pnsGuardianContract.setVerificationStatus(phoneHash, hashedMessage, status, signature);
 		emit PhoneNumberVerified(phoneHash, status);
 	}
@@ -324,12 +330,14 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		address resolver,
 		string memory label
 	) internal onlyVerified(phoneHash) onlyVerifiedOwner(phoneHash) {
-		require(msg.value >= convertAmountToETH(registryCost), 'fee must be greater than or equal to the registryCost fee');
+		console.log(msg.value, 'msg value');
+		require(msg.value >= convertAmountToETH(registryCost), 'insufficient balance');
 
 		PhoneRecord storage recordData = records[phoneHash];
-		require(!recordData.exists, 'phone record already exists');
 
 		ResolverRecord storage resolverRecordData = resolverRecordMapping[label];
+
+		require(!resolverRecordData.exists, 'phone record has been created and linked to a wallet already');
 
 		if (!resolverRecordData.exists) {
 			resolverRecordData.label = label;
@@ -350,6 +358,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		_setPhoneRecordMapping(recordData, phoneHash);
 
 		(bool success, ) = address(this).call{value: msg.value}('');
+		console.log(success, 'value from transfer');
 		require(success, 'Transfer failed.');
 
 		if (msg.value > convertAmountToETH(registryCost)) {
@@ -390,8 +399,15 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 
 	function convertAmountToETH(uint256 usdAmount) internal view returns (uint256) {
 		uint256 ethPrice = uint256(getEtherPriceInUSD());
-		uint256 ethAmount = ((usdAmount) / ethPrice) * 1 ether;
+		console.log(ethPrice, 'ether price in usd');
+		console.log(usdAmount, 'fee');
+		uint256 ethAmount = ((usdAmount) / ethPrice);
+		console.log(ethAmount, 'ether fee');
 		return ethAmount;
+	}
+
+	function getAmountinETH(uint256 usdAmount) external view returns (uint256) {
+		return convertAmountToETH(usdAmount);
 	}
 
 	/**
@@ -399,14 +415,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	 */
 
 	function getEtherPriceInUSD() internal view returns (int256) {
-		(
-			,
-			/*uint80 roundID*/
-			int256 price, /*uint startedAt*/ /*uint timeStamp*/ /*uint80 answeredInRound*/
-			,
-			,
-
-		) = AggregatorV3Interface(priceFeed).latestRoundData();
+		int256 price = priceFeedContract.latestRoundData();
 		return price;
 	}
 
@@ -417,14 +426,6 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	 * @param phoneHash The specified phoneHash.
 	 */
 	function getRecord(bytes32 phoneHash) external view returns (PhoneRecord memory) {
-		return _getRecord(phoneHash);
-	}
-
-	/**
-	 * @dev Returns the address that owns the specified phone number phoneHash.
-	 * @param phoneHash The specified phoneHash.
-	 */
-	function _getRecord(bytes32 phoneHash) internal view returns (PhoneRecord memory) {
 		PhoneRecord memory recordData = records[phoneHash];
 		require(recordData.exists, 'phone record not found');
 		bool _isInGracePeriod = _hasPassedExpiryTime(phoneHash);
@@ -443,6 +444,12 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 				recordData.createdAt
 			);
 	}
+
+	/**
+	 * @dev Returns the address that owns the specified phone number phoneHash.
+	 * @param phoneHash The specified phoneHash.
+	 */
+	function _getRecord(bytes32 phoneHash) internal view returns (PhoneRecord memory) {}
 
 	function _getResolver(bytes32 phoneHash) internal view returns (ResolverRecord[] memory) {
 		return phoneRecordResolvers[phoneHash];
@@ -535,13 +542,19 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		_;
 	}
 	modifier onlyVerified(bytes32 phoneHash) {
-		PhoneRecord memory recordData = _getRecord(phoneHash);
+		PhoneRecord memory recordData = records[phoneHash];
 		require(recordData.isVerified, 'phone record is not verified');
 		_;
 	}
 	modifier onlyVerifiedOwner(bytes32 phoneHash) virtual {
-		PhoneRecord memory recordData = _getRecord(phoneHash);
+		PhoneRecord memory recordData = records[phoneHash];
 		require(recordData.owner == msg.sender, 'caller is not verified owner');
 		_;
 	}
+
+	// Function to receive Ether. msg.data must be empty
+	receive() external payable {}
+
+	// Fallback function is called when msg.data is not empty
+	fallback() external payable {}
 }

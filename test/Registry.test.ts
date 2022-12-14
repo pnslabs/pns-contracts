@@ -15,6 +15,8 @@ describe('PNS Registry', () => {
   const status = true;
   const signer = ethers.provider.getSigner();
   const otp = '123456';
+  let amountInETH;
+  let amount = '10000000000000000000';
 
   let message = ethers.utils.solidityPack(['bytes32', 'uint256'], [phoneNumber1, otp]);
   const hashedMessage = ethers.utils.keccak256(message);
@@ -42,7 +44,8 @@ describe('PNS Registry', () => {
     );
   });
   it('should create a new record', async function () {
-    await expect(pnsRegistryContract.setPhoneRecord(phoneNumber1, adminAddress, label)).to.emit(
+    amountInETH = await pnsRegistryContract.getAmountinETH(amount);
+    await expect(pnsRegistryContract.setPhoneRecord(phoneNumber1, adminAddress, label, { value: amountInETH })).to.emit(
       pnsRegistryContract,
       'PhoneRecordCreated',
     );
@@ -59,13 +62,14 @@ describe('PNS Registry', () => {
   });
 
   it('should throw error when creating a record with an existing phone', async function () {
-    await expect(pnsRegistryContract.setPhoneRecord(phoneNumber1, adminAddress, label)).to.be.revertedWith(
-      'phone record already exists',
-    );
+    amountInETH = await pnsRegistryContract.getAmountinETH(amount);
+    await expect(
+      pnsRegistryContract.setPhoneRecord(phoneNumber1, adminAddress, label, { value: amountInETH }),
+    ).to.be.revertedWith('phone record has been created and linked to a wallet already');
   });
 
   it('should verifiy that new recorded created exist', async () => {
-    const phoneRecordExist = await pnsResolverContract.recordExists(phoneNumber1);
+    const phoneRecordExist = await pnsRegistryContract.recordExists(phoneNumber1);
 
     assert.equal(phoneRecordExist, true);
   });
@@ -77,8 +81,8 @@ describe('PNS Registry', () => {
   });
 
   it('should tie the correct owner to record', async () => {
-    const phoneRecord = await pnsResolverContract.getRecord(phoneNumber1);
-    assert.equal(phoneRecord.owner, adminAddress);
+    const owner = await pnsResolverContract.getOwner(phoneNumber1);
+    assert.equal(owner, adminAddress);
   });
   it('should withdraw the funds from the contract balance', async () => {
     const contractBalance = await ethers.provider.getBalance(pnsRegistryContract.address);

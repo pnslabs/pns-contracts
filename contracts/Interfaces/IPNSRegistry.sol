@@ -33,6 +33,8 @@ interface IPNSRegistry is IPNSSchema {
 
 	function renew(bytes32 phoneHash) external payable;
 
+	function getAmountinETH(uint256 usdAmount) external view returns (uint256);
+
 	function claimExpiredPhoneRecord(
 		bytes32 phoneHash,
 		address owner,

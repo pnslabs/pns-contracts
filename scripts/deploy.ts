@@ -6,8 +6,9 @@ import { chainlink_price_feeds } from './constants';
 async function deployContract() {
   let adminAccount;
   let pnsRegistryContract;
-  let registryCost = 10;
-  let registryRenewCost = 5;
+  let registryCost = '10000000000000000000'; // 10 usd
+  let registryRenewCost = '5000000000000000000'; // 5 usd
+  let ethPrice = '1779400000000';
 
   console.log(hre.network.name, 'network name');
 
@@ -20,6 +21,10 @@ async function deployContract() {
   const PNSResolverContract = await ethers.getContractFactory('PNSResolver');
 
   const PNSGuardianContract = await ethers.getContractFactory('PNSGuardian');
+
+  const DummyPriceOracleContract = await ethers.getContractFactory('DummyPriceOracle');
+
+  const dummyPriceOrcleContract = await DummyPriceOracleContract.deploy(ethPrice);
 
   const pnsGuardianContract = await upgrades.deployProxy(PNSGuardianContract, [adminAddress], {
     initializer: 'initialize',
@@ -79,7 +84,7 @@ async function deployContract() {
   } else {
     pnsRegistryContract = await upgrades.deployProxy(
       PNSRegistryContract,
-      [pnsGuardianContract.address, chainlink_price_feeds.BSC_MAINNET],
+      [pnsGuardianContract.address, dummyPriceOrcleContract.address],
       {
         initializer: 'initialize',
       },
