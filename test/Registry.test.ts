@@ -3,7 +3,7 @@ import hre from 'hardhat';
 
 const { assert, expect } = require('chai');
 const { keccak256 } = require('../utils/util');
-const { deployContract } = require('../scripts/deploy');
+const { deployContract } = require('../scripts/deployLocal');
 
 describe('PNS Registry', () => {
   let pnsRegistryContract;
