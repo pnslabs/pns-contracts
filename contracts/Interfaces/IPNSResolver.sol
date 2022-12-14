@@ -15,8 +15,6 @@ interface IPNSResolver is IPNSSchema {
 
 	function getRecord(bytes32 phoneHash) external view returns (PhoneRecord memory);
 
-	function recordExists(bytes32 phoneHash) external view returns (bool);
-
 	function getResolverDetails(bytes32 phoneHash) external view returns (ResolverRecord[] memory);
 
 	function getVersion() external view returns (uint32 version);

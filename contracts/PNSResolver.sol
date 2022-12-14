@@ -39,16 +39,6 @@ contract PNSResolver is IPNSSchema, Initializable {
 	}
 
 	/**
-	 * @dev Returns whether a record has been imported to the registry.
-	 * @param phoneHash The specified phoneHash.
-	 * @return Bool if record exists
-	 */
-	function recordExists(bytes32 phoneHash) public view returns (bool) {
-		PhoneRecord memory recordData = _getRecord(phoneHash);
-		return recordData.exists;
-	}
-
-	/**
 	 * @dev Returns an the resolver details for the specified phone number phoneHash.
 	 * @param phoneHash The specified phoneHash.
 	 */

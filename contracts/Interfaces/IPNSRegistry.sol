@@ -37,7 +37,6 @@ interface IPNSRegistry is IPNSSchema {
 
 	function claimExpiredPhoneRecord(
 		bytes32 phoneHash,
-		address owner,
 		address resolver,
 		string memory label
 	) external payable;
@@ -70,4 +69,6 @@ interface IPNSRegistry is IPNSSchema {
 	function withdraw(address _recipient, uint256 amount) external;
 
 	function getVersion() external view returns (uint32 version);
+
+	function recordExists(bytes32 phoneHash) external view returns (bool);
 }

@@ -205,7 +205,9 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	 * @param phoneHash The phoneHash.
 	 */
 	function renew(bytes32 phoneHash) external payable virtual authorised(phoneHash) hasExpiryOf(phoneHash) {
-		require(msg.value >= registryRenewCost, 'insufficient balance');
+		console.log(msg.value, 'msg value from renew');
+		require(msg.value >= convertAmountToETH(registryRenewCost), 'insufficient balance');
+
 		PhoneRecord storage recordData = records[phoneHash];
 		bool _timeHasPassedExpiryTime = _hasPassedExpiryTime(phoneHash);
 		bool _hasExhaustedGracePeriod = _hasPassedGracePeriod(phoneHash);
@@ -233,13 +235,11 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	/**
 	 * @dev Claims an already existing but expired phone record, and sets a completely new resolver.
 	 * @param phoneHash The phoneHash.
-	 * @param owner The address of the new owner.
 	 * @param resolver The address the phone number resolves to.
 	 * @param label The specified label of the resolver.
 	 */
 	function claimExpiredPhoneRecord(
 		bytes32 phoneHash,
-		address owner,
 		address resolver,
 		string memory label
 	) external payable virtual hasExpiryOf(phoneHash) {
@@ -251,7 +251,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 
 		delete records[phoneHash];
 
-		return _setPhoneRecord(phoneHash, owner, resolver, label);
+		return _setPhoneRecord(phoneHash, msg.sender, resolver, label);
 	}
 
 	/**
@@ -303,23 +303,12 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		return gracePeriod;
 	}
 
-	/**
-	 * @dev Returns whether a record has been imported to the registry.
-	 * @param phoneHash The specified phoneHash.
-	 * @return Bool if record exists
-	 */
-	function recordExists(bytes32 phoneHash) public view returns (bool) {
-		return records[phoneHash].exists;
-	}
-
 	function verifyPhone(
 		bytes32 phoneHash,
 		bytes32 hashedMessage,
 		bool status,
 		bytes memory signature
 	) external {
-		PhoneRecord memory recordData = records[phoneHash];
-		require(!recordData.exists, 'phone record already exists');
 		pnsGuardianContract.setVerificationStatus(phoneHash, hashedMessage, status, signature);
 		emit PhoneNumberVerified(phoneHash, status);
 	}
@@ -446,10 +435,13 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	}
 
 	/**
-	 * @dev Returns the address that owns the specified phone number phoneHash.
+	 * @dev Returns whether a record has been imported to the registry.
 	 * @param phoneHash The specified phoneHash.
+	 * @return Bool if record exists
 	 */
-	function _getRecord(bytes32 phoneHash) internal view returns (PhoneRecord memory) {}
+	function recordExists(bytes32 phoneHash) public view returns (bool) {
+		return records[phoneHash].exists;
+	}
 
 	function _getResolver(bytes32 phoneHash) internal view returns (ResolverRecord[] memory) {
 		return phoneRecordResolvers[phoneHash];
