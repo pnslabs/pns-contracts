@@ -42,7 +42,7 @@ contract PNSResolver is IPNSSchema, Initializable {
 	 * @dev Returns an the resolver details for the specified phone number phoneHash.
 	 * @param phoneHash The specified phoneHash.
 	 */
-	function getResolverDetails(bytes32 phoneHash) external view returns (ResolverRecord[] memory resolver) {
+	function getResolverDetails(bytes32 phoneHash) external view returns (ResolverRecord[] memory) {
 		return PNSRegistry.getResolver(phoneHash);
 	}
 
