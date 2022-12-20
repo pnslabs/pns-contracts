@@ -18,12 +18,12 @@ interface IPNSSchema {
 	struct PhoneRecord {
 		address owner;
 		bytes32 phoneHash;
-		uint256 createdAt;
 		bool exists;
 		bool isInGracePeriod;
 		bool isExpired;
 		bool isVerified;
 		uint256 expirationTime;
 		uint256 verifiedAt;
+		uint256 createdAt;
 	}
 }

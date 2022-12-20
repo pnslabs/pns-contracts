@@ -132,9 +132,9 @@ describe('PNS Registry', () => {
     await network.provider.send('evm_increaseTime', [oneYearInSeconds]);
     await network.provider.send('evm_mine', []);
     const getRecord = await pnsRegistryContract.getRecord(phoneNumber1);
-    console.log(getRecord[4], getRecord[5], 'get record');
-    expect(getRecord[4]).to.equal(true);
-    expect(getRecord[5]).to.equal(false);
+    console.log(getRecord[3], getRecord[4], 'get record');
+    expect(getRecord[3]).to.equal(true);
+    expect(getRecord[4]).to.equal(false);
   });
 
   it('successfully renews an unexpired phone record that is in grace period, and emits an event', async () => {
@@ -155,8 +155,8 @@ describe('PNS Registry', () => {
     await network.provider.send('evm_increaseTime', [twoYearsInSeconds + thirtyDaysInSeconds + 1]);
     await network.provider.send('evm_mine', []);
     const getRecord = await pnsRegistryContract.getRecord(phoneNumber1);
+    expect(getRecord[3]).to.equal(true);
     expect(getRecord[4]).to.equal(true);
-    expect(getRecord[5]).to.equal(true);
   });
 
   // it('successfully claims an expired phone record, and emits an event', async () => {
@@ -174,9 +174,11 @@ describe('PNS Registry', () => {
   // it('successfully deletes the previous record, and sets a new one when record is claimed.', async () => {
   //   const resolvers = await pnsResolverContract.getResolverDetails(phoneNumber1);
   //   const wallets = resolvers.length;
-  //   const label = resolvers[0][2];
+  //   console.log(resolvers, 'here');
+  //   console.log(wallets, 'wallets');
+  //   const returnedLabel = resolvers[0][2];
 
   //   assert.equal(wallets, 1);
-  //   assert.equal(label, label2);
+  //   assert.equal(returnedLabel, label2);
   // });
 });

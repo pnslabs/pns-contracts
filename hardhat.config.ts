@@ -20,7 +20,7 @@ module.exports = {
     ],
     optimizer: {
       enabled: true,
-      runs: 200,
+      runs: 100,
     },
   },
   contractSizer: {
