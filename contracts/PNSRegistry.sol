@@ -48,8 +48,6 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	// mapping state to store resolver recordslinked to a phone number
 	mapping(bytes32 => ResolverRecord[]) public resolverRecords;
 
-	ResolverRecord[] walletRecord;
-
 	/**
 	 * @dev logs the event when a phoneHash record is created.
 	 * @param phoneHash The phoneHash to be linked to the record.
