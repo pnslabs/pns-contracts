@@ -41,6 +41,8 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	/// Create a new role identifier for the minter role
 	bytes32 public constant MAINTAINER_ROLE = keccak256('MAINTAINER_ROLE');
 
+	bytes32 public constant VERIFIER_ROLE = keccak256('VERIFIER_ROLE');
+
 	/// Mapping state to store resolver record
 	mapping(string => ResolverRecord) resolverRecordMapping;
 	/// Mapping state to store mobile phone number record that will be linked to a resolver
@@ -122,7 +124,11 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	/**
 	 * @dev contract initializer function. This function exist because the contract is upgradable.
 	 */
-	function initialize(address _pnsGuardianContract, address _priceAggregator) external initializer {
+	function initialize(
+		address _pnsGuardianContract,
+		address _priceAggregator,
+		address _verifier
+	) external initializer {
 		__AccessControl_init();
 
 		//set oracle constant
@@ -134,6 +140,8 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		pnsGuardianContract = IPNSGuardian(_pnsGuardianContract);
 
 		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+
+		_grantRole(VERIFIER_ROLE, _verifier);
 	}
 
 	function setPhoneRecordMapping(PhoneRecord memory recordData, bytes32 phoneHash) external {
@@ -521,6 +529,11 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	}
 	modifier onlySystemRoles() {
 		require(hasRole(MAINTAINER_ROLE, msg.sender) || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), 'not allowed to execute function');
+		_;
+	}
+
+	modifier onlyVerifierRoles() {
+		require(hasRole(VERIFIER_ROLE, msg.sender) || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), 'NON_VERIFIER_ROLE: Not allowed to execute function');
 		_;
 	}
 	modifier onlyVerified(bytes32 phoneHash) {

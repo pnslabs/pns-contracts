@@ -31,7 +31,7 @@ async function deployContract() {
   if (hre.network.name === 'ethereum_mainnet') {
     pnsRegistryContract = await upgrades.deployProxy(
       PNSRegistryContract,
-      [pnsGuardianContract.address, chainlink_price_feeds.ETHEREUM_MAINNET],
+      [pnsGuardianContract.address, chainlink_price_feeds.ETHEREUM_MAINNET, adminAddress],
       {
         initializer: 'initialize',
       },
