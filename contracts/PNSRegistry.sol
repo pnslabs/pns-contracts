@@ -171,6 +171,10 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		return _setPhoneRecord(phoneHash, msg.sender, resolver, label);
 	}
 
+	/**
+	 * @dev Checks if the specified phoneHash is verified.
+	 * @param phoneHash The phoneHash to update.
+	 */
 	function isRecordVerified(bytes32 phoneHash) public view returns (bool) {
 		return records[phoneHash].isVerified;
 	}
@@ -232,8 +236,6 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		emit PhoneRecordRenewed(phoneHash);
 	}
 
-	/**
-     * @dev Claims an already existing but expired phone record, and sets a completely new resolver.
 	/**
 	 * @dev Claims an already existing but expired phone record, and sets a completely new resolver.
 	 * @param phoneHash The phoneHash.
@@ -403,9 +405,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	}
 
 	/**
-     * @dev Returns the expiry state of an existing phone record.
-	/**
-	 * @dev Returns the PhoneRecord data of address that owns the specified phone number phoneHash.
+	 * @dev Returns the PhoneRecord data linked to the specified phone number hash.
 	 * @param phoneHash The specified phoneHash.
 	 */
 	function getRecord(bytes32 phoneHash) external view returns (PhoneRecord memory) {

@@ -12,18 +12,22 @@ The `PNS.sol` smart contract comes with these list of public setter functions:
 setPhoneRecord
 setOwner
 linkPhoneToWallet
-reAuthenticate
+renew
 claimExpiredPhoneRecord
+setPhoneRecordMapping
+verifyPhone
 ```
 
 And these lists of public getter functions;
 
 ```
 getRecord
-getOwner
+getResolver
 recordExists
 getExpiryTime
 getGracePeriod
+getAmountinETH
+isRecordVerified
 ```
 
 These functions implement the IPNS.sol interface.
@@ -32,11 +36,17 @@ These functions implement the IPNS.sol interface.
 
 # IPNS Interface
 
-The IPNS's interface is as follows:
+The IPNSRegistry's interface is as follows:
 
-## setPhoneRecord(bytes32 phoneHash, address owner, address resolver, string label) external
+## setPhoneRecord(bytes32 phoneHash, address resolver, string label) external payable
 
-Sets a resolver record and links it to the phoneHash and owner.
+Sets a resolver record and links it to the phoneHash.
+
+<br />
+
+## isRecordVerified(bytes32 phoneHash) external view returns (bool);
+
+Checks if the specified phoneHash is verified.
 
 <br />
 
@@ -46,9 +56,9 @@ Sets the resolver address for the specified phoneHash.
 
 <br />
 
-## getRecord(bytes32 phoneHash) external view returns (address owner, ResolverRecord[] memory, bytes32, uint256 createdAt, bool exists );
+## getRecord(bytes32 phoneHash) external view returns (PhoneRecord memory);
 
-Returns the resolver details of the specified phoneHash.
+Returns the PhoneRecord data linked to the specified phone number hash.
 
 <br />
 
@@ -70,7 +80,7 @@ Transfers ownership of a phoneHash to a new address. May only be called by the c
 
 <br />
 
-## getResolverDetails(bytes32 phoneHash) external view returns (ResolverRecord[] memory)
+## getResolver(bytes32 phoneHash) external view returns (ResolverRecord[] memory)
 
 Returns an existing label for the specified phone number phoneHash.
 
@@ -88,15 +98,39 @@ Gets the current grace period.
 
 <br />
 
-## reAuthenticate(bytes32 phoneHash) external
+## renew(bytes32 phoneHash) external payable
 
-Re authenticates a phone record.
+Renew a phone record.
 
 <br />
 
-## claimExpiredPhoneRecord(bytes32 phoneHash, address owner) external
+## claimExpiredPhoneRecord(bytes32 phoneHash, address resolver, string memory label) external
 
-Claims an already existing but expired phone record.
+Claims an already existing but expired phone record, and sets a completely new resolver.
+
+<br />
+
+## getExpiryTime() external view returns (uint256)
+
+Returns the default phone record expiry time
+
+<br />
+
+## getGracePeriod() external view returns (uint256)
+
+Returns the default phone record grace period
+
+<br />
+
+## verifyPhone(bytes32 phoneHash, bytes32 hashedMessage, bool status, bytes memory signature) external
+
+Function used to update the verification status of a phone number.
+
+<br />
+
+## getAmountinETH(uint256 usdAmount) external view returns (uint256)
+
+Returns a USD amount converted to ETH
 
 <br />
 
