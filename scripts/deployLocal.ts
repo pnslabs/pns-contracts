@@ -44,7 +44,7 @@ async function deployContract() {
   } else if (hre.network.name === 'bnb_mainnet') {
     pnsRegistryContract = await upgrades.deployProxy(
       PNSRegistryContract,
-      [pnsGuardianContract.address, chainlink_price_feeds.BSC_MAINNET],
+      [pnsGuardianContract.address, chainlink_price_feeds.BSC_MAINNET, adminAddress],
       {
         initializer: 'initialize',
       },
@@ -52,7 +52,7 @@ async function deployContract() {
   } else if (hre.network.name === 'polygon_mainnet') {
     pnsRegistryContract = await upgrades.deployProxy(
       PNSRegistryContract,
-      [pnsGuardianContract.address, chainlink_price_feeds.MATIC_MAINNET],
+      [pnsGuardianContract.address, chainlink_price_feeds.MATIC_MAINNET, adminAddress],
       {
         initializer: 'initialize',
       },
@@ -60,7 +60,7 @@ async function deployContract() {
   } else if (hre.network.name === 'ethereum_goerli') {
     pnsRegistryContract = await upgrades.deployProxy(
       PNSRegistryContract,
-      [pnsGuardianContract.address, chainlink_price_feeds.ETHEREUM_GOERLI],
+      [pnsGuardianContract.address, chainlink_price_feeds.ETHEREUM_GOERLI, adminAddress],
       {
         initializer: 'initialize',
       },
@@ -68,7 +68,7 @@ async function deployContract() {
   } else if (hre.network.name === 'bnb_testnet') {
     pnsRegistryContract = await upgrades.deployProxy(
       PNSRegistryContract,
-      [pnsGuardianContract.address, chainlink_price_feeds.BSC_TESTNET],
+      [pnsGuardianContract.address, chainlink_price_feeds.BSC_TESTNET, adminAddress],
       {
         initializer: 'initialize',
       },
@@ -76,7 +76,7 @@ async function deployContract() {
   } else if (hre.network.name === 'polygon_mumbai') {
     pnsRegistryContract = await upgrades.deployProxy(
       PNSRegistryContract,
-      [pnsGuardianContract.address, chainlink_price_feeds.MATIC_MUMBAI],
+      [pnsGuardianContract.address, chainlink_price_feeds.MATIC_MUMBAI, adminAddress],
       {
         initializer: 'initialize',
       },
@@ -84,7 +84,7 @@ async function deployContract() {
   } else {
     pnsRegistryContract = await upgrades.deployProxy(
       PNSRegistryContract,
-      [pnsGuardianContract.address, dummyPriceOrcleContract.address],
+      [pnsGuardianContract.address, dummyPriceOrcleContract.address, adminAddress],
       {
         initializer: 'initialize',
       },

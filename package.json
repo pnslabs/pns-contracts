@@ -10,6 +10,7 @@
     "coverage": "cross-env CODE_COVERAGE=true hardhat coverage --solcoverjs ./.solcover.js --temp artifacts --testfiles \"./test/**/*.ts\"",
     "test": "npx hardhat test",
     "deploy:localhost": "npx hardhat run --network localhost scripts/deploy.ts",
+    "deploy:bnb_testnet": "npx hardhat run --network bnb_testnet scripts/deploy.ts",
     "prepare": "husky install"
   },
   "devDependencies": {

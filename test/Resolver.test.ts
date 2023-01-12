@@ -51,6 +51,7 @@ describe('PNS Resolver', () => {
     await expect(
       pnsRegistryContract.setPhoneRecord(phoneNumber1, adminAddress, label1, { value: amountInETH }),
     ).to.emit(pnsRegistryContract, 'PhoneRecordCreated');
+    resolverCreatedLength++;
   });
 
   it('should link a new resolver to a phone record and emit an event', async () => {
@@ -63,20 +64,21 @@ describe('PNS Resolver', () => {
 
   it('verifies that all previously created resolvers exists', async () => {
     const resolvers = await pnsResolverContract.getResolverDetails(phoneNumber1);
-    console.log(resolvers, 'resolver');
-    // const wallets = resolvers.length;
+    console.log(resolvers.length, 'resolver length');
+    console.log(resolverCreatedLength, 'length of resolvers created');
+    const wallets = resolvers.length;
 
-    // assert.equal(wallets, resolverCreatedLength);
+    assert.equal(wallets, resolverCreatedLength);
   });
 
   it('should get the details of a specific resolver', async () => {
     const resolvers = await pnsResolverContract.getResolverDetails(phoneNumber1);
+    const firstLabel = resolvers[0][2];
+    const secondLabel = resolvers[1][2];
 
-    console.log(resolvers, 'resolver');
-    // const firstLabel = resolvers[0][2];
-    // const secondLabel = resolvers[1][2];
+    console.log(resolvers, 'resolvers');
 
-    // assert.equal(firstLabel, label1);
-    // assert.equal(secondLabel, label2);
+    assert.equal(firstLabel, label1);
+    assert.equal(secondLabel, label2);
   });
 });
