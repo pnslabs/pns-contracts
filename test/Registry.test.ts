@@ -1,4 +1,4 @@
-import { ethers } from 'hardhat';
+import { ethers, network } from 'hardhat';
 import hre from 'hardhat';
 
 const { assert, expect } = require('chai');
