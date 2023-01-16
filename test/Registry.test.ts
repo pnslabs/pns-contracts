@@ -31,6 +31,8 @@ describe('PNS Registry', () => {
 
   before(async function () {
     signature = await signer.signMessage(ethers.utils.arrayify(hashedMessage));
+    console.log(signature, 'signature');
+    console.log(signer, 'signer');
     const {
       pnsRegistryContract: _pnsRegistryContract,
       adminAddress: _adminAddress,

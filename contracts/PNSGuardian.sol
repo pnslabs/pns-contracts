@@ -19,6 +19,9 @@ contract PNSGuardian is IPNSSchema, Initializable {
 
 	address public guardianVerifier;
 
+	// Mapping statte to store verification record
+	mapping(bytes32 => VerificationRecord) verificationRecordMapping;
+
 	/**
 	 * @dev logs the event when a phone record is verified.
 	 * @param owner The phoneHash to be linked to the record.
@@ -70,27 +73,40 @@ contract PNSGuardian is IPNSSchema, Initializable {
 		bytes32 prefixedHashMessage = keccak256(abi.encodePacked(prefix, _hashedMessage));
 		address signer = ECDSA.recover(prefixedHashMessage, _signature);
 
-		PhoneRecord memory recordData = registryContract.getRecordMapping(phoneHash);
+		VerificationRecord memory verificationRecordData = verificationRecordMapping[phoneHash];
 
-		if (!recordData.exists) {
-			recordData.owner = signer;
-			recordData.phoneHash = phoneHash;
-			recordData.verifiedAt = block.timestamp;
-			recordData.exists = true;
-			recordData.isVerified = status;
+		if (!verificationRecordData.exists) {
+			verificationRecordData.owner = signer;
+			verificationRecordData.phoneHash = phoneHash;
+			verificationRecordData.verifiedAt = block.timestamp;
+			verificationRecordData.exists = true;
+			verificationRecordData.isVerified = status;
 		}
 
-		registryContract.setPhoneRecordMapping(recordData, phoneHash);
-
+		_setVerificationRecordMapping(verificationRecordData, phoneHash);
 		emit PhoneVerified(signer, phoneHash, block.timestamp);
+	}
+
+	function _setVerificationRecordMapping(VerificationRecord memory verificationRecordData, bytes32 phoneHash) internal {
+		VerificationRecord storage _verificationRecord = verificationRecordMapping[phoneHash];
+		_verificationRecord.owner = verificationRecordData.owner;
+		_verificationRecord.exists = verificationRecordData.exists;
+		_verificationRecord.phoneHash = verificationRecordData.phoneHash;
+		_verificationRecord.isVerified = verificationRecordData.isVerified;
+		_verificationRecord.verifiedAt = verificationRecordData.verifiedAt;
+	}
+
+	function getVerificationRecord(bytes32 phoneHash) external view returns (VerificationRecord memory) {
+		VerificationRecord memory verificationRecord = verificationRecordMapping[phoneHash];
+		return verificationRecord;
 	}
 
 	/**
 	 * @notice gets user verification state
 	 */
 	function getVerificationStatus(bytes32 phoneHash) external view returns (bool) {
-		PhoneRecord memory records = _getRecord(phoneHash);
-		return records.isVerified;
+		VerificationRecord memory verificationRecord = verificationRecordMapping[phoneHash];
+		return verificationRecord.isVerified;
 	}
 
 	/**

@@ -49,7 +49,7 @@ jobs:
       - name: Generate typings
         run: yarn compile
       - name: Run Test
-        run: yarn test
+        run: yarn run test
 
   # coverage: (not being checked)
   #   runs-on: ubuntu-latest

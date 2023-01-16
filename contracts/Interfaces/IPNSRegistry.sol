@@ -71,4 +71,6 @@ interface IPNSRegistry is IPNSSchema {
 	function getVersion() external view returns (uint32 version);
 
 	function recordExists(bytes32 phoneHash) external view returns (bool);
+
+	function getVerificationRecord(bytes32 phoneHash) external view returns (VerificationRecord memory);
 }
