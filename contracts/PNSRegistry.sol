@@ -6,7 +6,6 @@ pragma solidity 0.8.9;
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 import '@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol';
-import 'hardhat/console.sol';
 
 // ==========  Internal imports    ==========
 import './Interfaces/IPNSRegistry.sol';
@@ -160,9 +159,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		_recordData.phoneHash = recordData.phoneHash;
 		_recordData.isInGracePeriod = recordData.isInGracePeriod;
 		_recordData.isExpired = recordData.isExpired;
-		_recordData.isVerified = recordData.isVerified;
 		_recordData.expirationTime = recordData.expirationTime;
-		_recordData.verifiedAt = recordData.verifiedAt;
 	}
 
 	/**
@@ -184,7 +181,8 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	 * @param phoneHash The phoneHash to update.
 	 */
 	function isRecordVerified(bytes32 phoneHash) public view returns (bool) {
-		return records[phoneHash].isVerified;
+		VerificationRecord memory verificationRecordData = pnsGuardianContract.getVerificationRecord(phoneHash);
+		return verificationRecordData.isVerified;
 	}
 
 	/**
@@ -352,7 +350,6 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		_setPhoneRecordMapping(recordData, phoneHash);
 
 		(bool success, ) = address(this).call{value: msg.value}('');
-		console.log(success, 'value from transfer');
 		require(success, 'Transfer failed.');
 
 		if (msg.value > convertAmountToETH(registryCost)) {
@@ -429,11 +426,14 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 				recordData.exists,
 				_isInGracePeriod,
 				_isExpired,
-				recordData.isVerified,
 				recordData.expirationTime,
-				recordData.verifiedAt,
 				recordData.createdAt
 			);
+	}
+
+	function getVerificationRecord(bytes32 phoneHash) external view returns (VerificationRecord memory) {
+		VerificationRecord memory verificationRecordData = pnsGuardianContract.getVerificationRecord(phoneHash);
+		return verificationRecordData;
 	}
 
 	/**
@@ -537,13 +537,13 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		_;
 	}
 	modifier onlyVerified(bytes32 phoneHash) {
-		PhoneRecord memory recordData = records[phoneHash];
-		require(recordData.isVerified, 'phone record is not verified');
+		VerificationRecord memory verificationRecordData = pnsGuardianContract.getVerificationRecord(phoneHash);
+		require(verificationRecordData.isVerified, 'phone record is not verified');
 		_;
 	}
 	modifier onlyVerifiedOwner(bytes32 phoneHash) virtual {
-		PhoneRecord memory recordData = records[phoneHash];
-		require(recordData.owner == msg.sender, 'caller is not verified owner');
+		VerificationRecord memory verificationRecordData = pnsGuardianContract.getVerificationRecord(phoneHash);
+		require(verificationRecordData.owner == msg.sender, 'caller is not verified owner');
 		_;
 	}
 

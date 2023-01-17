@@ -31,6 +31,8 @@ describe('PNS Registry', () => {
 
   before(async function () {
     signature = await signer.signMessage(ethers.utils.arrayify(hashedMessage));
+    console.log(signature, 'signature');
+    console.log(signer, 'signer');
     const {
       pnsRegistryContract: _pnsRegistryContract,
       adminAddress: _adminAddress,
@@ -49,6 +51,10 @@ describe('PNS Registry', () => {
       pnsRegistryContract,
       'PhoneNumberVerified',
     );
+  });
+  it('should get the verification record', async () => {
+    let verificationRecord = await pnsRegistryContract.getVerificationRecord(phoneNumber1);
+    console.log(verificationRecord, 'verification record');
   });
   it('should create a new record', async function () {
     amountInETH = await pnsRegistryContract.getAmountinETH(amount);
@@ -118,7 +124,7 @@ describe('PNS Registry', () => {
   it('gets returns the expiration time of the phone record', async () => {
     const phoneRecord = await pnsRegistryContract.getRecord(phoneNumber1);
     console.log(phoneRecord, 'phone record from the resolver');
-    expect(Number(phoneRecord[7])).to.be.greaterThan(0);
+    expect(Number(phoneRecord[5])).to.be.greaterThan(0);
   });
 
   it('reverts with an error when attempting to renew a phone record that is not in grace period', async () => {
@@ -132,6 +138,7 @@ describe('PNS Registry', () => {
     await network.provider.send('evm_increaseTime', [oneYearInSeconds]);
     await network.provider.send('evm_mine', []);
     const getRecord = await pnsRegistryContract.getRecord(phoneNumber1);
+    console.log(getRecord, 'record');
     console.log(getRecord[3], getRecord[4], 'get record');
     expect(getRecord[3]).to.equal(true);
     expect(getRecord[4]).to.equal(false);
