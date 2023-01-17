@@ -140,7 +140,6 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		pnsGuardianContract = IPNSGuardian(_pnsGuardianContract);
 
 		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-
 		_grantRole(VERIFIER_ROLE, _verifier);
 	}
 
@@ -154,12 +153,12 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 
 	function _setPhoneRecordMapping(PhoneRecord memory recordData, bytes32 phoneHash) internal {
 		PhoneRecord storage _recordData = records[phoneHash];
-		_recordData.createdAt = recordData.createdAt;
+		// _recordData.createdAt = recordData.createdAt;
 		_recordData.owner = recordData.owner;
 		_recordData.exists = recordData.exists;
 		_recordData.phoneHash = recordData.phoneHash;
-		_recordData.isInGracePeriod = recordData.isInGracePeriod;
-		_recordData.isExpired = recordData.isExpired;
+		// _recordData.isInGracePeriod = recordData.isInGracePeriod;
+		// _recordData.isExpired = recordData.isExpired;
 		_recordData.isVerified = recordData.isVerified;
 		_recordData.expirationTime = recordData.expirationTime;
 		_recordData.verifiedAt = recordData.verifiedAt;
@@ -192,7 +191,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	 * @param phoneHash The phoneHash to transfer ownership of.
 	 * @param owner The address of the new owner.
 	 */
-	function setOwner(bytes32 phoneHash, address owner) public virtual authorised(phoneHash) expired(phoneHash) authenticated(phoneHash) {
+	function setOwner(bytes32 phoneHash, address owner) public virtual authorised(phoneHash) authenticated(phoneHash) {
 		require(owner != address(0x0), 'cannot set owner to the zero address');
 		require(owner != address(this), 'cannot set owner to the registry address');
 		records[phoneHash].owner = owner;
@@ -206,11 +205,12 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	 * @param resolver The address of the resolver.
 	 * @param label The specified label of the resolver.
 	 */
+	// expired(phoneHash
 	function linkPhoneToWallet(
 		bytes32 phoneHash,
 		address resolver,
 		string memory label
-	) public virtual authorised(phoneHash) expired(phoneHash) authenticated(phoneHash) {
+	) public virtual authorised(phoneHash) authenticated(phoneHash) {
 		_linkphoneHashToWallet(phoneHash, resolver, label);
 		emit PhoneLinked(phoneHash, resolver);
 	}
@@ -225,11 +225,12 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		PhoneRecord storage recordData = records[phoneHash];
 		bool _timeHasPassedExpiryTime = _hasPassedExpiryTime(phoneHash);
 		bool _hasExhaustedGracePeriod = _hasPassedGracePeriod(phoneHash);
+
 		require(recordData.exists, 'only an existing phone record can be renewed');
 		require(_timeHasPassedExpiryTime && !_hasExhaustedGracePeriod, 'only a phone record currently in grace period can be renewed');
 
-		recordData.isInGracePeriod = false;
-		recordData.isExpired = false;
+		// recordData.isInGracePeriod = false;
+		// recordData.isExpired = false;
 		recordData.expirationTime = block.timestamp + expiryTime;
 
 		(bool success, ) = address(this).call{value: msg.value}('');
@@ -335,17 +336,17 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 
 		if (!resolverRecordData.exists) {
 			resolverRecordData.label = label;
-			resolverRecordData.createdAt = block.timestamp;
+			// resolverRecordData.createdAt = block.timestamp;
 			resolverRecordData.wallet = resolver;
 			resolverRecordData.exists = true;
 			resolverRecords[phoneHash].push(resolverRecordData);
 		}
 		recordData.phoneHash = phoneHash;
 		recordData.owner = owner;
-		recordData.createdAt = block.timestamp;
+		// recordData.createdAt = block.timestamp;
 		recordData.exists = true;
-		recordData.isInGracePeriod = false;
-		recordData.isExpired = false;
+		// recordData.isInGracePeriod = false;
+		// recordData.isExpired = false;
 		recordData.expirationTime = block.timestamp + expiryTime;
 
 		// update mapping here
@@ -374,7 +375,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 
 		if (!resolverRecordData.exists) {
 			resolverRecordData.label = label;
-			resolverRecordData.createdAt = block.timestamp;
+			// resolverRecordData.createdAt = block.timestamp;
 			resolverRecordData.wallet = resolver;
 			resolverRecordData.exists = true;
 			resolverRecords[phoneHash].push(resolverRecordData);
@@ -427,12 +428,12 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 				recordData.owner,
 				recordData.phoneHash,
 				recordData.exists,
-				_isInGracePeriod,
-				_isExpired,
+				// _isInGracePeriod,
+				// _isExpired,
 				recordData.isVerified,
 				recordData.expirationTime,
-				recordData.verifiedAt,
-				recordData.createdAt
+				recordData.verifiedAt
+				// recordData.createdAt
 			);
 	}
 
@@ -484,8 +485,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	 * @param phoneHash The phoneHash of the record owner to be compared.
 	 */
 	modifier authorised(bytes32 phoneHash) {
-		address owner = records[phoneHash].owner;
-		require(owner == msg.sender, 'caller is not authorised');
+		require(msg.sender == records[phoneHash].owner, 'caller is not authorised');
 		_;
 	}
 
@@ -502,15 +502,15 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	 * @dev Permits the function to run only if phone record is not expired.
 	 * @param phoneHash The phoneHash of the record to be compared.
 	 */
-	modifier expired(bytes32 phoneHash) {
-		bool _hasExpired = _hasPassedExpiryTime(phoneHash);
-		if (_hasExpired) {
-			PhoneRecord storage recordData = records[phoneHash];
-			recordData.isInGracePeriod = true;
-			emit PhoneRecordEnteredGracePeriod(phoneHash);
-		}
-		_;
-	}
+	// modifier expired(bytes32 phoneHash) {
+	// 	bool _hasExpired = _hasPassedExpiryTime(phoneHash);
+	// 	if (_hasExpired) {
+	// 		PhoneRecord storage recordData = records[phoneHash];
+	// 		recordData.isInGracePeriod = true;
+	// 		emit PhoneRecordEnteredGracePeriod(phoneHash);
+	// 	}
+	// 	_;
+	// }
 
 	/**
 	 * @dev Permits the function to run only if phone record is still authenticated.
@@ -519,11 +519,11 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	modifier authenticated(bytes32 phoneHash) {
 		bool _hasExhaustedGracePeriod = _hasPassedGracePeriod(phoneHash);
 		if (_hasExhaustedGracePeriod) {
-			PhoneRecord storage recordData = records[phoneHash];
-			recordData.isInGracePeriod = false;
-			recordData.isExpired = true;
-			emit PhoneRecordExpired(phoneHash);
-			revert('phone record has expired, please renew');
+			// PhoneRecord storage recordData = records[phoneHash];
+			// // recordData.isInGracePeriod = false;
+			// // recordData.isExpired = true;
+			// emit PhoneRecordExpired(phoneHash);
+			// revert('phone record has expired, please renew');
 		}
 		_;
 	}
