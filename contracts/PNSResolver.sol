@@ -9,6 +9,7 @@ import '@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 
 // ==========  Internal imports    ==========
+import './PNSAddress.sol';
 import './Interfaces/IPNSResolver.sol';
 import './Interfaces/IPNSRegistry.sol';
 
@@ -18,7 +19,12 @@ import './Interfaces/IPNSRegistry.sol';
  * @notice You can only interact with the public functions and state definitions.
  * @dev The interface IPNSResolver is inherited which inherits IPNSSchema.
  */
-contract PNSResolver is IPNSSchema, Initializable {
+
+contract PNSResolver is Initializable {
+	uint256 private constant COIN_TYPE_ETH = 60;
+
+	mapping(bytes32 => mapping(uint256 => string)) _resolveAddress;
+
 	IPNSRegistry public PNSRegistry;
 
 	/**
@@ -34,7 +40,7 @@ contract PNSResolver is IPNSSchema, Initializable {
 	 * @return address of the owner.
 	 */
 	function getOwner(bytes32 phoneHash) public view virtual returns (address) {
-		PhoneRecord memory recordData = _getRecord(phoneHash);
+		IPNSRegistry.PhoneRecord memory recordData = _getRecord(phoneHash);
 		return recordData.owner;
 	}
 
@@ -42,7 +48,7 @@ contract PNSResolver is IPNSSchema, Initializable {
 	 * @dev Returns an the resolver details for the specified phone number phoneHash.
 	 * @param phoneHash The specified phoneHash.
 	 */
-	function getResolverDetails(bytes32 phoneHash) external view returns (ResolverRecord[] memory) {
+	function getResolverDetails(bytes32 phoneHash) external view returns (IPNSRegistry.ResolverRecord[] memory) {
 		return PNSRegistry.getResolver(phoneHash);
 	}
 
@@ -54,36 +60,49 @@ contract PNSResolver is IPNSSchema, Initializable {
 	 * @dev Returns the address that owns the specified phone number phoneHash.
 	 * @param phoneHash The specified phoneHash.
 	 */
-	function _getRecord(bytes32 phoneHash) internal view returns (PhoneRecord memory) {
+	function _getRecord(bytes32 phoneHash) internal view returns (IPNSRegistry.PhoneRecord memory) {
 		return PNSRegistry.getRecord(phoneHash);
 	}
 
-	/**
-	 * @dev Returns the expiry state of an existing phone record.
-	 * @param phoneHash The specified phoneHash.
-	 */
-	function _hasPassedExpiryTime(bytes32 phoneHash) internal view hasExpiryOf(phoneHash) returns (bool) {
-		PhoneRecord memory recordData = _getRecord(phoneHash);
-		return block.timestamp > recordData.expirationTime;
+	function getAddress(bytes32 phoneHash, uint256 coinType) public view virtual returns (string memory) {
+		return _resolveAddress[phoneHash][coinType];
 	}
 
 	/**
-	 * @dev Returns the grace period state of an existing phone record.
-	 * @param phoneHash The specified phoneHash.
+	 * Returns the address associated with an PNS phoneHash.
+	 * @param phoneHash The PNS phoneHash to query.
+	 * @return The associated address.
 	 */
-	function _hasPassedGracePeriod(bytes32 phoneHash) internal view hasExpiryOf(phoneHash) returns (bool) {
-		uint256 gracePeriod = PNSRegistry.getGracePeriod();
-		PhoneRecord memory recordData = _getRecord(phoneHash);
-		return block.timestamp > (recordData.expirationTime + gracePeriod);
+	function getAddress(bytes32 phoneHash) public view virtual returns (string memory) {
+		string memory a = getAddress(phoneHash, COIN_TYPE_ETH);
+		// bytes memory validateAddress = bytes(a);
+		return a;
 	}
 
 	/**
-	 * @dev Permits the function to run only if expiry of record is found
-	 * @param phoneHash The phoneHash of the record to be compared.
+	 * Sets the address associated with an PNS phoneHash.
+	 * May only be called by the owner of that phoneHash in the PNS registry.
+	 * @param phoneHash The phoneHash to update.
+	 * @param addr The address to set.
 	 */
-	modifier hasExpiryOf(bytes32 phoneHash) {
-		PhoneRecord memory recordData = _getRecord(phoneHash);
-		require(recordData.expirationTime > 0, 'phone expiry record not found');
+	function setAddress(bytes32 phoneHash, string calldata addr) external virtual {
+		setAddress(phoneHash, COIN_TYPE_ETH, addr);
+	}
+
+	function setAddress(
+		bytes32 phoneHash,
+		uint256 coinType,
+		string memory addr
+	) public virtual authorised(phoneHash) {
+		_resolveAddress[phoneHash][coinType] = addr;
+	}
+
+	function isAuthorised(bytes32 phoneHash) internal view returns (bool) {
+		return msg.sender == getOwner(phoneHash);
+	}
+
+	modifier authorised(bytes32 phoneHash) {
+		require(isAuthorised(phoneHash));
 		_;
 	}
 }
