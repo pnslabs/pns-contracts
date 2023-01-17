@@ -10,7 +10,7 @@ import './IPNSSchema.sol';
  * @notice This only serves as a function guide for the PNS Guardian.
  * @dev All function call interfaces are defined here.
  */
-interface IPNSGuardian is IPNSSchema {
+interface IPNSGuardian {
 	function setVerificationStatus(
 		bytes32 phoneHash,
 		bytes32 _hashedMessage,
