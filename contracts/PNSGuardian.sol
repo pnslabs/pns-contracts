@@ -4,6 +4,7 @@ pragma solidity ^0.8.9;
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
+import '@openzeppelin/contracts/access/Ownable.sol';
 
 import './Interfaces/IPNSSchema.sol';
 import './Interfaces/IPNSRegistry.sol';
@@ -11,7 +12,7 @@ import './Interfaces/IPNSRegistry.sol';
 /// @title Handles the authentication of the PNS registry
 /// @author  PNS core team
 /// @notice The PNS Guardian is responsible for authenticating the records created in PNS registry
-contract PNSGuardian is IPNSSchema, Initializable {
+contract PNSGuardian is Initializable, Ownable {
 	/// the guardian layer address that updates verification state
 	address public registryAddress;
 
@@ -35,26 +36,19 @@ contract PNSGuardian is IPNSSchema, Initializable {
 	}
 
 	/**
-	 * @notice updates registry layer address
-	 */
-	function setPNSRegistry(address _registryAddress) external onlyGuardianVerifier {
-		registryAddress = _registryAddress;
-		registryContract = IPNSRegistry(registryAddress);
-	}
-
-	/**
-	 * @notice updates guardian layer address
-	 */
-	function setGuardianVerifier(address _guardianVerifier) external onlyGuardianVerifier {
-		guardianVerifier = _guardianVerifier;
-	}
-
-	/**
 	 * @dev Returns the address that owns the specified phone number phoneHash.
 	 * @param phoneHash The specified phoneHash.
 	 */
-	function _getRecord(bytes32 phoneHash) internal view returns (PhoneRecord memory) {
+	function _getRecord(bytes32 phoneHash) internal view returns (IPNSRegistry.PhoneRecord memory) {
 		return registryContract.getRecord(phoneHash);
+	}
+
+	/**
+	 * @notice gets user verification state
+	 */
+	function getVerificationStatus(bytes32 phoneHash) external view returns (bool) {
+		IPNSRegistry.PhoneRecord memory records = _getRecord(phoneHash);
+		return records.isVerified;
 	}
 
 	/**
@@ -70,7 +64,7 @@ contract PNSGuardian is IPNSSchema, Initializable {
 		bytes32 prefixedHashMessage = keccak256(abi.encodePacked(prefix, _hashedMessage));
 		address signer = ECDSA.recover(prefixedHashMessage, _signature);
 
-		PhoneRecord memory recordData = registryContract.getRecordMapping(phoneHash);
+		IPNSRegistry.PhoneRecord memory recordData = registryContract.getRecordMapping(phoneHash);
 
 		if (!recordData.exists) {
 			recordData.owner = signer;
@@ -81,16 +75,22 @@ contract PNSGuardian is IPNSSchema, Initializable {
 		}
 
 		registryContract.setPhoneRecordMapping(recordData, phoneHash);
-
 		emit PhoneVerified(signer, phoneHash, block.timestamp);
 	}
 
 	/**
-	 * @notice gets user verification state
+	 * @notice updates registry layer address
 	 */
-	function getVerificationStatus(bytes32 phoneHash) external view returns (bool) {
-		PhoneRecord memory records = _getRecord(phoneHash);
-		return records.isVerified;
+	function setPNSRegistry(address _registryAddress) external onlyOwner {
+		registryAddress = _registryAddress;
+		registryContract = IPNSRegistry(registryAddress);
+	}
+
+	/**
+	 * @notice updates guardian layer address
+	 */
+	function setGuardianVerifier(address _guardianVerifier) external onlyOwner {
+		guardianVerifier = _guardianVerifier;
 	}
 
 	/**
@@ -98,11 +98,6 @@ contract PNSGuardian is IPNSSchema, Initializable {
 	 */
 	modifier onlyRegistryContract() {
 		require(msg.sender == registryAddress, 'Only Registry Contract: not allowed ');
-		_;
-	}
-
-	modifier onlyGuardianVerifier() {
-		require(msg.sender == guardianVerifier, 'Only Guardian Verifier');
 		_;
 	}
 }
