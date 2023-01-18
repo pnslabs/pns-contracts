@@ -42,8 +42,8 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 
 	bytes32 public constant VERIFIER_ROLE = keccak256('VERIFIER_ROLE');
 
-	/// Mapping state to store resolver record
-	mapping(string => ResolverRecord) resolverRecordMapping;
+	/// Mapping state to map phonehash to a map of resolver record
+	mapping(bytes32 => mapping(string => ResolverRecord)) resolverRecordMapping;
 	/// Mapping state to store mobile phone number record that will be linked to a resolver
 	mapping(bytes32 => PhoneRecord) public records;
 	// mapping state to store resolver recordslinked to a phone number
@@ -315,16 +315,16 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 
 		PhoneRecord storage recordData = records[phoneHash];
 
-		ResolverRecord storage resolverRecordData = resolverRecordMapping[label];
+		mapping(string => ResolverRecord) storage resolverRecordData = resolverRecordMapping[phoneHash];
 
-		require(!resolverRecordData.exists, 'phone record has been created and linked to a wallet already');
+		require(!resolverRecordData[label].exists, 'phone record has been created and linked to a wallet already');
 
-		if (!resolverRecordData.exists) {
-			resolverRecordData.label = label;
-			resolverRecordData.createdAt = block.timestamp;
-			resolverRecordData.wallet = resolver;
-			resolverRecordData.exists = true;
-			resolverRecords[phoneHash].push(resolverRecordData);
+		if (!resolverRecordData[label].exists) {
+			resolverRecordData[label].label = label;
+			resolverRecordData[label].createdAt = block.timestamp;
+			resolverRecordData[label].wallet = resolver;
+			resolverRecordData[label].exists = true;
+			resolverRecords[phoneHash].push(resolverRecordData[label]);
 		}
 		recordData.phoneHash = phoneHash;
 		recordData.owner = owner;
@@ -349,17 +349,16 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		address resolver,
 		string memory label
 	) internal {
-		ResolverRecord storage resolverRecordData = resolverRecordMapping[label];
+		mapping(string => ResolverRecord) storage resolverRecordData = resolverRecordMapping[phoneHash];
 		PhoneRecord storage recordData = records[phoneHash];
 		require(recordData.exists, 'phone record not found');
-		require(!resolverRecordData.exists, 'resolver label already exist');
 
-		if (!resolverRecordData.exists) {
-			resolverRecordData.label = label;
-			resolverRecordData.createdAt = block.timestamp;
-			resolverRecordData.wallet = resolver;
-			resolverRecordData.exists = true;
-			resolverRecords[phoneHash].push(resolverRecordData);
+		if (!resolverRecordData[label].exists) {
+			resolverRecordData[label].label = label;
+			resolverRecordData[label].createdAt = block.timestamp;
+			resolverRecordData[label].wallet = resolver;
+			resolverRecordData[label].exists = true;
+			resolverRecords[phoneHash].push(resolverRecordData[label]);
 		}
 	}
 
