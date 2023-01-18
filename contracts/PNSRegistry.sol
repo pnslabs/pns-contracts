@@ -291,6 +291,14 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		registryRenewCost = _registryRenewCost;
 	}
 
+	function getRegistryCost() external view returns (uint256) {
+		return registryCost;
+	}
+
+	function getRegistryRenewCost() external view returns (uint256) {
+		return registryRenewCost;
+	}
+
 	function getGracePeriod() external view returns (uint256) {
 		return gracePeriod;
 	}
