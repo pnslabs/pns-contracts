@@ -9,7 +9,7 @@ import '@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 
 // ==========  Internal imports    ==========
-import './PNSAddress.sol';
+// import './PNSAddress.sol';
 import './Interfaces/IPNSResolver.sol';
 import './Interfaces/IPNSRegistry.sol';
 
@@ -74,9 +74,8 @@ contract PNSResolver is Initializable {
 	 * @return The associated address.
 	 */
 	function getAddress(bytes32 phoneHash) public view virtual returns (string memory) {
-		string memory a = getAddress(phoneHash, COIN_TYPE_ETH);
+		return getAddress(phoneHash, COIN_TYPE_ETH);
 		// bytes memory validateAddress = bytes(a);
-		return a;
 	}
 
 	/**
