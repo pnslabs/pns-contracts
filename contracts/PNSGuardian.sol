@@ -73,7 +73,7 @@ contract PNSGuardian is IPNSSchema, Initializable {
 		bytes32 prefixedHashMessage = keccak256(abi.encodePacked(prefix, _hashedMessage));
 		address signer = ECDSA.recover(prefixedHashMessage, _signature);
 
-		VerificationRecord memory verificationRecordData = verificationRecordMapping[phoneHash];
+		VerificationRecord storage verificationRecordData = verificationRecordMapping[phoneHash];
 
 		if (!verificationRecordData.exists) {
 			verificationRecordData.owner = signer;
@@ -83,17 +83,7 @@ contract PNSGuardian is IPNSSchema, Initializable {
 			verificationRecordData.isVerified = status;
 		}
 
-		_setVerificationRecordMapping(verificationRecordData, phoneHash);
 		emit PhoneVerified(signer, phoneHash, block.timestamp);
-	}
-
-	function _setVerificationRecordMapping(VerificationRecord memory verificationRecordData, bytes32 phoneHash) internal {
-		VerificationRecord storage _verificationRecord = verificationRecordMapping[phoneHash];
-		_verificationRecord.owner = verificationRecordData.owner;
-		_verificationRecord.exists = verificationRecordData.exists;
-		_verificationRecord.phoneHash = verificationRecordData.phoneHash;
-		_verificationRecord.isVerified = verificationRecordData.isVerified;
-		_verificationRecord.verifiedAt = verificationRecordData.verifiedAt;
 	}
 
 	function getVerificationRecord(bytes32 phoneHash) external view returns (VerificationRecord memory) {

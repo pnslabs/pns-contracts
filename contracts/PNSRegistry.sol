@@ -151,17 +151,6 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		return records[phoneHash];
 	}
 
-	function _setPhoneRecordMapping(PhoneRecord memory recordData, bytes32 phoneHash) internal {
-		PhoneRecord storage _recordData = records[phoneHash];
-		_recordData.createdAt = recordData.createdAt;
-		_recordData.owner = recordData.owner;
-		_recordData.exists = recordData.exists;
-		_recordData.phoneHash = recordData.phoneHash;
-		_recordData.isInGracePeriod = recordData.isInGracePeriod;
-		_recordData.isExpired = recordData.isExpired;
-		_recordData.expirationTime = recordData.expirationTime;
-	}
-
 	/**
 	 * @dev Sets the record for a phoneHash.
 	 * @param phoneHash The phoneHash to update.
@@ -237,7 +226,6 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 			(bool sent, ) = msg.sender.call{value: msg.value - convertAmountToETH(registryRenewCost)}('');
 			require(sent, 'Transfer failed.');
 		}
-		_setPhoneRecordMapping(recordData, phoneHash);
 
 		emit PhoneRecordRenewed(phoneHash);
 	}
@@ -346,9 +334,6 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		recordData.isExpired = false;
 		recordData.expirationTime = block.timestamp + expiryTime;
 
-		// update mapping here
-		_setPhoneRecordMapping(recordData, phoneHash);
-
 		(bool success, ) = address(this).call{value: msg.value}('');
 		require(success, 'Transfer failed.');
 
@@ -376,7 +361,6 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 			resolverRecordData.exists = true;
 			resolverRecords[phoneHash].push(resolverRecordData);
 		}
-		_setPhoneRecordMapping(recordData, phoneHash);
 	}
 
 	/**
@@ -463,6 +447,17 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	 */
 	function _hasPassedGracePeriod(bytes32 phoneHash) internal view hasExpiryOf(phoneHash) returns (bool) {
 		return block.timestamp > (records[phoneHash].expirationTime + gracePeriod);
+	}
+
+	function _setPhoneRecordMapping(PhoneRecord memory recordData, bytes32 phoneHash) internal {
+		PhoneRecord storage _recordData = records[phoneHash];
+		_recordData.createdAt = recordData.createdAt;
+		_recordData.owner = recordData.owner;
+		_recordData.exists = recordData.exists;
+		_recordData.phoneHash = recordData.phoneHash;
+		_recordData.isInGracePeriod = recordData.isInGracePeriod;
+		_recordData.isExpired = recordData.isExpired;
+		_recordData.expirationTime = recordData.expirationTime;
 	}
 
 	/**
