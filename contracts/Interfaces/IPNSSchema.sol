@@ -9,7 +9,7 @@ pragma solidity 0.8.9;
  */
 interface IPNSSchema {
 	struct ResolverRecord {
-		address wallet;
+		string wallet;
 		string label;
 	}
 
