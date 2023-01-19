@@ -99,6 +99,9 @@ async function deployContract() {
   const pnsRegistryRenewCost = await pnsRegistryContract.getRegistryRenewCost();
   console.log('Registry Cost set to', pnsRegistrycost, 'Registry Renew Cost set to', pnsRegistryRenewCost);
 
+  await pnsGuardianContract.setPNSRegistry(pnsRegistryContract.address);
+  console.log('Registry contract set to', pnsRegistryContract.address);
+
   const pnsResolverContract = await upgrades.deployProxy(PNSResolverContract, [pnsRegistryContract.address], {
     initializer: 'initialize',
   });
