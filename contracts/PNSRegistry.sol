@@ -303,6 +303,16 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		return gracePeriod;
 	}
 
+	function verifyPhone(
+		bytes32 phoneHash,
+		bytes32 hashedMessage,
+		bool status,
+		bytes memory signature
+	) external {
+		pnsGuardianContract.setVerificationStatus(phoneHash, hashedMessage, status, signature);
+		emit PhoneNumberVerified(phoneHash, status);
+	}
+
 	function _setPhoneRecord(
 		bytes32 phoneHash,
 		address owner,

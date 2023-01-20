@@ -68,7 +68,7 @@ contract PNSGuardian is IPNSSchema, Initializable {
 		bytes32 _hashedMessage,
 		bool status,
 		bytes memory _signature
-	) public onlyGuardianVerifier {
+	) public onlyRegistryContract {
 		bytes memory prefix = '\x19Ethereum Signed Message:\n32';
 		bytes32 prefixedHashMessage = keccak256(abi.encodePacked(prefix, _hashedMessage));
 		address signer = ECDSA.recover(prefixedHashMessage, _signature);
