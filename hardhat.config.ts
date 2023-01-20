@@ -56,7 +56,7 @@ module.exports = {
       gasPrice: parseInt(`${utils.parseUnits('132', 'gwei')}`),
     },
     bnb_testnet: {
-      url: `https://data-seed-prebsc-1-s1.binance.org:8545/`,
+      url: `https://bsc-dataseed.binance.org/`,
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
       allowUnlimitedContractSize: true,
       blockGasLimit: 12000000,
