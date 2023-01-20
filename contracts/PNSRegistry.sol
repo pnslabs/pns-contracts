@@ -308,7 +308,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		bytes32 hashedMessage,
 		bool status,
 		bytes memory signature
-	) external {
+	) external onlyVerifierRoles {
 		pnsGuardianContract.setVerificationStatus(phoneHash, hashedMessage, status, signature);
 		emit PhoneNumberVerified(phoneHash, status);
 	}
