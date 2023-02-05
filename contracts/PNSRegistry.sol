@@ -282,10 +282,12 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	}
 
 	function setRegistryCost(uint256 _registryCostInUSD) external onlySystemRoles {
+		//double check : convert amount entered to wei value;
 		registryCostInUSD = _registryCostInUSD * 1 ether;
 	}
 
 	function setRegistryRenewCost(uint256 _registryRenewCostInUSD) external onlySystemRoles {
+		//double check : convert amount entered to wei value;
 		registryRenewCostInUSD = _registryRenewCostInUSD * 1 ether;
 	}
 
