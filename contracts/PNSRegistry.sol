@@ -26,14 +26,13 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	/// Grace period value
 	uint256 public gracePeriod;
 	/// registry cost
-	uint256 public registryCost;
+	uint256 public registryCostInUSD;
 	/// registry renew cost
-	uint256 public registryRenewCost;
+	uint256 public registryRenewCostInUSD;
 
 	/// Oracle feed pricing
 	//AggregatorV3Interface public priceFeedContract;
-
-	DummyPriceOracle public priceFeedContract;
+	AggregatorV3Interface public priceFeedContract;
 
 	IPNSGuardian public pnsGuardianContract;
 
@@ -134,8 +133,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		expiryTime = 365 days;
 		gracePeriod = 60 days;
 
-		priceFeedContract = DummyPriceOracle(_priceAggregator);
-
+		priceFeedContract = AggregatorV3Interface(_priceAggregator);
 		pnsGuardianContract = IPNSGuardian(_pnsGuardianContract);
 
 		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -207,8 +205,9 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	 * @param phoneHash The phoneHash.
 	 */
 	function renew(bytes32 phoneHash) external payable virtual authorised(phoneHash) hasExpiryOf(phoneHash) {
-		require(msg.value >= convertAmountToETH(registryRenewCost), 'insufficient balance');
-
+		//convert to wei
+		uint256 userAmountInETH = convertETHToUSD(msg.value);
+		require(userAmountInETH >= registryRenewCostInUSD, 'insufficient balance');
 		PhoneRecord storage recordData = records[phoneHash];
 		bool _timeHasPassedExpiryTime = _hasPassedExpiryTime(phoneHash);
 		bool _hasExhaustedGracePeriod = _hasPassedGracePeriod(phoneHash);
@@ -219,14 +218,13 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		recordData.isExpired = false;
 		recordData.expirationTime = block.timestamp + expiryTime;
 
-		(bool success, ) = address(this).call{value: msg.value}('');
-		require(success, 'Transfer failed.');
-
-		if (msg.value > convertAmountToETH(registryRenewCost)) {
-			(bool sent, ) = msg.sender.call{value: msg.value - convertAmountToETH(registryRenewCost)}('');
+		//refund user if excessive
+		if (userAmountInETH > registryRenewCostInUSD) {
+			(bool sent, ) = msg.sender.call{value: userAmountInETH - registryRenewCostInUSD}('');
 			require(sent, 'Transfer failed.');
 		}
 
+		//implement move money(ETH) to treasury
 		emit PhoneRecordRenewed(phoneHash);
 	}
 
@@ -283,20 +281,20 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		emit GracePeriodUpdated(msg.sender, time);
 	}
 
-	function setRegistryCost(uint256 _registryCost) external onlySystemRoles {
-		registryCost = _registryCost;
+	function setRegistryCost(uint256 _registryCostInUSD) external onlySystemRoles {
+		registryCostInUSD = _registryCostInUSD * 1 ether;
 	}
 
-	function setRegistryRenewCost(uint256 _registryRenewCost) external onlySystemRoles {
-		registryRenewCost = _registryRenewCost;
+	function setRegistryRenewCost(uint256 _registryRenewCostInUSD) external onlySystemRoles {
+		registryRenewCostInUSD = _registryRenewCostInUSD * 1 ether;
 	}
 
 	function getRegistryCost() external view returns (uint256) {
-		return registryCost;
+		return registryCostInUSD;
 	}
 
 	function getRegistryRenewCost() external view returns (uint256) {
-		return registryRenewCost;
+		return registryRenewCostInUSD;
 	}
 
 	function getGracePeriod() external view returns (uint256) {
@@ -319,7 +317,8 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		address resolver,
 		string memory label
 	) internal onlyVerified(phoneHash) onlyVerifiedOwner(phoneHash) {
-		require(msg.value >= convertAmountToETH(registryCost), 'insufficient balance');
+		uint256 userAmountInETH = convertETHToUSD(msg.value);
+		require(userAmountInETH >= registryCostInUSD, 'insufficient balance');
 
 		PhoneRecord storage recordData = records[phoneHash];
 
@@ -342,13 +341,11 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		recordData.isExpired = false;
 		recordData.expirationTime = block.timestamp + expiryTime;
 
-		(bool success, ) = address(this).call{value: msg.value}('');
-		require(success, 'Transfer failed.');
-
-		if (msg.value > convertAmountToETH(registryCost)) {
-			(bool sent, ) = msg.sender.call{value: msg.value - convertAmountToETH(registryCost)}('');
+		if (userAmountInETH > registryCostInUSD) {
+			(bool sent, ) = msg.sender.call{value: userAmountInETH - registryCostInUSD}('');
 			require(sent, 'Transfer failed.');
 		}
+		//implement move funds to trwasury
 		emit PhoneRecordCreated(phoneHash, resolver, owner);
 	}
 
@@ -379,16 +376,10 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		return keccak256(abi.encode(phoneHash));
 	}
 
-	function convertAmountToETH(uint256 usdAmount) internal view returns (uint256) {
-		uint256 ethPrice = uint256(getEtherPriceInUSD());
-
-		uint256 ethAmount = ((usdAmount) / ethPrice);
-
-		return ethAmount;
-	}
-
-	function getAmountinETH(uint256 usdAmount) external view returns (uint256) {
-		return convertAmountToETH(usdAmount);
+	function convertETHToUSD(uint256 ethAmount) internal view returns (uint256) {
+		int256 ethPrice = getEtherPriceInUSD();
+		uint256 ethAmountInUSD = (ethAmount * uint256(ethPrice)) / 10**18;
+		return uint256(ethAmountInUSD);
 	}
 
 	/**
@@ -396,8 +387,9 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	 */
 
 	function getEtherPriceInUSD() internal view returns (int256) {
-		int256 price = priceFeedContract.latestRoundData();
-		return price;
+		(, int256 answer, , , ) = priceFeedContract.latestRoundData();
+		// Chainlink returns 8 decimal places so we convert to wei
+		return answer * 10**10;
 	}
 
 	/**
