@@ -11,6 +11,7 @@
     "test": "npx hardhat test",
     "deploy:localhost": "npx hardhat run --network localhost scripts/deploy.ts",
     "deploy:bnb_testnet": "npx hardhat run --network bnb_testnet scripts/deploy.ts",
+    "deploy:ethereum_goerli": "npx hardhat run --network ethereum_goerli scripts/deploy.ts",
     "prepare": "husky install"
   },
   "devDependencies": {
