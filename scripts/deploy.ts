@@ -95,9 +95,9 @@ async function deployContract() {
 
   console.log('PNS Registry Contract Deployed to', pnsRegistryContract.address);
   await pnsRegistryContract.setRegistryCost(registryCost);
-  const pnsRegistrycost = await pnsRegistryContract.getRegistryCost();
+  const pnsRegistrycost = await pnsRegistryContract.registryCostInUSD();
   await pnsRegistryContract.setRegistryRenewCost(registryRenewCost);
-  const pnsRegistryRenewCost = await pnsRegistryContract.getRegistryRenewCost();
+  const pnsRegistryRenewCost = await pnsRegistryContract.registryRenewCostInUSD();
   console.log(
     `Registry Cost set to ${pnsRegistrycost / 1e18} USD, \n Registry Renew Cost set to, ${
       pnsRegistryRenewCost / 1e18
