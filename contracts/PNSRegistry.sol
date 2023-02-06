@@ -5,13 +5,18 @@ pragma solidity 0.8.9;
 
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
-import '@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol';
+// import '@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol';
+
+import 'hardhat/console.sol';
 
 // ==========  Internal imports    ==========
 import './Interfaces/IPNSRegistry.sol';
 import './Interfaces/IPNSResolver.sol';
 import './Interfaces/IPNSGuardian.sol';
-import './mocks/DummyPriceOracle.sol';
+
+interface AggregatorInterface {
+	function latestAnswer() external view returns (int256);
+}
 
 /**
  * @title The contract for phone number service Registry.
@@ -21,6 +26,7 @@ import './mocks/DummyPriceOracle.sol';
  */
 
 contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
+	// using AddressUpgradeable for address payable;
 	/// Expiry time value
 	uint256 public expiryTime;
 	/// Grace period value
@@ -32,7 +38,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 
 	/// Oracle feed pricing
 	//AggregatorV3Interface public priceFeedContract;
-	AggregatorV3Interface public priceFeedContract;
+	AggregatorInterface public priceFeedContract;
 
 	IPNSGuardian public pnsGuardianContract;
 
@@ -133,7 +139,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		expiryTime = 365 days;
 		gracePeriod = 60 days;
 
-		priceFeedContract = AggregatorV3Interface(_priceAggregator);
+		priceFeedContract = AggregatorInterface(_priceAggregator);
 		pnsGuardianContract = IPNSGuardian(_pnsGuardianContract);
 
 		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -220,7 +226,9 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 
 		//refund user if excessive
 		if (ethToUSD > registryRenewCostInUSD) {
-			(bool sent, ) = msg.sender.call{value: ethToUSD - registryRenewCostInUSD}('');
+			uint256 refunAmountInUSD = ethToUSD - registryRenewCostInUSD;
+			uint256 refundAmountInETH = convertUSDToETH(refunAmountInUSD);
+			(bool sent, ) = msg.sender.call{value: refundAmountInETH}('');
 			require(sent, 'Transfer failed.');
 		}
 
@@ -283,20 +291,12 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 
 	function setRegistryCost(uint256 _registryCostInUSD) external onlySystemRoles {
 		//double check : convert amount entered to wei value;
-		registryCostInUSD = _registryCostInUSD * 1 ether;
+		registryCostInUSD = _registryCostInUSD;
 	}
 
 	function setRegistryRenewCost(uint256 _registryRenewCostInUSD) external onlySystemRoles {
 		//double check : convert amount entered to wei value;
-		registryRenewCostInUSD = _registryRenewCostInUSD * 1 ether;
-	}
-
-	function getRegistryCost() external view returns (uint256) {
-		return registryCostInUSD / 1 ether;
-	}
-
-	function getRegistryRenewCost() external view returns (uint256) {
-		return registryRenewCostInUSD / 1 ether;
+		registryRenewCostInUSD = _registryRenewCostInUSD;
 	}
 
 	function getGracePeriod() external view returns (uint256) {
@@ -308,7 +308,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		bytes32 hashedMessage,
 		bool status,
 		bytes memory signature
-	) external onlyVerifierRoles {
+	) external {
 		pnsGuardianContract.setVerificationStatus(phoneHash, hashedMessage, status, signature);
 		emit PhoneNumberVerified(phoneHash, status);
 	}
@@ -344,7 +344,9 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		recordData.expirationTime = block.timestamp + expiryTime;
 
 		if (ethToUSD > registryCostInUSD) {
-			(bool sent, ) = msg.sender.call{value: ethToUSD - registryCostInUSD}('');
+			uint256 refunAmountInUSD = ethToUSD - registryCostInUSD;
+			uint256 refundAmountInETH = convertUSDToETH(refunAmountInUSD);
+			(bool sent, ) = msg.sender.call{value: refundAmountInETH}('');
 			require(sent, 'Transfer failed.');
 		}
 		//implement move funds to trwasury
@@ -378,9 +380,15 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		return keccak256(abi.encode(phoneHash));
 	}
 
-	function convertETHToUSD(uint256 ethAmount) internal view returns (uint256) {
-		int256 ethPrice = getEtherPriceInUSD();
-		uint256 ethAmountInUSD = (ethAmount * uint256(ethPrice)) / 10**18;
+	function convertETHToUSD(uint256 ethAmount) public view returns (uint256) {
+		uint256 ethPrice = getEtherPriceInUSD();
+		uint256 ethAmountInUSD = (ethAmount * ethPrice) / 10**18;
+		return uint256(ethAmountInUSD);
+	}
+
+	function convertUSDToETH(uint256 usdAmount) public view returns (uint256) {
+		uint256 ethPrice = getEtherPriceInUSD();
+		uint256 ethAmountInUSD = (usdAmount * 10**18) / ethPrice;
 		return uint256(ethAmountInUSD);
 	}
 
@@ -388,10 +396,10 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	 * @dev Returns the latest price
 	 */
 
-	function getEtherPriceInUSD() internal view returns (int256) {
-		(, int256 answer, , , ) = priceFeedContract.latestRoundData();
+	function getEtherPriceInUSD() public view returns (uint256) {
+		int256 answer = priceFeedContract.latestAnswer();
 		// Chainlink returns 8 decimal places so we convert to wei
-		return answer * 10**10;
+		return uint256(answer * 10**10);
 	}
 
 	/**
