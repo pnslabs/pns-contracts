@@ -63,6 +63,8 @@
   },
   "dependencies": {
     "@chainlink/contracts": "^0.5.1",
-    "@openzeppelin/contracts": "^4.7.3"
+    "@openzeppelin/contracts": "^4.7.3",
+    "eip-712": "^1.0.0",
+    "ethereumjs-util": "^7.1.5"
   }
 }
