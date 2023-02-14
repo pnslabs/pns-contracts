@@ -73,7 +73,6 @@ contract PNSGuardian is IPNSSchema, Initializable {
 		bytes32 prefixedHashMessage = keccak256(abi.encodePacked(prefix, _hashedMessage));
 		address signer = ECDSA.recover(prefixedHashMessage, _signature);
 		//implement 20 days to reauthicate record & claim mechanism here.
-		require(this.getVerificationStatus(phoneHash) == false, 'record already claimed and verified');
 
 		VerificationRecord storage verificationRecordData = verificationRecordMapping[phoneHash];
 
