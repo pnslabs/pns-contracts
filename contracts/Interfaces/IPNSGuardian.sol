@@ -23,4 +23,6 @@ interface IPNSGuardian {
 	function setPNSRegistry(address _registryAddress) external;
 
 	function getVerificationStatus(bytes32 phoneHash) external view returns (bool);
+
+	function getVerificationRecord(bytes32 phoneHash) external view returns (VerificationRecord memory);
 }

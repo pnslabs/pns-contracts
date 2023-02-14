@@ -20,6 +20,9 @@ contract PNSGuardian is Initializable, Ownable {
 
 	address public guardianVerifier;
 
+	// Mapping statte to store verification record
+	mapping(bytes32 => VerificationRecord) verificationRecordMapping;
+
 	/**
 	 * @dev logs the event when a phone record is verified.
 	 * @param owner The phoneHash to be linked to the record.
@@ -63,34 +66,31 @@ contract PNSGuardian is Initializable, Ownable {
 		bytes memory prefix = '\x19Ethereum Signed Message:\n32';
 		bytes32 prefixedHashMessage = keccak256(abi.encodePacked(prefix, _hashedMessage));
 		address signer = ECDSA.recover(prefixedHashMessage, _signature);
+		//implement 20 days to reauthicate record & claim mechanism here.
 
-		IPNSRegistry.PhoneRecord memory recordData = registryContract.getRecordMapping(phoneHash);
+		VerificationRecord storage verificationRecordData = verificationRecordMapping[phoneHash];
 
-		if (!recordData.exists) {
-			recordData.owner = signer;
-			recordData.phoneHash = phoneHash;
-			recordData.verifiedAt = block.timestamp;
-			recordData.exists = true;
-			recordData.isVerified = status;
+		if (!verificationRecordData.exists) {
+			verificationRecordData.owner = signer;
+			verificationRecordData.phoneHash = phoneHash;
+			verificationRecordData.verifiedAt = block.timestamp;
+			verificationRecordData.exists = true;
+			verificationRecordData.isVerified = status;
 		}
-
-		registryContract.setPhoneRecordMapping(recordData, phoneHash);
 		emit PhoneVerified(signer, phoneHash, block.timestamp);
+	}
+
+	function getVerificationRecord(bytes32 phoneHash) external view returns (VerificationRecord memory) {
+		VerificationRecord memory verificationRecord = verificationRecordMapping[phoneHash];
+		return verificationRecord;
 	}
 
 	/**
 	 * @notice updates registry layer address
 	 */
-	function setPNSRegistry(address _registryAddress) external onlyOwner {
-		registryAddress = _registryAddress;
-		registryContract = IPNSRegistry(registryAddress);
-	}
-
-	/**
-	 * @notice updates guardian layer address
-	 */
-	function setGuardianVerifier(address _guardianVerifier) external onlyOwner {
-		guardianVerifier = _guardianVerifier;
+	function getVerificationStatus(bytes32 phoneHash) public view returns (bool) {
+		VerificationRecord memory verificationRecord = verificationRecordMapping[phoneHash];
+		return verificationRecord.isVerified;
 	}
 
 	/**

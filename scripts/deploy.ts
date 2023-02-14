@@ -2,12 +2,14 @@ import { ethers, upgrades } from 'hardhat';
 import hre from 'hardhat';
 
 import { chainlink_price_feeds } from './constants';
+import { ethToWei } from '../test/helpers/base';
 
 async function deployContract() {
   let adminAccount;
   let pnsRegistryContract;
-  let registryCost = '10000000000000000000'; // 10 usd
-  let registryRenewCost = '5000000000000000000'; // 5 usd
+  let registryCost = ethToWei('10'); // 10 usd
+  let registryRenewCost = ethToWei('5'); // 5 usd
+  let ethPrice = '1779400000000';
 
   console.log(hre.network.name, 'network name');
 
@@ -20,6 +22,10 @@ async function deployContract() {
   const PNSResolverContract = await ethers.getContractFactory('PNSResolver');
 
   const PNSGuardianContract = await ethers.getContractFactory('PNSGuardian');
+
+  const DummyPriceOracleContract = await ethers.getContractFactory('DummyPriceOracle');
+
+  const dummyPriceOrcleContract = await DummyPriceOracleContract.deploy(ethPrice);
 
   const pnsGuardianContract = await upgrades.deployProxy(PNSGuardianContract, [adminAddress], {
     initializer: 'initialize',
@@ -79,7 +85,7 @@ async function deployContract() {
   } else {
     pnsRegistryContract = await upgrades.deployProxy(
       PNSRegistryContract,
-      [pnsGuardianContract.address, chainlink_price_feeds.BSC_MAINNET, adminAddress],
+      [pnsGuardianContract.address, dummyPriceOrcleContract.address, adminAddress],
       {
         initializer: 'initialize',
       },
@@ -89,8 +95,14 @@ async function deployContract() {
 
   console.log('PNS Registry Contract Deployed to', pnsRegistryContract.address);
   await pnsRegistryContract.setRegistryCost(registryCost);
+  const pnsRegistrycost = await pnsRegistryContract.registryCostInUSD();
   await pnsRegistryContract.setRegistryRenewCost(registryRenewCost);
-  console.log('Registry Cost set to', registryCost, 'Registry Renew Cost set to', registryRenewCost);
+  const pnsRegistryRenewCost = await pnsRegistryContract.registryRenewCostInUSD();
+  console.log(
+    `Registry Cost set to ${pnsRegistrycost / 1e18} USD, \n Registry Renew Cost set to, ${
+      pnsRegistryRenewCost / 1e18
+    } USD`,
+  );
 
   await pnsGuardianContract.setPNSRegistry(pnsRegistryContract.address);
   console.log('Registry contract set to', pnsRegistryContract.address);

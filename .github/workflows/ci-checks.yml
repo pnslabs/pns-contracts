@@ -38,7 +38,6 @@ jobs:
         run: yarn lint:contracts
         continue-on-error: true
 
-
   tests:
     name: Unit tests
     runs-on: ubuntu-latest
@@ -49,7 +48,7 @@ jobs:
       - name: Generate typings
         run: yarn compile
       - name: Run Test
-        run: yarn test
+        run: yarn run test
 
   # coverage: (not being checked)
   #   runs-on: ubuntu-latest

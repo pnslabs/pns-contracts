@@ -17,8 +17,16 @@ interface IPNSSchema {
 		address owner;
 		bytes32 phoneHash;
 		bool exists;
-		bool isVerified;
+		bool isInGracePeriod;
+		bool isExpired;
 		uint256 expirationTime;
+		uint256 createdAt;
+	}
+	struct VerificationRecord {
 		uint256 verifiedAt;
+		bool isVerified;
+		bool exists;
+		address owner;
+		bytes32 phoneHash;
 	}
 }

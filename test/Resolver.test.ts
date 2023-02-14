@@ -45,6 +45,10 @@ describe('PNS Resolver', () => {
       'PhoneNumberVerified',
     );
   });
+  it('should get the verification record', async () => {
+    let verificationRecord = await pnsRegistryContract.getVerificationRecord(phoneNumber1);
+    console.log(verificationRecord, 'verification record');
+  });
 
   it('should create a new record', async function () {
     amountInETH = await pnsRegistryContract.getAmountinETH(amount);

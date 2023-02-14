@@ -2,13 +2,14 @@ import { ethers, upgrades } from 'hardhat';
 import hre from 'hardhat';
 
 import { chainlink_price_feeds } from './constants';
+import { ethToWei } from '../test/helpers/base';
 
 async function deployContract() {
   let adminAccount;
   let pnsRegistryContract;
-  let registryCost = '10000000000000000000'; // 10 usd
-  let registryRenewCost = '5000000000000000000'; // 5 usd
-  let ethPrice = '1779400000000';
+  let registryCost = ethToWei('10'); // 10 usd
+  let registryRenewCost = ethToWei('5'); // 5 usd
+  let ethPrice = '163759050000';
 
   console.log(hre.network.name, 'network name');
 
@@ -94,8 +95,14 @@ async function deployContract() {
 
   console.log('PNS Registry Contract Deployed to', pnsRegistryContract.address);
   await pnsRegistryContract.setRegistryCost(registryCost);
+  const pnsRegistrycost = await pnsRegistryContract.registryCostInUSD();
   await pnsRegistryContract.setRegistryRenewCost(registryRenewCost);
-  console.log('Registry Cost set to', registryCost, 'Registry Renew Cost set to', registryRenewCost);
+  const pnsRegistryRenewCost = await pnsRegistryContract.registryRenewCostInUSD();
+  console.log(
+    `Registry Cost set to ${pnsRegistrycost / 1e18} USD, \n Registry Renew Cost set to, ${
+      pnsRegistryRenewCost / 1e18
+    } USD`,
+  );
 
   await pnsGuardianContract.setPNSRegistry(pnsRegistryContract.address);
   console.log('Registry contract set to', pnsRegistryContract.address);
@@ -107,7 +114,7 @@ async function deployContract() {
 
   console.log('PNS Resolver Contract Deployed to', pnsResolverContract.address);
 
-  return { pnsRegistryContract, adminAddress, pnsResolverContract };
+  return { pnsRegistryContract, pnsGuardianContract, adminAddress, pnsResolverContract };
 }
 
 async function deployUpgradedContract(pnsRegistryContract) {
@@ -122,10 +129,3 @@ module.exports = {
   deployContract,
   deployUpgradedContract,
 };
-
-deployContract()
-  .then(() => process.exit(0))
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  });
