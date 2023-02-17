@@ -11,6 +11,14 @@ import './IPNSSchema.sol';
  * @dev All function call interfaces are defined here.
  */
 interface IPNSGuardian {
+	struct VerificationRecord {
+		uint256 verifiedAt;
+		bool isVerified;
+		bool exists;
+		address owner;
+		bytes32 phoneHash;
+	}
+
 	function setVerificationStatus(
 		bytes32 phoneHash,
 		bytes32 _hashedMessage,
