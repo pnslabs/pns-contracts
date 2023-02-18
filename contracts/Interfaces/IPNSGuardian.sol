@@ -15,6 +15,12 @@ interface IPNSGuardian {
 		address owner;
 	}
 
+	function getVerificationStatus(bytes32 phoneHash) external view returns (bool);
+
+	function getVerifiedOwner(bytes32 phoneHash) external view returns (address);
+
+	function getVerificationRecord(bytes32 phoneHash) external view returns (VerificationRecord memory);
+
 	function setVerificationStatus(
 		bytes32 phoneHash,
 		bool status,
@@ -24,8 +30,4 @@ interface IPNSGuardian {
 	function setGuardianVerifier(address _guardianVerifier) external;
 
 	function setPNSRegistry(address _registryAddress) external;
-
-	function getVerificationStatus(bytes32 phoneHash) external view returns (bool);
-
-	function getVerificationRecord(bytes32 phoneHash) external view returns (VerificationRecord memory);
 }
