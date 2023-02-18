@@ -2,8 +2,6 @@
 
 pragma solidity 0.8.9;
 
-import './IPNSSchema.sol';
-
 /**
  * @title Interface for the PNS Guardian contract.
  * @author PNS foundation core
@@ -14,17 +12,14 @@ interface IPNSGuardian {
 	struct VerificationRecord {
 		uint256 verifiedAt;
 		bool isVerified;
-		bool exists;
 		address owner;
-		bytes32 phoneHash;
 	}
 
 	function setVerificationStatus(
 		bytes32 phoneHash,
-		bytes32 _hashedMessage,
 		bool status,
 		bytes memory _signature
-	) external;
+	) external returns (bool);
 
 	function setGuardianVerifier(address _guardianVerifier) external;
 
