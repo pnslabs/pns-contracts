@@ -11,6 +11,8 @@ import './IPNSSchema.sol';
  * @dev All function call interfaces are defined here.
  */
 interface IPNSRegistry is IPNSSchema {
+	event Transfer(bytes32 indexed phoneHash, address owner);
+
 	function setPhoneRecord(
 		bytes32 phoneHash,
 		address resolver,
