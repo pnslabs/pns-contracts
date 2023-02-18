@@ -72,9 +72,15 @@ contract PNSGuardian is Initializable, IPNSGuardian, Ownable, EIP712Upgradeable 
 	/**
 	 * @notice updates registry layer address
 	 */
-	function getVerificationStatus(bytes32 phoneHash) public view returns (bool) {
-		VerificationRecord memory verificationRecord = verifiedRecord[phoneHash];
-		return verificationRecord.isVerified;
+	function getVerificationStatus(bytes32 phoneHash) external view returns (bool) {
+		return verifiedRecord[phoneHash].isVerified;
+	}
+
+	/**
+	 * @notice updates registry layer address
+	 */
+	function getVerifiedOwner(bytes32 phoneHash) external view returns (address) {
+		return verifiedRecord[phoneHash].owner;
 	}
 
 	/**
