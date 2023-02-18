@@ -44,13 +44,13 @@ contract PNSResolver is Initializable {
 		return recordData.owner;
 	}
 
-	/**
-	 * @dev Returns an the resolver details for the specified phone number phoneHash.
-	 * @param phoneHash The specified phoneHash.
-	 */
-	function getResolverDetails(bytes32 phoneHash) external view returns (IPNSRegistry.ResolverRecord[] memory) {
-		return PNSRegistry.getResolver(phoneHash);
-	}
+	// /**
+	//  * @dev Returns an the resolver details for the specified phone number phoneHash.
+	//  * @param phoneHash The specified phoneHash.
+	//  */
+	// function getResolverDetails(bytes32 phoneHash) external view returns (IPNSRegistry.ResolverRecord[] memory) {
+	// 	return PNSRegistry.getResolver(phoneHash);
+	// }
 
 	function getVersion() external view virtual returns (uint32) {
 		return 1;
@@ -62,6 +62,10 @@ contract PNSResolver is Initializable {
 	 */
 	function _getRecord(bytes32 phoneHash) internal view returns (IPNSRegistry.PhoneRecord memory) {
 		return PNSRegistry.getRecord(phoneHash);
+	}
+
+	function getRecord(bytes32 phoneHash) public view returns (IPNSRegistry.PhoneRecord memory) {
+		return _getRecord(phoneHash);
 	}
 
 	function getAddress(bytes32 phoneHash, uint256 coinType) public view virtual returns (string memory) {
