@@ -14,7 +14,7 @@ interface IPNSSchema {
 	 * @param wallet The resolver (address) of the record
 	 * @param owner The address of the owner
 	 */
-	event PhoneRecordCreated(bytes32 indexed phoneHash, address indexed wallet, address indexed owner);
+	event PhoneRecordCreated(bytes32 indexed phoneHash, string indexed wallet, address indexed owner);
 
 	/**
 	 * @dev logs when there is a transfer of ownership of a phoneHash to a new address

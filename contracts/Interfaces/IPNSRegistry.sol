@@ -11,25 +11,21 @@ import './IPNSSchema.sol';
  * @dev All function call interfaces are defined here.
  */
 interface IPNSRegistry is IPNSSchema {
-	event Transfer(bytes32 indexed phoneHash, address owner);
+	// event Transfer(bytes32 indexed phoneHash, address owner);
 
-	function setPhoneRecord(
-		bytes32 phoneHash,
-		address resolver,
-		string memory label
-	) external payable;
+	function setPhoneRecord(bytes32 phoneHash, string calldata resolver) external payable;
 
-	function linkPhoneToWallet(
-		bytes32 phoneHash,
-		address resolver,
-		string memory label
-	) external;
+	// function linkPhoneToWallet(
+	// 	bytes32 phoneHash,
+	// 	address resolver,
+	// 	string memory label
+	// ) external;
 
 	function setOwner(bytes32 phoneHash, address owner) external;
 
 	function getRecord(bytes32 phoneHash) external view returns (PhoneRecord memory);
 
-	function getResolver(bytes32 phoneHash) external view returns (ResolverRecord[] memory);
+	// function getResolver(bytes32 phoneHash) external view returns (ResolverRecord[] memory);
 
 	function getRegistryCost() external view returns (uint256);
 
@@ -78,5 +74,5 @@ interface IPNSRegistry is IPNSSchema {
 
 	function recordExists(bytes32 phoneHash) external view returns (bool);
 
-	function getVerificationRecord(bytes32 phoneHash) external view returns (VerificationRecord memory);
+	// function getVerificationRecord(bytes32 phoneHash) external view returns (VerificationRecord memory);
 }

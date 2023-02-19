@@ -3,7 +3,7 @@
 pragma solidity 0.8.9;
 
 import './IPNSSchema.sol';
-import './ens/IAddressResolver.sol';
+import './profiles/IAddressResolver.sol';
 
 /**
  * @title Interface for the PNS Resolver contract.

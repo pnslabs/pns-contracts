@@ -6,8 +6,6 @@ pragma solidity 0.8.9;
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 
-// import '@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol';
-
 import 'hardhat/console.sol';
 
 // ==========  Internal imports    ==========
@@ -60,7 +58,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	) external initializer {
 		__AccessControl_init();
 		//set oracle constant
-		// expiryTime = 365 days;
+		// EXPIRY_TIME = 365 days;
 		gracePeriod = 60 days;
 
 		priceFeedContract = AggregatorInterface(_priceAggregator);
@@ -74,7 +72,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	function createRecord(address owner, bytes32 phoneHash) internal {
 		PhoneRecord storage record = phoneRegistry[phoneHash];
 		record.owner = owner;
-		record.expiration = block.timestamp + expiryTime;
+		record.expiration = block.timestamp + EXPIRY_TIME;
 		record.creation = block.timestamp;
 	}
 
@@ -83,7 +81,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	 * @param phoneHash The phoneHash to update.
 	 * @param resolver The address the phone number resolves to.
 	 */
-	function setPhoneRecord(bytes32 phoneHash, address resolver) external payable virtual {
+	function setPhoneRecord(bytes32 phoneHash, string calldata resolver) external payable virtual {
 		_setPhoneRecord(phoneHash, resolver);
 	}
 
@@ -101,14 +99,14 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	 * @param newOwner The address of the new owner.
 	 */
 	function transfer(bytes32 phoneHash, address newOwner) public virtual authorised(phoneHash) authenticated(phoneHash) {
-		require(owner != address(0x0), 'cannot set owner to the zero address');
-		require(owner != address(this), 'cannot set owner to the registry address');
+		require(newOwner != address(0x0), 'cannot set owner to the zero address');
+		require(newOwner != address(this), 'cannot set owner to the registry address');
 
-		phoneRegistry[phoneHash].owner = owner;
-		emit Transfer(phoneHash, owner);
+		phoneRegistry[phoneHash].owner = newOwner;
+		emit Transfer(phoneHash, newOwner);
 	}
 
-	function _setPhoneRecord(bytes32 phoneHash, address resolver) internal onlyVerified(phoneHash) onlyVerifiedOwner(phoneHash) {
+	function _setPhoneRecord(bytes32 phoneHash, string calldata resolver) internal onlyVerified(phoneHash) onlyVerifiedOwner(phoneHash) {
 		uint256 ethToUSD = convertETHToUSD(msg.value);
 		require(ethToUSD >= registryCostInUSD, 'insufficient balance');
 		//create the record in registry
@@ -122,7 +120,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 			require(sent, 'Transfer failed.');
 		}
 		//implement move funds to trwasury
-		emit PhoneRecordCreated(phoneHash, resolver, owner);
+		emit PhoneRecordCreated(phoneHash, resolver, msg.sender);
 	}
 
 	// /**
@@ -158,7 +156,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 
 	// 	// recordData.isInGracePeriod = false;
 	// 	// recordData.isExpired = false;
-	// 	recordData.expirationTime = block.timestamp + expiryTime;
+	// 	recordData.expirationTime = block.timestamp + EXPIRY_TIME;
 
 	// 	//refund user if excessive
 	// 	if (ethToUSD > registryRenewCostInUSD) {
@@ -208,7 +206,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	//  * @param time The new expiry time in seconds.
 	//  */
 	// function setExpiryTime(uint256 time) external onlySystemRoles {
-	// 	expiryTime = time;
+	// 	EXPIRY_TIME = time;
 	// 	emit ExpiryTimeUpdated(msg.sender, time);
 	// }
 
@@ -294,7 +292,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	// 		);
 	// }
 
-	function getVerificationStatus(bytes32 phoneHash) public view returns (VerificationRecord memory) {
+	function getVerificationStatus(bytes32 phoneHash) public view returns (bool) {
 		bool status = pnsGuardianContract.getVerificationStatus(phoneHash);
 		return status;
 	}
@@ -305,23 +303,23 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	 * @return Bool if record exists
 	 */
 	function recordExists(bytes32 phoneHash) public view returns (bool) {
-		return phoneRegistry[phoneHash].exists;
+		return phoneRegistry[phoneHash].owner != address(0);
 	}
 
 	/**
 	 * @dev Returns the expiry state of an existing phone record.
 	 * @param phoneHash The specified phoneHash.
 	 */
-	function _hasPassedExpiryTime(bytes32 phoneHash) internal view hasExpiryOf(phoneHash) returns (bool) {
-		return block.timestamp > phoneRegistry[phoneHash].expirationTime;
+	function _hasPassedExpiryTime(bytes32 phoneHash) internal view returns (bool) {
+		return block.timestamp > phoneRegistry[phoneHash].expiration;
 	}
 
 	/**
 	 * @dev Returns the grace period state of an existing phone record.
 	 * @param phoneHash The specified phoneHash.
 	 */
-	function _hasPassedGracePeriod(bytes32 phoneHash) internal view hasExpiryOf(phoneHash) returns (bool) {
-		return block.timestamp > (phoneRegistry[phoneHash].expirationTime + gracePeriod);
+	function _hasPassedGracePeriod(bytes32 phoneHash) internal view returns (bool) {
+		return block.timestamp > (phoneRegistry[phoneHash].expiration + gracePeriod);
 	}
 
 	/**
@@ -343,15 +341,6 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	 */
 	modifier authorised(bytes32 phoneHash) {
 		require(msg.sender == phoneRegistry[phoneHash].owner, 'caller is not authorised');
-		_;
-	}
-
-	/**
-	 * @dev Permits the function to run only if expiry of record is found
-	 * @param phoneHash The phoneHash of the record to be compared.
-	 */
-	modifier hasExpiryOf(bytes32 phoneHash) {
-		require(phoneRegistry[phoneHash].expirationTime > 0, 'phone expiry record not found');
 		_;
 	}
 
@@ -380,12 +369,12 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	}
 
 	modifier onlyVerified(bytes32 phoneHash) {
-		bool status = pnsGuardianContract.getVerificationStauts(phoneHash);
+		bool status = pnsGuardianContract.getVerificationStatus(phoneHash);
 		require(status, 'phone record is not verified');
 		_;
 	}
 	modifier onlyVerifiedOwner(bytes32 phoneHash) virtual {
-		address owner = pnsGuardian.getVerifiedOwner(phoneHash);
+		address owner = pnsGuardianContract.getVerifiedOwner(phoneHash);
 		require(owner == msg.sender, 'caller is not verified owner');
 		_;
 	}
@@ -399,10 +388,4 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		require(hasRole(VERIFIER_ROLE, msg.sender) || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), 'NON_VERIFIER_ROLE: Not allowed to execute function');
 		_;
 	}
-
-	// Function to receive Ether. msg.data must be empty
-	receive() external payable {}
-
-	// Fallback function is called when msg.data is not empty
-	fallback() external payable {}
 }
