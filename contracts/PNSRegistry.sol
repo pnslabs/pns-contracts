@@ -35,7 +35,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	/// registry renew cost
 	uint256 public registryRenewCostInUSD;
 	/// registry renew cost
-	address private treasuryAddress;
+	address public treasuryAddress;
 	/// Oracle feed pricing
 	AggregatorInterface public priceFeedContract;
 
