@@ -1,17 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
-pragma experimental ABIEncoderV2;
 
 //  ==========  External imports    ==========
 
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol';
-import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 
 // ==========  Internal imports    ==========
 // import './PNSAddress.sol';
-import './Interfaces/IPNSResolver.sol';
-import './Interfaces/IPNSRegistry.sol';
+import './Interfaces/pns/IPNSResolver.sol';
+import './Interfaces/pns/IPNSRegistry.sol';
 
 /**
  * @title The contract for phone number service.
@@ -20,10 +19,10 @@ import './Interfaces/IPNSRegistry.sol';
  * @dev The interface IPNSResolver is inherited which inherits IPNSSchema.
  */
 
-contract PNSResolver is Initializable {
+contract PNSResolver is Initializable, OwnableUpgradeable {
 	uint256 private constant COIN_TYPE_ETH = 60;
 
-	mapping(bytes32 => mapping(uint256 => string)) _resolveAddress;
+	mapping(bytes32 => mapping(uint256 => string)) resolveAddress;
 
 	IPNSRegistry public PNSRegistry;
 
@@ -31,6 +30,7 @@ contract PNSResolver is Initializable {
 	 * @dev contract initializer function. This function exist because the contract is upgradable.
 	 */
 	function initialize(IPNSRegistry _PNSRegistry) external initializer {
+		__Ownable_init();
 		PNSRegistry = _PNSRegistry;
 	}
 
@@ -69,7 +69,7 @@ contract PNSResolver is Initializable {
 	}
 
 	function getAddress(bytes32 phoneHash, uint256 coinType) public view virtual returns (string memory) {
-		return _resolveAddress[phoneHash][coinType];
+		return resolveAddress[phoneHash][coinType];
 	}
 
 	/**
@@ -97,7 +97,11 @@ contract PNSResolver is Initializable {
 		uint256 coinType,
 		string memory addr
 	) public virtual authorised(phoneHash) {
-		_resolveAddress[phoneHash][coinType] = addr;
+		resolveAddress[phoneHash][coinType] = addr;
+	}
+
+	function setPNSRegistry(address _newRegistry) external onlyOwner {
+		PNSRegistry = IPNSRegistry(_newRegistry);
 	}
 
 	function isAuthorised(bytes32 phoneHash) internal view returns (bool) {
