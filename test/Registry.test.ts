@@ -3,7 +3,7 @@ import hre from 'hardhat';
 
 const { assert, expect } = require('chai');
 const { keccak256 } = require('../utils/util');
-const { deployContract } = require('../scripts/deployLocal');
+const { deployContract } = require('../scripts/deploy');
 
 describe('PNS Registry', () => {
   let pnsRegistryContract;
@@ -45,7 +45,7 @@ describe('PNS Registry', () => {
     balanceBeforeTx = await ethers.provider.getBalance(adminAddress);
     console.log(balanceBeforeTx, 'balance before tx');
 
-    await expect(pnsRegistryContract.verifyPhone(phoneNumber1, hashedMessage, status, signature)).to.emit(
+    await expect(pnsRegistryContract.verifyPhone(phoneNumber1, status, signature)).to.emit(
       pnsRegistryContract,
       'PhoneNumberVerified',
     );

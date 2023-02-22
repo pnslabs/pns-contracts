@@ -41,13 +41,64 @@ async function deployContract() {
 
   console.log('PNS Guardian Contract Deployed to', pnsGuardianContract.address);
 
-  pnsRegistryContract = await upgrades.deployProxy(
-    PNSRegistryContract,
-    [pnsGuardianContract.address, priceConverter.address, adminAddress, treasuryAddress],
-    {
-      initializer: 'initialize',
-    },
-  );
+  if (hre.network.name === 'ethereum_mainnet') {
+    pnsRegistryContract = await upgrades.deployProxy(
+      PNSRegistryContract,
+      [pnsGuardianContract.address, chainlink_price_feeds.ETHEREUM_MAINNET, adminAddress],
+      {
+        initializer: 'initialize',
+      },
+    );
+  } else if (hre.network.name === 'bnb_mainnet') {
+    pnsRegistryContract = await upgrades.deployProxy(
+      PNSRegistryContract,
+      [pnsGuardianContract.address, chainlink_price_feeds.BSC_MAINNET, adminAddress],
+      {
+        initializer: 'initialize',
+      },
+    );
+  } else if (hre.network.name === 'polygon_mainnet') {
+    pnsRegistryContract = await upgrades.deployProxy(
+      PNSRegistryContract,
+      [pnsGuardianContract.address, chainlink_price_feeds.MATIC_MAINNET, adminAddress],
+      {
+        initializer: 'initialize',
+      },
+    );
+  } else if (hre.network.name === 'ethereum_goerli') {
+    pnsRegistryContract = await upgrades.deployProxy(
+      PNSRegistryContract,
+      [pnsGuardianContract.address, chainlink_price_feeds.ETHEREUM_GOERLI, adminAddress],
+      {
+        initializer: 'initialize',
+      },
+    );
+  } else if (hre.network.name === 'bnb_testnet') {
+    pnsRegistryContract = await upgrades.deployProxy(
+      PNSRegistryContract,
+      [pnsGuardianContract.address, chainlink_price_feeds.BSC_TESTNET, adminAddress],
+      {
+        initializer: 'initialize',
+      },
+    );
+  } else if (hre.network.name === 'polygon_mumbai') {
+    pnsRegistryContract = await upgrades.deployProxy(
+      PNSRegistryContract,
+      [pnsGuardianContract.address, chainlink_price_feeds.MATIC_MUMBAI, adminAddress],
+      {
+        initializer: 'initialize',
+      },
+    );
+  } else {
+    const treasuryAddress = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266';
+    pnsRegistryContract = await upgrades.deployProxy(
+      PNSRegistryContract,
+      [pnsGuardianContract.address, dummyPriceOrcleContract.address, adminAddress, treasuryAddress],
+      {
+        initializer: 'initialize',
+      },
+    );
+  }
 
   await pnsRegistryContract.deployed();
 

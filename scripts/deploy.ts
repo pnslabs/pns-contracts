@@ -31,9 +31,9 @@ async function deployContract() {
 
   const DummyPriceOracleContract = await ethers.getContractFactory('DummyPriceOracle');
 
-  const PriceConverter = await ethers.getContractFactory('PriceConverter');
-
   const dummyPriceOrcleContract = await DummyPriceOracleContract.deploy(ethPrice);
+  await dummyPriceOrcleContract.deployed();
+  const PriceConverter = await ethers.getContractFactory('PriceConverter');
 
   const priceConverter = await PriceConverter.deploy(dummyPriceOrcleContract.address);
   await priceConverter.deployed();
@@ -97,7 +97,7 @@ async function deployContract() {
     const treasuryAddress = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266';
     pnsRegistryContract = await upgrades.deployProxy(
       PNSRegistryContract,
-      [pnsGuardianContract.address, dummyPriceOrcleContract.address, adminAddress, treasuryAddress],
+      [pnsGuardianContract.address, priceConverter.address, adminAddress, treasuryAddress],
       {
         initializer: 'initialize',
       },
@@ -128,7 +128,7 @@ async function deployContract() {
 
   console.log('PNS Resolver Contract Deployed to', pnsResolverContract.address);
 
-  return { pnsRegistryContract, adminAddress, pnsResolverContract };
+  return { pnsRegistryContract, pnsGuardianContract, adminAddress, pnsResolverContract };
 }
 
 async function deployUpgradedContract(pnsRegistryContract) {
@@ -143,10 +143,3 @@ module.exports = {
   deployContract,
   deployUpgradedContract,
 };
-
-deployContract()
-  .then(() => process.exit(0))
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  });

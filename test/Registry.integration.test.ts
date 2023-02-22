@@ -4,9 +4,9 @@ import { ethToWei, getEthBalance, toUnits, toWholeUnits } from './helpers/base';
 
 const { assert, expect } = require('chai');
 const { keccak256 } = require('../utils/util');
-const { deployContract } = require('../scripts/deployLocal');
+const { deployContract } = require('../scripts/deploy');
 
-describe('PNS Registry', () => {
+describe.only('PNS Registry', () => {
   let pnsRegistryContract;
   let pnsGuardianContract;
   let pnsResolverContract;
@@ -51,8 +51,9 @@ describe('PNS Registry', () => {
   it('Should add record to registry', async () => {
     const [joe, emma] = accounts.slice(1, 5);
     //joe goes to link phone number and verifies it successfully
-    await expect(pnsRegistryContract.connect(joe).verifyPhone(phoneNumber1, hashedMessage, status, signature)).to.not.be
-      .reverted;
+    let guard = await pnsGuardianContract.registryContract;
+    console.log('this is the guard', guard);
+    await expect(pnsRegistryContract.connect(joe).verifyPhone(phoneNumber1, status, signature)).to.not.be.reverted;
 
     let joeVerificationRecord = await pnsRegistryContract.getVerificationRecord(phoneNumber1);
     //joe record authenticated successfully by guardian

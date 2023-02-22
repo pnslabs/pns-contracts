@@ -2,7 +2,7 @@ import { ethers } from 'hardhat';
 
 const { assert, expect } = require('chai');
 const { keccak256 } = require('../utils/util');
-const { deployContract } = require('../scripts/deployLocal');
+const { deployContract } = require('../scripts/deploy');
 
 describe('PNS Resolver', () => {
   let pnsRegistryContract;
