@@ -24,7 +24,7 @@ jobs:
       - name: Compile & Build Contracts
         run: yarn compile
       - name: Deploy Contracts Locally
-        run: yarn deploy
+        run: yarn deploy:localhost
         id: deployment-successful
 
   lint:
