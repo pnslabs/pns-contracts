@@ -58,7 +58,7 @@ contract PNSGuardian is Initializable, IPNSGuardian, Ownable, EIP712Upgradeable 
 		if (verificationRecord.owner == address(0)) {
 			verificationRecord.owner = signer;
 			verificationRecord.verifiedAt = block.timestamp;
-			verificationRecord.isVerified = true;
+			verificationRecord.isVerified = status;
 		}
 		emit PhoneVerified(signer, phoneHash, block.timestamp);
 		return verificationRecord.owner != address(0);
