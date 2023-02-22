@@ -34,6 +34,8 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	uint256 public registryCostInUSD;
 	/// registry renew cost
 	uint256 public registryRenewCostInUSD;
+	/// registry renew cost
+	address public treasuryAddress;
 	/// Oracle feed pricing
 	AggregatorInterface public priceFeedContract;
 
@@ -54,12 +56,14 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		address _pnsGuardianContract,
 		address _pnsResolverContract,
 		address _priceAggregator,
-		address _verifier
+		address _verifier,
+		address _treasuryAddress
 	) external initializer {
 		__AccessControl_init();
 		//set oracle constant
 		// EXPIRY_TIME = 365 days;
 		gracePeriod = 60 days;
+		treasuryAddress = _treasuryAddress;
 
 		priceFeedContract = AggregatorInterface(_priceAggregator);
 		pnsGuardianContract = IPNSGuardian(_pnsGuardianContract);
@@ -119,6 +123,8 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 			(bool sent, ) = msg.sender.call{value: refundAmountInETH}('');
 			require(sent, 'Transfer failed.');
 		}
+		// Send the contract balance to the treasury
+		withdraw(treasuryAddress, address(this).balance);
 		//implement move funds to trwasury
 		emit PhoneRecordCreated(phoneHash, resolver, msg.sender);
 	}

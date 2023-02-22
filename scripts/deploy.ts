@@ -10,6 +10,12 @@ async function deployContract() {
   let registryCost = ethToWei('10'); // 10 usd
   let registryRenewCost = ethToWei('5'); // 5 usd
   let ethPrice = '1779400000000';
+  const ethGoerliTreasuryAddress = process.env.GNOSIS_GOERLI_TREASURY_ADDRESS;
+  const bscTestnetTreasuryAddress = '0x';
+  const maticMumbaiTreasuryAddress = '0x';
+  const bscMainnetTreasuryAddress = '0x';
+  const maticMainnetTreasuryAddress = '0x';
+  const ethMainnetTreasuryAddress = '0x';
 
   console.log(hre.network.name, 'network name');
 
@@ -37,7 +43,7 @@ async function deployContract() {
   if (hre.network.name === 'ethereum_mainnet') {
     pnsRegistryContract = await upgrades.deployProxy(
       PNSRegistryContract,
-      [pnsGuardianContract.address, chainlink_price_feeds.ETHEREUM_MAINNET, adminAddress],
+      [pnsGuardianContract.address, chainlink_price_feeds.ETHEREUM_MAINNET, adminAddress, ethMainnetTreasuryAddress],
       {
         initializer: 'initialize',
       },
@@ -45,7 +51,7 @@ async function deployContract() {
   } else if (hre.network.name === 'bnb_mainnet') {
     pnsRegistryContract = await upgrades.deployProxy(
       PNSRegistryContract,
-      [pnsGuardianContract.address, chainlink_price_feeds.BSC_MAINNET, adminAddress],
+      [pnsGuardianContract.address, chainlink_price_feeds.BSC_MAINNET, adminAddress, bscMainnetTreasuryAddress],
       {
         initializer: 'initialize',
       },
@@ -53,7 +59,7 @@ async function deployContract() {
   } else if (hre.network.name === 'polygon_mainnet') {
     pnsRegistryContract = await upgrades.deployProxy(
       PNSRegistryContract,
-      [pnsGuardianContract.address, chainlink_price_feeds.MATIC_MAINNET, adminAddress],
+      [pnsGuardianContract.address, chainlink_price_feeds.MATIC_MAINNET, adminAddress, maticMainnetTreasuryAddress],
       {
         initializer: 'initialize',
       },
@@ -61,7 +67,7 @@ async function deployContract() {
   } else if (hre.network.name === 'ethereum_goerli') {
     pnsRegistryContract = await upgrades.deployProxy(
       PNSRegistryContract,
-      [pnsGuardianContract.address, chainlink_price_feeds.ETHEREUM_GOERLI, adminAddress],
+      [pnsGuardianContract.address, chainlink_price_feeds.ETHEREUM_GOERLI, adminAddress, ethGoerliTreasuryAddress],
       {
         initializer: 'initialize',
       },
@@ -69,7 +75,7 @@ async function deployContract() {
   } else if (hre.network.name === 'bnb_testnet') {
     pnsRegistryContract = await upgrades.deployProxy(
       PNSRegistryContract,
-      [pnsGuardianContract.address, chainlink_price_feeds.BSC_TESTNET, adminAddress],
+      [pnsGuardianContract.address, chainlink_price_feeds.BSC_TESTNET, adminAddress, bscTestnetTreasuryAddress],
       {
         initializer: 'initialize',
       },
@@ -77,7 +83,7 @@ async function deployContract() {
   } else if (hre.network.name === 'polygon_mumbai') {
     pnsRegistryContract = await upgrades.deployProxy(
       PNSRegistryContract,
-      [pnsGuardianContract.address, chainlink_price_feeds.MATIC_MUMBAI, adminAddress],
+      [pnsGuardianContract.address, chainlink_price_feeds.MATIC_MUMBAI, adminAddress, maticMumbaiTreasuryAddress],
       {
         initializer: 'initialize',
       },
@@ -85,7 +91,7 @@ async function deployContract() {
   } else {
     pnsRegistryContract = await upgrades.deployProxy(
       PNSRegistryContract,
-      [pnsGuardianContract.address, dummyPriceOrcleContract.address, adminAddress],
+      [pnsGuardianContract.address, dummyPriceOrcleContract.address, adminAddress, process.env.PRIVATE_KEY_GANACHE],
       {
         initializer: 'initialize',
       },
