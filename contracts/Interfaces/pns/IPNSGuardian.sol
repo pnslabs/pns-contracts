@@ -29,7 +29,7 @@ interface IPNSGuardian {
 
 	function getVerificationRecord(bytes32 phoneHash) external view returns (VerificationRecord memory);
 
-	function setVerificationStatus(
+	function verifyPhoneHash(
 		bytes32 phoneHash,
 		bool status,
 		bytes memory _signature
