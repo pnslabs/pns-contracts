@@ -21,7 +21,7 @@ import './Interfaces/dependencies/IPriceConverter.sol';
  * @dev The interface IPNSRegistry is inherited which inherits IPNSSchema.
  */
 
-contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
+contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 	// using AddressUpgradeable for address payable;
 	/// Expiry time value
 	uint256 public constant EXPIRY_TIME = 365 days;
@@ -43,7 +43,6 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 
 	/// Create a new role identifier for the minter role
 	bytes32 public constant MAINTAINER_ROLE = keccak256('MAINTAINER_ROLE');
-	bytes32 public constant VERIFIER_ROLE = keccak256('VERIFIER_ROLE');
 
 	/**
 	 * @dev contract initializer function. This function exist because the contract is upgradable.
@@ -51,7 +50,6 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	function initialize(
 		address _pnsGuardian,
 		address _priceConverter,
-		address _verifier,
 		address _treasuryAddress
 	) external initializer {
 		__AccessControl_init();
@@ -63,7 +61,6 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		treasuryAddress = _treasuryAddress;
 
 		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-		_grantRole(VERIFIER_ROLE, _verifier);
 	}
 
 	/**
@@ -157,21 +154,11 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		return 1;
 	}
 
-	function verifyPhone(
-		bytes32 phoneHash,
-		bool status,
-		bytes calldata signature
-	) external {
-		bool ok = pnsGuardian.setVerificationStatus(phoneHash, status, signature);
-		require(ok, 'verification failed');
-		emit PhoneNumberVerified(phoneHash, status);
-	}
-
 	/**
 	 * @dev Returns the PhoneRecord data linked to the specified phone number hash.
 	 * @param phoneHash The specified phoneHash.
 	 */
-	function getRecord(bytes32 phoneHash)
+	function getRecordFull(bytes32 phoneHash)
 		external
 		view
 		returns (
@@ -189,6 +176,10 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		expiration = record.expiration;
 		creation = record.creation;
 		owner = record.owner;
+	}
+
+	function getRecord(bytes32 phoneHash) external view returns (PhoneRecord memory) {
+		return phoneRegistry[phoneHash];
 	}
 
 	function getVerificationStatus(bytes32 phoneHash) public view returns (bool) {
@@ -307,6 +298,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		require(status, 'phone record is not verified');
 		_;
 	}
+
 	modifier onlyVerifiedOwner(bytes32 phoneHash) virtual {
 		address owner = pnsGuardian.getVerifiedOwner(phoneHash);
 		require(owner == msg.sender, 'caller is not verified owner');
@@ -315,11 +307,6 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 
 	modifier onlySystemRoles() {
 		require(hasRole(MAINTAINER_ROLE, msg.sender) || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), 'not allowed to execute function');
-		_;
-	}
-
-	modifier onlyVerifierRoles() {
-		require(hasRole(VERIFIER_ROLE, msg.sender) || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), 'NON_VERIFIER_ROLE: Not allowed to execute function');
 		_;
 	}
 }

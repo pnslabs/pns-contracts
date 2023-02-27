@@ -11,56 +11,76 @@ import './IPNSSchema.sol';
  * @dev All function call interfaces are defined here.
  */
 interface IPNSRegistry is IPNSSchema {
+	/**
+	 * @dev logs the event when a phoneHash record is created.
+	 * @param phoneHash The phoneHash to be linked to the record.
+	 * @param wallet The resolver (address) of the record
+	 * @param owner The address of the owner
+	 */
+	event PhoneRecordCreated(bytes32 indexed phoneHash, string indexed wallet, address indexed owner);
+
+	event PhoneNumberVerified(bytes32 indexed phoneHash, bool status);
+
+	/**
+	 * @dev logs when there is a transfer of ownership of a phoneHash to a new address
+	 * @param phoneHash The phoneHash of the record to be updated.
+	 * @param owner The address of the owner
+	 */
+	event Transfer(bytes32 indexed phoneHash, address indexed owner);
+
+	/**
+	 * @dev logs when phone record is re-authenticated.
+	 * @param phoneHash The phoneHash of the record.
+	 */
+	event PhoneRecordRenewed(bytes32 indexed phoneHash);
+
+	/**
+	 * @dev logs when phone record is claimed.
+	 * @param updater Who made the call
+	 * @param expiryTime The new expiry time in seconds.
+	 */
+	event ExpiryTimeUpdated(address indexed updater, uint256 expiryTime);
+
+	/**
+	 * @dev logs when phone record is claimed.
+	 * @param updater Who made the call
+	 * @param newAddress The new expiry time in seconds.
+	 */
+	event changeTreasury(address indexed updater, address newAddress);
+
+	event changeGracePeriod(address indexed updater, uint256 expiryTime);
+
+	/**
+	 * @dev logs when funds is withdrawn from the smar contracts.
+	 * @param _recipient withdrawal recipient
+	 * @param amount Withdeawal amount
+	 *
+	 */
+	event WithdrawalSuccessful(address indexed _recipient, uint256 amount);
+
 	// event Transfer(bytes32 indexed phoneHash, address owner);
 
 	function setPhoneRecord(bytes32 phoneHash, string calldata resolver) external payable;
 
-	function setOwner(bytes32 phoneHash, address owner) external;
-
 	function getRecord(bytes32 phoneHash) external view returns (PhoneRecord memory);
-
-	// function getResolver(bytes32 phoneHash) external view returns (ResolverRecord[] memory);
-
-	function getRegistryCost() external view returns (uint256);
-
-	function getRegistryRenewCost() external view returns (uint256);
-
-	function setPhoneRecordMapping(PhoneRecord memory recordData, bytes32 phoneHash) external;
 
 	function renew(bytes32 phoneHash) external payable;
 
-	function getAmountinETH(uint256 usdAmount) external view returns (uint256);
+	// function setExpiryTime(uint256 time) external;
 
-	function claimExpiredPhoneRecord(
-		bytes32 phoneHash,
-		address resolver,
-		string memory label
-	) external payable;
+	// function isRecordVerified(bytes32 phoneHash) external view returns (bool);
 
-	function setExpiryTime(uint256 time) external;
+	// function getExpiryTime() external view returns (uint256);
 
-	function isRecordVerified(bytes32 phoneHash) external view returns (bool);
+	// function getGracePeriod() external view returns (uint256);
 
-	function getExpiryTime() external view returns (uint256);
+	// function setGracePeriod(uint256 time) external;
 
-	function getGracePeriod() external view returns (uint256);
+	// function setRegistryCost(uint256 _registryCost) external;
 
-	function setGracePeriod(uint256 time) external;
+	// function setRegistryRenewCost(uint256 _renewalCost) external;
 
-	function setRegistryCost(uint256 _registryCost) external;
-
-	function setRegistryRenewCost(uint256 _renewalCost) external;
-
-	function getRecordMapping(bytes32 phoneHash) external view returns (PhoneRecord memory);
-
-	function verifyPhone(
-		bytes32 phoneHash,
-		bytes32 hashedMessage,
-		bool status,
-		bytes memory signature
-	) external;
-
-	function setGuardianAddress(address guardianAddress) external;
+	// function getRecordMapping(bytes32 phoneHash) external view returns (PhoneRecord memory);
 
 	function withdraw(address _recipient, uint256 amount) external;
 

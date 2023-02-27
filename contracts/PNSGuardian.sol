@@ -16,9 +16,9 @@ import './Interfaces/pns/IPNSRegistry.sol';
 contract PNSGuardian is Initializable, IPNSGuardian, EIP712Upgradeable {
 	/// the guardian layer address that updates verification state
 	address public registryAddress;
-
+	/// PNS registry
 	IPNSRegistry public registryContract;
-
+	/// Address of off chain verifier
 	address public guardianVerifier;
 	// Mapping statte to store verification record
 	mapping(bytes32 => VerificationRecord) verifiedRecord;
@@ -33,28 +33,6 @@ contract PNSGuardian is Initializable, IPNSGuardian, EIP712Upgradeable {
 		// __Ownable_init();
 		__EIP712_init('PNS Guardian', '1.0');
 		guardianVerifier = _guardianVerifier;
-	}
-
-	/**
-	 * @notice updates user authentication state once authenticated
-	 */
-	function setVerificationStatus(
-		bytes32 phoneHash,
-		bool status,
-		bytes calldata _signature
-	) external onlyRegistryContract returns (bool) {
-		bytes32 digest = _hashTypedDataV4(keccak256(abi.encode(_VERIFY_TYPEHASH, phoneHash)));
-		address signer = ECDSA.recover(digest, _signature);
-		//implement 20 days to reauthicate record & claim mechanism here.
-		VerificationRecord storage verificationRecord = verifiedRecord[phoneHash];
-
-		if (verificationRecord.owner == address(0)) {
-			verificationRecord.owner = signer;
-			verificationRecord.verifiedAt = block.timestamp;
-			verificationRecord.isVerified = status;
-		}
-		emit PhoneVerified(signer, phoneHash, block.timestamp);
-		return verificationRecord.owner != address(0);
 	}
 
 	/**
@@ -91,6 +69,27 @@ contract PNSGuardian is Initializable, IPNSGuardian, EIP712Upgradeable {
 	 */
 	function setGuardianVerifier(address _guardianVerifier) external onlyGuardianVerifier {
 		guardianVerifier = _guardianVerifier;
+	}
+
+	/**
+	 * @notice updates user authentication state once authenticated
+	 */
+	function verifyPhoneHash(
+		bytes32 phoneHash,
+		bool status,
+		bytes calldata _signature
+	) external onlyGuardianVerifier returns (bool) {
+		bytes32 digest = _hashTypedDataV4(keccak256(abi.encode(_VERIFY_TYPEHASH, phoneHash)));
+		address signer = ECDSA.recover(digest, _signature);
+		VerificationRecord storage verificationRecord = verifiedRecord[phoneHash];
+
+		if (verificationRecord.owner == address(0)) {
+			verificationRecord.owner = signer;
+			verificationRecord.verifiedAt = block.timestamp;
+			verificationRecord.isVerified = status;
+		}
+		emit PhoneVerified(signer, phoneHash, block.timestamp);
+		return verificationRecord.owner != address(0);
 	}
 
 	/**
