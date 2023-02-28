@@ -22,6 +22,7 @@ async function deployContract() {
   [adminAccount] = await ethers.getSigners();
   const adminAddress = adminAccount.address;
   console.log(adminAddress, 'address');
+  console.log('------------------------------------------------');
 
   const PNSRegistryContract = await ethers.getContractFactory('PNSRegistry');
 
@@ -44,6 +45,7 @@ async function deployContract() {
   await pnsGuardianContract.deployed();
 
   console.log('PNS Guardian Contract Deployed to', pnsGuardianContract.address);
+  console.log('------------------------------------------------');
 
   if (hre.network.name === 'ethereum_mainnet') {
     pnsRegistryContract = await upgrades.deployProxy(
@@ -80,7 +82,7 @@ async function deployContract() {
   } else if (hre.network.name === 'bnb_testnet') {
     pnsRegistryContract = await upgrades.deployProxy(
       PNSRegistryContract,
-      [pnsGuardianContract.address, chainlink_price_feeds.BSC_TESTNET, adminAddress, bscTestnetTreasuryAddress],
+      [pnsGuardianContract.address, chainlink_price_feeds.BSC_TESTNET, bscTestnetTreasuryAddress],
       {
         initializer: 'initialize',
       },
@@ -88,7 +90,7 @@ async function deployContract() {
   } else if (hre.network.name === 'polygon_mumbai') {
     pnsRegistryContract = await upgrades.deployProxy(
       PNSRegistryContract,
-      [pnsGuardianContract.address, chainlink_price_feeds.MATIC_MUMBAI, adminAddress, maticMumbaiTreasuryAddress],
+      [pnsGuardianContract.address, chainlink_price_feeds.MATIC_MUMBAI, maticMumbaiTreasuryAddress],
       {
         initializer: 'initialize',
       },
@@ -97,7 +99,7 @@ async function deployContract() {
     const treasuryAddress = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266';
     pnsRegistryContract = await upgrades.deployProxy(
       PNSRegistryContract,
-      [pnsGuardianContract.address, priceConverter.address, adminAddress, treasuryAddress],
+      [pnsGuardianContract.address, priceConverter.address, treasuryAddress],
       {
         initializer: 'initialize',
       },
@@ -106,19 +108,26 @@ async function deployContract() {
   await pnsRegistryContract.deployed();
 
   console.log('PNS Registry Contract Deployed to', pnsRegistryContract.address);
+  console.log('------------------------------------------------');
   await pnsRegistryContract.setRegistryCost(registryCost);
   const pnsRegistrycost = await pnsRegistryContract.registryCostInUSD();
   await pnsRegistryContract.setRegistryRenewCost(registryRenewCost);
   const pnsRegistryRenewCost = await pnsRegistryContract.registryRenewCostInUSD();
+  await pnsGuardianContract.setPNSRegistry(pnsRegistryContract.address);
+  const guardianRegistry = await pnsGuardianContract.registryAddress();
+  console.log('Registry contract set in guardian as', guardianRegistry);
+  console.log('------------------------------------------------');
   console.log(
     `Registry Cost set to ${pnsRegistrycost / 1e18} USD, \n Registry Renew Cost set to, ${
       pnsRegistryRenewCost / 1e18
     } USD`,
   );
+  console.log('------------------------------------------------');
 
   await pnsGuardianContract.setPNSRegistry(pnsRegistryContract.address);
 
   console.log('Registry contract set to', pnsRegistryContract.address);
+  console.log('------------------------------------------------');
 
   const pnsResolverContract = await upgrades.deployProxy(PNSResolverContract, [pnsRegistryContract.address], {
     initializer: 'initialize',
@@ -127,6 +136,7 @@ async function deployContract() {
   await pnsRegistryContract.setResolver(pnsResolverContract.address);
 
   console.log('PNS Resolver Contract Deployed to', pnsResolverContract.address);
+  console.log('------------------------------------------------');
 
   return { pnsRegistryContract, pnsGuardianContract, adminAddress, pnsResolverContract };
 }

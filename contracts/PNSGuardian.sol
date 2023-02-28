@@ -62,6 +62,7 @@ contract PNSGuardian is Initializable, IPNSGuardian, EIP712Upgradeable {
 	 */
 	function setPNSRegistry(address _registryAddress) external onlyGuardianVerifier {
 		registryContract = IPNSRegistry(_registryAddress);
+		registryAddress = _registryAddress;
 	}
 
 	/**
