@@ -6,8 +6,6 @@ This repository contains the Solidity smart contracts for the PNS Protocol
 
 ## Table of Contents
 
-## Table of Contents
-
 - [PNS Protocol](#pns-protocol)
   - [Table of Contents](#table-of-contents)
   - [Architecture](#architecture)
