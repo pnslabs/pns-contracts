@@ -40,6 +40,19 @@ The resolver functions allows for:
   1. setting the resolvers for the phone number
   2. returning the reolver details of a phone number.
 
+The PNS Resolver mapping is adaptive to [ENS EIP 2304](https://eips.ethereum.org/EIPS/eip-2304) method with a bit of twist 
+```
+ //ENS
+    
+   //name -> coinType-> encodedAddressInBytes
+    mapping(bytes32 => mapping(uint256 => bytes)) versionable_addresses;
+
+//PNS
+
+   //name -> coinType-> string
+   mapping(bytes32 => mapping(uint256 => string)) _resolveAddress;
+```
+
 - **`PNS Guardian`**
 The PNS Guardian contract is the entry point for record creation and it's responsible for verification of phone numbers.
 
