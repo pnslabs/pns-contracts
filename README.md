@@ -123,4 +123,4 @@ yarn run test
 
 ## License
 
-[MIT](LICENSE) Copyright 2022 Sound PNS Labs
+[MIT](LICENSE) Copyright 2022 PNS Labs
