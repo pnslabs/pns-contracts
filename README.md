@@ -1,157 +1,118 @@
-# PNS
+# PNS Protocol
 
-Phone Number Service (PNS) is a chain agnostic protocol designed to link a mobile phone number with EVM-compatible blockchain addresses.
+Phone Number Service (PNS) is a protocol that allows you to associate your phone number to wallet addresses.
 
-<br />
+This repository contains the Solidity smart contracts for the PNS Protocol
 
-# Implementations for registrars and resolvers for the PNS
+## Table of Contents
 
-The `PNS.sol` smart contract comes with these list of public setter functions:
+## Table of Contents
 
-```
-setPhoneRecord
-setOwner
-linkPhoneToWallet
-renew
-claimExpiredPhoneRecord
-setPhoneRecordMapping
-verifyPhone
-```
+- [PNS Protocol](#pns-protocol)
+  - [Table of Contents](#table-of-contents)
+  - [Architecture](#architecture)
+  - [Contracts](#contracts)
+  - [Documentation](#documentation)
+  - [Usage](#usage)
+    - [Prerequisites](#prerequisites)
+    - [Setup](#setup)
+    - [Deploying](#deploying)
+     - [Testing](#testing)
+  - [License](#license)
+# Contract Design
 
-And these lists of public getter functions;
+## Architecture
 
-```
-getRecord
-getResolver
-recordExists
-getExpiryTime
-getGracePeriod
-getAmountinETH
-isRecordVerified
-```
+The PNS Protocol comprises of several components: 
 
-These functions implement the IPNS.sol interface.
+- **`PNS Registry`**  
 
-<br />
+  The PNS Registry contract.
 
-# IPNS Interface
+  The registry contract is the core function that lies at the heart of phone number resolution. 
 
-The IPNSRegistry's interface is as follows:
+  The `setPhoneRecord` function allows for initial creation of phone record.
 
-## setPhoneRecord(bytes32 phoneHash, address resolver, string label) external payable
+- **`PNS Resolver`** 
+The PNS resolvers are responsible for setting resolvers and translating phone numbers into addresses. 
 
-Sets a resolver record and links it to the phoneHash.
+The resolver functions allows for:
+  1. setting the resolvers for the phone number
+  2. returning the reolver details of a phone number.
 
-<br />
+- **`PNS Guardian`**
+The PNS Guardian contract is the entry point for record creation and it's responsible for verification of phone numbers.
 
-## isRecordVerified(bytes32 phoneHash) external view returns (bool);
+The `setVerificationStatus` function updates user authentication state after verifying an otp onchain through it's signature using ECDSA verification scheme. The Guardian contract is the only authotized contract to access the guardian.
 
-Checks if the specified phoneHash is verified.
+## Contracts
 
-<br />
+The smart contracts are stored under the `contracts` directory.
 
-## linkPhoneToWallet(bytes32 phoneHash, address resolver, string label) external
+Files marked with an asterisk (\*) are specific to [sound.xyz](https://sound.xyz),  
+but you can refer to them if you are building contracts to interact with them on-chain,   
+or building your own customized versions.
 
-Sets the resolver address for the specified phoneHash.
-
-<br />
-
-## getRecord(bytes32 phoneHash) external view returns (PhoneRecord memory);
-
-Returns the PhoneRecord data linked to the specified phone number hash.
-
-<br />
-
-## getOwner(bytes32 phoneHash) external view returns (address)
-
-Returns the address that owns the specified phoneHash.
-
-<br />
-
-## recordExists(bytes32 phoneHash) external view returns (bool)
-
-Returns true or false on whether or not a record linked to the specified phoneHash exists.
-
-<br />
-
-## setOwner(bytes32 phoneHash, address owner) external
-
-Transfers ownership of a phoneHash to a new address. May only be called by the current owner of the phoneHash.
-
-<br />
-
-## getResolver(bytes32 phoneHash) external view returns (ResolverRecord[] memory)
-
-Returns an existing label for the specified phone number phoneHash.
-
-<br />
-
-## getExpiryTime() external view returns (uint256)
-
-Gets the current expiry time.
-
-<br />
-
-## getGracePeriod() external view returns (uint256)
-
-Gets the current grace period.
-
-<br />
-
-## renew(bytes32 phoneHash) external payable
-
-Renew a phone record.
-
-<br />
-
-## claimExpiredPhoneRecord(bytes32 phoneHash, address resolver, string memory label) external
-
-Claims an already existing but expired phone record, and sets a completely new resolver.
-
-<br />
-
-## getExpiryTime() external view returns (uint256)
-
-Returns the default phone record expiry time
-
-<br />
-
-## getGracePeriod() external view returns (uint256)
-
-Returns the default phone record grace period
-
-<br />
-
-## verifyPhone(bytes32 phoneHash, bytes32 hashedMessage, bool status, bytes memory signature) external
-
-Function used to update the verification status of a phone number.
-
-<br />
-
-## getAmountinETH(uint256 usdAmount) external view returns (uint256)
-
-Returns a USD amount converted to ETH
-
-<br />
-
-# Developer guide
-
-## How to setup
-
-```
-git clone https://github.com/pnsfoundation/PNS-Core.git
-
-cd PNS-CORE
-
-yarn install
+```ml
+contracts/
+├── Interface
+│   ├── IPNSGuardian.sol * ─ "PNS Guardian Interface"
+│   ├── IPNSRegistry.sol * ─ "PNS Registry implementation interface"
+│   ├── IPNSResolver.sol * ─ "NS Resolver implementation interface"
+├── PNSGuardian.sol * ─ "PNS Guardian implementation for phone number verification"
+├── PNSRegistry.sol * ─ "PNS Registry logic for phone number records"
+├── PNSResolver.sol * ─ "Responsible for resolving phone numbers to addresses"
+├── PriceOracle.sol * ─ "Handles price calculations and interacts with chainlink oracle for price conversions"
 ```
 
-## Run local ganache
 
-Add `PRIVATE_KEY_GANACHE` in your `.env` file and paste in your secret key. Then in your terminal, run:
+## Documentation
+
+A comprehensive documentation is currently in the works.  
+
+## Usage
+
+### Prerequisites
+
+-   [git](https://git-scm.com/downloads)
+-   [nodeJS](https://nodejs.org/en/download/)
+-   [brew](https://brew.sh/)
+-   [foundry](https://getfoundry.sh) - You can run `sh ./setup.sh` to install Foundry and its dependencies.
+-   [Hardhat](https://hardhat.org)
+
+### Setup
+
+-   Clone the repository
+
+    ```bash
+   git clone https://github.com/pnslabs/pns-contracts.git
+    cd pns-contracts
+    ```
+
+-   Install packages
+
+    ```
+    yarn
+    ```
+ -   Build contracts
+
+    ```
+    yarn build
+    ```
+
+
+### Deploying
+
+Create a .env in the root with:
 
 ```
-ganache
+PRIVATE_KEY=PRIVATE_KEY
+ALCHEMY_API_KEY=
+```
+
+Then run:
+```
+yarn run deploy:ethereum_goerli
 ```
 
 ## Run unit tests
@@ -159,3 +120,8 @@ ganache
 ```shell
 yarn run test
 ```
+
+
+## License
+
+[MIT](LICENSE) Copyright 2022 Sound PNS Labs
