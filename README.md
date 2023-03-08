@@ -1,5 +1,7 @@
 # PNS Protocol
 
+## DISCLAMER: This repo is currently under active development and is not ready to be used in production 
+
 Phone Number Service (PNS) is a protocol that allows you to associate your phone number to wallet addresses.
 
 This repository contains the Solidity smart contracts for the PNS Protocol
