@@ -72,6 +72,7 @@ contract PNSGuardian is IPNSSchema, Initializable {
 		bytes memory prefix = '\x19Ethereum Signed Message:\n32';
 		bytes32 prefixedHashMessage = keccak256(abi.encodePacked(prefix, _hashedMessage));
 		address signer = ECDSA.recover(prefixedHashMessage, _signature);
+		//implement 20 days to reauthicate record & claim mechanism here.
 
 		VerificationRecord storage verificationRecordData = verificationRecordMapping[phoneHash];
 
@@ -94,7 +95,7 @@ contract PNSGuardian is IPNSSchema, Initializable {
 	/**
 	 * @notice gets user verification state
 	 */
-	function getVerificationStatus(bytes32 phoneHash) external view returns (bool) {
+	function getVerificationStatus(bytes32 phoneHash) public view returns (bool) {
 		VerificationRecord memory verificationRecord = verificationRecordMapping[phoneHash];
 		return verificationRecord.isVerified;
 	}
