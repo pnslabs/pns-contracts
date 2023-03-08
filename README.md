@@ -83,7 +83,7 @@ A comprehensive documentation is currently in the works.
 -   Clone the repository
 
     ```bash
-   git clone https://github.com/pnslabs/pns-contracts.git
+    git clone https://github.com/pnslabs/pns-contracts.git
     cd pns-contracts
     ```
 
@@ -92,6 +92,7 @@ A comprehensive documentation is currently in the works.
     ```
     yarn
     ```
+
  -   Build contracts
 
     ```
