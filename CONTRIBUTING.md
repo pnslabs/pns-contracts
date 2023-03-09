@@ -1,5 +1,7 @@
 # CONTRIBUTING
 
+Please note that everything within this repo is currently in beta. Some contracts are not yet deployed on mainnet which means some functionality may break on the network.
+
 Contributions are very welcome. When contributing code, please follow these
 simple guidelines.
 
@@ -22,7 +24,7 @@ When proposing changes via a pull-request or patch:
 - Keep your changesets small, specific and uncontroversial, so that they can be
   merged more quickly.
 - If the change is substantial or requires re-architecting certain parts of the
-  codebase, write a proposal in English first, and get consensus on that before
+  codebase, write a proposal in English first, provide diagrams if necessary and get consensus on that before
   proposing the code changes.
 
 ## Writing Git commit messages
