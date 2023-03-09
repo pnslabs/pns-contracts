@@ -71,7 +71,7 @@ contracts/
 ├── Interface
 │   ├── IPNSGuardian.sol * ─ "PNS Guardian Interface"
 │   ├── IPNSRegistry.sol * ─ "PNS Registry implementation interface"
-│   ├── IPNSResolver.sol * ─ "NS Resolver implementation interface"
+│   ├── IPNSResolver.sol * ─ "PNS Resolver implementation interface"
 ├── PNSGuardian.sol * ─ "PNS Guardian implementation for phone number verification"
 ├── PNSRegistry.sol * ─ "PNS Registry logic for phone number records"
 ├── PNSResolver.sol * ─ "Responsible for resolving phone numbers to addresses"
