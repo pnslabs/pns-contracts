@@ -142,7 +142,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 		}
 		//move to  DAO treasury
 		toTreasury(registryRenewCostInUSD);
-		phoneRegistry[phoneHash].expiration = block.timestamp + EXPIRY_TIME;
+		phoneRegistry[phoneHash].expiration = uint48(block.timestamp + EXPIRY_TIME);
 		emit PhoneRecordRenewed(phoneHash);
 	}
 
@@ -227,8 +227,8 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 	function createRecord(address owner, bytes32 phoneHash) internal {
 		PhoneRecord storage record = phoneRegistry[phoneHash];
 		record.owner = owner;
-		record.expiration = block.timestamp + EXPIRY_TIME;
-		record.creation = block.timestamp;
+		record.expiration = uint48(block.timestamp + EXPIRY_TIME);
+		record.creation = uint48(block.timestamp);
 	}
 
 	function _setPhoneRecord(bytes32 phoneHash, string calldata resolver) internal onlyVerified(phoneHash) onlyVerifiedOwner(phoneHash) {

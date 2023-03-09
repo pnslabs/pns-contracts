@@ -14,8 +14,6 @@ import './Interfaces/pns/IPNSRegistry.sol';
 /// @author  PNS core team
 /// @notice The PNS Guardian is responsible for authenticating the records created in PNS registry
 contract PNSGuardian is Initializable, IPNSGuardian, EIP712Upgradeable {
-	/// the guardian layer address that updates verification state
-	address public registryAddress;
 	/// PNS registry
 	IPNSRegistry public registryContract;
 	/// Address of off chain verifier
@@ -62,7 +60,6 @@ contract PNSGuardian is Initializable, IPNSGuardian, EIP712Upgradeable {
 	 */
 	function setPNSRegistry(address _registryAddress) external onlyGuardianVerifier {
 		registryContract = IPNSRegistry(_registryAddress);
-		registryAddress = _registryAddress;
 	}
 
 	/**
@@ -86,7 +83,7 @@ contract PNSGuardian is Initializable, IPNSGuardian, EIP712Upgradeable {
 
 		if (verificationRecord.owner == address(0)) {
 			verificationRecord.owner = signer;
-			verificationRecord.verifiedAt = block.timestamp;
+			verificationRecord.verifiedAt = uint48(block.timestamp);
 			verificationRecord.isVerified = status;
 		}
 		emit PhoneVerified(signer, phoneHash, block.timestamp);
@@ -97,7 +94,7 @@ contract PNSGuardian is Initializable, IPNSGuardian, EIP712Upgradeable {
 	 * @dev Permits modifications only by an guardian Layer Address.
 	 */
 	modifier onlyRegistryContract() {
-		require(msg.sender == registryAddress, 'Only Registry Contract: not allowed ');
+		require(msg.sender == address(registryContract), 'Only Registry Contract: not allowed ');
 		_;
 	}
 

@@ -17,8 +17,9 @@ interface IPNSGuardian {
 	 */
 	event PhoneVerified(address indexed owner, bytes32 indexed phoneHash, uint256 verifiedAt);
 
+	// store in 1 slot, bool is a flexible type and will occupy the space left for it if any or take up a full slot if not packable
 	struct VerificationRecord {
-		uint256 verifiedAt;
+		uint48 verifiedAt;
 		bool isVerified;
 		address owner;
 	}
