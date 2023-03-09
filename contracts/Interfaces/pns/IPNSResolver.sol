@@ -12,7 +12,7 @@ import '../profiles/IAddressResolver.sol';
  * @dev All function call interfaces are defined here.
  */
 interface IPNSResolver is IAddressResolver {
-	// storing expiration and creation as uint48s saves gas as calling the mapping that returns this slot only has to do 2 sloads under the hood
+	// storing expiration and creation as uint48s saves gas as calling the mapping that returns this slot only has to do 1 sloads under the hood
 	// addresses are uint160s by default and so can be packed with uint96 which is (uint48 * 2)
 	// this is safe to when using it as a time variable as uint48,max is the year 8,927,483 AD
 	struct PhoneRecord {
