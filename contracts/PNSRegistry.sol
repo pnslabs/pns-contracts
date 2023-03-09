@@ -324,7 +324,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 
 		PhoneRecord storage recordData = records[phoneHash];
 
-		ResolverRecord storage resolverRecordData = resolverRecordMapping[phoneHash];
+		mapping(string => ResolverRecord) storage resolverRecordData = resolverRecordMapping[phoneHash];
 
 		require(!resolverRecordData[label].exists, 'phone record has been created and linked to a wallet already');
 
