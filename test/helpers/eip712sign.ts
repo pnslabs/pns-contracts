@@ -1,6 +1,10 @@
 const ethUtil = require('ethereumjs-util');
 const { getMessage } = require('eip-712');
 
+//hardhat depoyment path
+const VERIFYING_CONTRACT = '';
+// testing chainID
+const chainID = 1;
 const typedData = {
   types: {
     EIP712Domain: [
@@ -9,15 +13,15 @@ const typedData = {
       { name: 'chainId', type: 'uint256' },
       { name: 'verifyingContract', type: 'address' },
     ],
-    Whitelist: [{ name: 'user', type: 'address' }],
+    verify: [{ name: 'phoneHash', type: 'bytes32' }],
   },
   domain: {
-    name: 'PNS - core',
-    version: 'v1.0.0',
-    chainId: 31337,
-    verifyingContract: '',
+    name: 'PNS Guardian',
+    version: '1.0',
+    chainId: 1,
+    verifyingContract: VERIFYING_CONTRACT,
   },
-  primaryType: 'Whitelist',
+  primaryType: 'verifyPhoneHash',
   message: {
     user: '',
   },
