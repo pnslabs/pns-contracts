@@ -1,7 +1,7 @@
 import { ethers } from 'hardhat';
 import hre from 'hardhat';
 import { ethToWei, getEthBalance, toUnits, toWholeUnits, weiToEth } from './helpers/base';
-import signEIP712Message from './helpers/eip712sign';
+import { domain, PNSTypes } from './helpers/eip712sign';
 
 const { assert, expect } = require('chai');
 const { keccak256 } = require('../utils/util');
@@ -13,6 +13,8 @@ describe.only('PNS Registry', () => {
   let pnsResolverContract;
   let adminAddress;
   let balanceBeforeTx;
+
+  //using an enummeration  prone phoneHash
   const phoneNumber1 = keccak256('2347084562591');
   const phoneNumber2 = keccak256('08084442592');
   const oneYearInSeconds = 31536000;
@@ -58,9 +60,13 @@ describe.only('PNS Registry', () => {
     const balance = await joe.provider.getBalance(joe.address);
     console.log(weiToEth(balance));
 
-    // const joeSignature = await joe.
+    const value = {
+      phoneHash: phoneNumber1,
+    };
+    const sig = await joe._signTypedData(domain, PNSTypes, value);
+    console.log('this is signature', sig);
     //joe verifies his phone number successfully
-    await expect(pnsGuardianContract.verifyPhoneHash(phoneNumber1, status, joe.address, signature)).to.not.be.reverted;
+    await expect(pnsGuardianContract.verifyPhoneHash(phoneNumber1, status, joe.address, sig)).to.not.be.reverted;
 
     //joe's record authenticated successfully by guardian
     let joeVerificationStatus = await pnsRegistryContract.getVerificationStatus(phoneNumber1);
