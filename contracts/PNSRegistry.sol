@@ -73,14 +73,6 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 	}
 
 	/**
-	 * @dev Checks if the specified phoneHash is verified.
-	 * @param phoneHash The phoneHash to update.
-	 */
-	function isRecordVerified(bytes32 phoneHash) public view returns (bool) {
-		return getVerificationStatus(phoneHash);
-	}
-
-	/**
 	 * @dev Transfers ownership of a phoneHash to a new address. Can only be called by the current owner of the phoneHash.
 	 * @param phoneHash The phoneHash to transfer ownership of.
 	 * @param newOwner The address of the new owner.
@@ -185,6 +177,14 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 	function getVerificationStatus(bytes32 phoneHash) public view returns (bool) {
 		bool status = pnsGuardian.getVerificationStatus(phoneHash);
 		return status;
+	}
+
+	/**
+	 * @dev Checks if the specified phoneHash is verified.
+	 * @param phoneHash The phoneHash to update.
+	 */
+	function isRecordVerified(bytes32 phoneHash) public view returns (bool) {
+		return getVerificationStatus(phoneHash);
 	}
 
 	/**
