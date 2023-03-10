@@ -70,7 +70,6 @@ contract PNSGuardian is Initializable, IPNSGuardian, EIP712Upgradeable {
 	 */
 	function setPNSRegistry(address _registryAddress) external onlyGuardianVerifier {
 		registryContract = IPNSRegistry(_registryAddress);
-		registryAddress = _registryAddress;
 	}
 
 	/**
@@ -88,9 +87,16 @@ contract PNSGuardian is Initializable, IPNSGuardian, EIP712Upgradeable {
 	   @param _signature Signature provided by the off-chain verifier
 	   @return bool - A boolean indicating if the verification record has been updated and is no longer a zero-address
 	 */
-	function verifyPhoneHash(bytes32 phoneHash, bool status, bytes calldata _signature) external onlyGuardianVerifier returns (bool) {
+	function verifyPhoneHash(
+		bytes32 phoneHash,
+		bool status,
+		address owner,
+		bytes calldata _signature
+	) external onlyGuardianVerifier returns (bool) {
 		bytes32 digest = _hashTypedDataV4(keccak256(abi.encode(_VERIFY_TYPEHASH, phoneHash)));
 		address signer = ECDSA.recover(digest, _signature);
+		//prevention of signature mismatch
+		require(owner == signer, 'signer does not match signature');
 		VerificationRecord storage verificationRecord = verifiedRecord[phoneHash];
 
 		if (verificationRecord.owner == address(0)) {
