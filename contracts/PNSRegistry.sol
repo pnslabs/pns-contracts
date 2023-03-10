@@ -2,10 +2,8 @@
 pragma solidity 0.8.9;
 
 //  ==========  External imports    ==========
-
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
-
 import 'hardhat/console.sol';
 
 // ==========  Internal imports    ==========
