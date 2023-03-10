@@ -13,7 +13,7 @@ describe.only('PNS Registry', () => {
   let pnsResolverContract;
   let adminAddress;
   let balanceBeforeTx;
-  const phoneNumber1 = keccak256('07084562591');
+  const phoneNumber1 = keccak256('2347084562591');
   const phoneNumber2 = keccak256('08084442592');
   const oneYearInSeconds = 31536000;
   const twoYearsInSeconds = 63072000;
@@ -53,12 +53,14 @@ describe.only('PNS Registry', () => {
     adminAddress = _adminAddress;
   });
 
-  it('Shows a walkthrough of how Joe uses the contract', async () => {
+  it('Should register a phone number on PNS and set record', async () => {
     const [joe, emma] = accounts.slice(1, 5);
     const balance = await joe.provider.getBalance(joe.address);
     console.log(weiToEth(balance));
+
+    // const joeSignature = await joe.
     //joe verifies his phone number successfully
-    await expect(pnsGuardianContract.verifyPhoneHash(phoneNumber1, status, signature)).to.not.be.reverted;
+    await expect(pnsGuardianContract.verifyPhoneHash(phoneNumber1, status, joe.address, signature)).to.not.be.reverted;
 
     //joe's record authenticated successfully by guardian
     let joeVerificationStatus = await pnsRegistryContract.getVerificationStatus(phoneNumber1);
