@@ -7,8 +7,8 @@ import { ethToWei } from '../test/helpers/base';
 async function deployContract() {
   let adminAccount;
   let pnsRegistryContract;
-  let registryCost = ethToWei('10'); // 10 usd
-  let registryRenewCost = ethToWei('5'); // 5 usd
+  let registryCost = ethToWei('9.99'); // 10 usd
+  let registryRenewCost = ethToWei('4.99'); // 5 usd
   let ethPrice = '1779400000000';
   const ethGoerliTreasuryAddress = process.env.GNOSIS_GOERLI_TREASURY_ADDRESS;
   const bscTestnetTreasuryAddress = '0x';
@@ -115,7 +115,7 @@ async function deployContract() {
   const pnsRegistryRenewCost = await pnsRegistryContract.registryRenewCostInUSD();
   await pnsGuardianContract.setPNSRegistry(pnsRegistryContract.address);
   const guardianRegistry = await pnsGuardianContract.registryAddress();
-  console.log('Registry contract set in guardian as', guardianRegistry);
+  console.log('Registry contract in guardian after deployment', guardianRegistry);
   console.log('------------------------------------------------');
   console.log(
     `Registry Cost set to ${pnsRegistrycost / 1e18} USD, \n Registry Renew Cost set to, ${
@@ -126,7 +126,7 @@ async function deployContract() {
 
   await pnsGuardianContract.setPNSRegistry(pnsRegistryContract.address);
 
-  console.log('Registry contract set to', pnsRegistryContract.address);
+  console.log('Registry contract in guardian set to', pnsRegistryContract.address);
   console.log('------------------------------------------------');
 
   const pnsResolverContract = await upgrades.deployProxy(PNSResolverContract, [pnsRegistryContract.address], {

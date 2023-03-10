@@ -7,8 +7,8 @@ import { ethToWei } from '../test/helpers/base';
 async function deployContract() {
   let adminAccount;
   let pnsRegistryContract;
-  let registryCost = ethToWei('10'); // 10 usd
-  let registryRenewCost = ethToWei('5'); // 5 usd
+  let registryCost = ethToWei('9.99'); // 10 usd
+  let registryRenewCost = ethToWei('4.99'); // 5 usd
   let ethPrice = '163759050000';
 
   const treasuryAddress = '0x';
