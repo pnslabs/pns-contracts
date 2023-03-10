@@ -32,6 +32,7 @@ interface IPNSGuardian {
 	function verifyPhoneHash(
 		bytes32 phoneHash,
 		bool status,
+		address owner,
 		bytes memory _signature
 	) external returns (bool);
 
