@@ -60,14 +60,20 @@ describe.only('PNS Registry', () => {
     const balance = await joe.provider.getBalance(joe.address);
     console.log(weiToEth(balance));
 
-    console.log('this is address', joe.address);
-    //joe encounters an error while verifying his phone number
+    //joe encounters an error while verifying his phone number with a wrong owner
     await expect(
       pnsGuardianContract.verifyPhoneHash(phoneNumber1, hashedMessage, status, emma.address, signature),
     ).to.be.revertedWith('signer does not match signature');
+
+    //joe encounters an error while verifying his phone number with a wrong verifier
+    await expect(
+      pnsGuardianContract.connect(joe).verifyPhoneHash(phoneNumber1, hashedMessage, status, emma.address, signature),
+    ).to.be.revertedWith('Only Guardian Verifier');
+
     //joe verifies his phone number successfully
-    await expect(pnsGuardianContract.verifyPhoneHash(phoneNumber1, hashedMessage, status, joe.address, signature)).to
-      .not.be.reverted;
+    await expect(
+      pnsGuardianContract.verifyPhoneHash(phoneNumber1, hashedMessage, status, joe.address, signature),
+    ).to.emit(pnsGuardianContract, 'PhoneVerified');
 
     //joe's record authenticated successfully by guardian
     // let joeVerificationStatus = await pnsRegistryContract.getVerificationStatus(phoneNumber1);

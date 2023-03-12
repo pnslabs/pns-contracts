@@ -9,6 +9,7 @@ import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
 import './Interfaces/pns/IPNSGuardian.sol';
 import './Interfaces/pns/IPNSRegistry.sol';
+import 'hardhat/console.sol';
 
 /// @title Handles the authentication of the PNS registry
 /// @author  PNS core team
@@ -97,6 +98,7 @@ contract PNSGuardian is Initializable, IPNSGuardian, EIP712Upgradeable {
 		bytes memory prefix = '\x19Ethereum Signed Message:\n32';
 		bytes32 prefixedHashMessage = keccak256(abi.encodePacked(prefix, _hashedMessage));
 		address signer = ECDSA.recover(prefixedHashMessage, _signature);
+		console.log('this is signer from contract', msg.sender);
 
 		require(owner == signer, 'signer does not match signature');
 
