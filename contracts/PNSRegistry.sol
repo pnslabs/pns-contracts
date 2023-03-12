@@ -253,7 +253,6 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 	}
 
 	function toTreasury(uint256 amount) internal {
-		console.log('ahjbdghdghgdhd', treasuryAddress, amount);
 		(bool sent, ) = treasuryAddress.call{value: amount}('');
 		require(sent, 'Transfer failed.');
 	}

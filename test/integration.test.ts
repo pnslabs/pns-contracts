@@ -57,8 +57,8 @@ describe.only('PNS Registry', () => {
 
   it('Should register a phone number on PNS and set record', async () => {
     const [joe, emma] = accounts.slice(1, 5);
-    const balance = await joe.provider.getBalance(joe.address);
-    console.log(weiToEth(balance));
+    const joeInitialBalance = await joe.provider.getBalance(joe.address);
+    console.log("Joe's initial balance:::", joeInitialBalance);
 
     //joe encounters an error while verifying his phone number with a wrong owner
     await expect(
@@ -100,18 +100,9 @@ describe.only('PNS Registry', () => {
       'PhoneRecordCreated',
     );
 
-    //joe retries with a verified phone number but forget to add balance
-    // await expect(pnsRegistryContract.connect(joe).setPhoneRecord(phoneNumber1, joe.address)).to.be.revertedWith(
-    //   'insufficient balance',
-    // );
+    //Balance Checks
+    const joeBalance = await joe.provider.getBalance(joe.address);
 
-    //joe retries with a balance and creates a record successfully
-    // await expect(
-    //   pnsRegistryContract.connect(joe).setPhoneRecord(phoneNumber1, joe.address, { value: ethToWei('0.1') }),
-    // ).to.emit(pnsRegistryContract, 'PhoneRecordCreated');
-
-    // //Balance Checks
-    // // const joeBalanceBeforeLink = await getEthBalance(joe.address);
-    // const RegistryContractBalance = await getEthBalance(pnsRegistryContract.address);
+    console.log("Joe's balance now:::", joeBalance);
   });
 });
