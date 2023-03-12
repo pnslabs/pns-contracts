@@ -115,14 +115,6 @@ contract PNSGuardian is Initializable, IPNSGuardian, EIP712Upgradeable {
 	}
 
 	/**
-	 * @dev Modifier that permits modifications only by the PNS registry contract
-	 */
-	modifier onlyRegistryContract() {
-		require(msg.sender == registryAddress, 'Only Registry Contract: not allowed ');
-		_;
-	}
-
-	/**
 	 * @dev Modifier that permits modifications only by the PNS guardian verifier.
 	 */
 	modifier onlyGuardianVerifier() {
