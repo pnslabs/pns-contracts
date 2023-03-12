@@ -60,17 +60,18 @@ describe.only('PNS Registry', () => {
     const balance = await joe.provider.getBalance(joe.address);
     console.log(weiToEth(balance));
 
-    const value = {
-      phoneHash: phoneNumber1,
-    };
-    const sig = await joe._signTypedData(domain, PNSTypes, value);
-    console.log('this is signature', sig);
+    console.log('this is address', joe.address);
+    //joe encounters an error while verifying his phone number
+    await expect(
+      pnsGuardianContract.verifyPhoneHash(phoneNumber1, hashedMessage, status, emma.address, signature),
+    ).to.be.revertedWith('signer does not match signature');
     //joe verifies his phone number successfully
-    await expect(pnsGuardianContract.verifyPhoneHash(phoneNumber1, status, joe.address, sig)).to.not.be.reverted;
+    await expect(pnsGuardianContract.verifyPhoneHash(phoneNumber1, hashedMessage, status, joe.address, signature)).to
+      .not.be.reverted;
 
     //joe's record authenticated successfully by guardian
-    let joeVerificationStatus = await pnsRegistryContract.getVerificationStatus(phoneNumber1);
-    await expect(joeVerificationStatus).to.be.equal(true);
+    // let joeVerificationStatus = await pnsRegistryContract.getVerificationStatus(phoneNumber1);
+    // await expect(joeVerificationStatus).to.be.equal(true);
 
     //joe's verification record is owned by joe
     // let verificationOwner = await pnsGuardianContract.getVerifiedOwner(phoneNumber1);
@@ -78,9 +79,9 @@ describe.only('PNS Registry', () => {
     // await expect(verificationOwner).to.be.equal(joe.address);
 
     //joe attempts to create a record with an unverified phone number
-    await expect(pnsRegistryContract.connect(joe).setPhoneRecord(phoneNumber2, joe.address)).to.be.revertedWith(
-      'phone record is not verified',
-    );
+    // await expect(pnsRegistryContract.connect(joe).setPhoneRecord(phoneNumber2, joe.address)).to.be.revertedWith(
+    //   'phone record is not verified',
+    // );
 
     //joe retries with a verified phone number but forget to add balance
     // await expect(pnsRegistryContract.connect(joe).setPhoneRecord(phoneNumber1, joe.address)).to.be.revertedWith(

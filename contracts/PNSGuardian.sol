@@ -89,14 +89,17 @@ contract PNSGuardian is Initializable, IPNSGuardian, EIP712Upgradeable {
 	 */
 	function verifyPhoneHash(
 		bytes32 phoneHash,
+		bytes32 _hashedMessage,
 		bool status,
 		address owner,
 		bytes calldata _signature
 	) external onlyGuardianVerifier returns (bool) {
-		bytes32 digest = _hashTypedDataV4(keccak256(abi.encode(_VERIFY_TYPEHASH, phoneHash)));
-		address signer = ECDSA.recover(digest, _signature);
-		//prevention of signature mismatch
+		bytes memory prefix = '\x19Ethereum Signed Message:\n32';
+		bytes32 prefixedHashMessage = keccak256(abi.encodePacked(prefix, _hashedMessage));
+		address signer = ECDSA.recover(prefixedHashMessage, _signature);
+
 		require(owner == signer, 'signer does not match signature');
+
 		VerificationRecord storage verificationRecord = verifiedRecord[phoneHash];
 
 		if (verificationRecord.owner == address(0)) {
@@ -104,6 +107,7 @@ contract PNSGuardian is Initializable, IPNSGuardian, EIP712Upgradeable {
 			verificationRecord.verifiedAt = block.timestamp;
 			verificationRecord.isVerified = status;
 		}
+
 		emit PhoneVerified(signer, phoneHash, block.timestamp);
 		return verificationRecord.owner != address(0);
 	}
