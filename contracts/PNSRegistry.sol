@@ -11,6 +11,7 @@ import './Interfaces/pns/IPNSRegistry.sol';
 import './Interfaces/pns/IPNSResolver.sol';
 import './Interfaces/pns/IPNSGuardian.sol';
 import './Interfaces/dependencies/IPriceConverter.sol';
+import 'hardhat/console.sol';
 
 /**
  * @title The contract for phone number service Registry.
@@ -64,10 +65,9 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 	/**
 	 * @dev Sets the record for a phoneHash.
 	 * @param phoneHash The phoneHash to update.
-	 * @param resolver The address the phone number resolves to.
 	 */
-	function setPhoneRecord(bytes32 phoneHash, string calldata resolver) external payable virtual {
-		_setPhoneRecord(phoneHash, resolver);
+	function setPhoneRecord(bytes32 phoneHash) external payable virtual {
+		_setPhoneRecord(phoneHash);
 	}
 
 	/**
@@ -229,26 +229,31 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 		record.creation = block.timestamp;
 	}
 
-	function _setPhoneRecord(bytes32 phoneHash, string calldata resolver) internal onlyVerified(phoneHash) onlyVerifiedOwner(phoneHash) {
+	function _setPhoneRecord(bytes32 phoneHash) internal onlyVerified(phoneHash) onlyVerifiedOwner(phoneHash) {
 		uint256 ethToUSD = priceConverter.convertETHToUSD(msg.value);
 		require(ethToUSD >= registryCostInUSD, 'insufficient balance');
 		//create the record in registry
 		createRecord(msg.sender, phoneHash);
 		//update the address field of eth as default
-		pnsResolver.setAddr(phoneHash, resolver);
+		// pnsResolver.setAddr(phoneHash, msg.sender);
+
+		// Send the registry cost to the treasury
+		uint256 registryCostInEth = priceConverter.convertUSDToETH(registryCostInUSD);
+		toTreasury(registryCostInEth);
+
+		emit PhoneRecordCreated(phoneHash, msg.sender);
+
+		// Refund remaining balance to caller
 		if (ethToUSD > registryCostInUSD) {
 			uint256 refunAmountInUSD = ethToUSD - registryCostInUSD;
 			uint256 refundAmountInETH = priceConverter.convertUSDToETH(refunAmountInUSD);
 			(bool sent, ) = msg.sender.call{value: refundAmountInETH}('');
 			require(sent, 'Transfer failed.');
 		}
-		// Send the contract balance to the treasury
-		toTreasury(registryCostInUSD);
-		//implement move funds to trwasury
-		emit PhoneRecordCreated(phoneHash, resolver, msg.sender);
 	}
 
 	function toTreasury(uint256 amount) internal {
+		console.log('ahjbdghdghgdhd', treasuryAddress, amount);
 		(bool sent, ) = treasuryAddress.call{value: amount}('');
 		require(sent, 'Transfer failed.');
 	}

@@ -4,6 +4,7 @@ pragma solidity >=0.8.4;
 import '../Interfaces/profiles/IAddrResolver.sol';
 import '../Interfaces/profiles/IAddressResolver.sol';
 import './ResolverBase.sol';
+import 'hardhat/console.sol';
 
 abstract contract AddrResolver is IAddrResolver, IAddressResolver, ResolverBase {
 	uint256 private constant COIN_TYPE_ETH = 60;
@@ -37,6 +38,7 @@ abstract contract AddrResolver is IAddrResolver, IAddressResolver, ResolverBase 
 		uint256 coinType,
 		bytes memory a
 	) public virtual authorised(phoneHash) {
+		console.log('we are here');
 		emit AddressChanged(phoneHash, coinType, a);
 		if (coinType == COIN_TYPE_ETH) {
 			emit AddrChanged(phoneHash, bytesToAddress(a));
@@ -62,7 +64,7 @@ abstract contract AddrResolver is IAddrResolver, IAddressResolver, ResolverBase 
 		}
 	}
 
-	function addressToBytes(address a) internal pure returns (bytes memory b) {
+	function addressToBytes(address a) internal view returns (bytes memory b) {
 		b = new bytes(20);
 		assembly {
 			mstore(add(b, 32), mul(a, exp(256, 12)))
