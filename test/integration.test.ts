@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat';
 import hre from 'hardhat';
-import { ethToWei, getEthBalance, toUnits, toWholeUnits, weiToEth } from './helpers/base';
+import { ethToWei, getEthBalance, increaseTime, toUnits, toWholeUnits, weiToEth } from './helpers/base';
 import { domain, PNSTypes } from './helpers/eip712sign';
 
 const { assert, expect } = require('chai');
@@ -98,6 +98,26 @@ describe.only('PNS Registry', () => {
     await expect(
       pnsRegistryContract.connect(joe).setPhoneRecord(phoneNumber1, joe.address, { value: ethToWei('1') }),
     ).to.emit(pnsRegistryContract, 'PhoneRecordCreated');
+
+    //joe encounters an error when trying to renew record before expiration
+    await expect(pnsRegistryContract.connect(joe).renew(phoneNumber1)).to.be.revertedWith(
+      'cannot renew an active record',
+    );
+
+    //increase evm time
+    await increaseTime(oneYearInSeconds);
+
+    //joe encounters an error when trying to renew record with a wrong owner
+    await expect(pnsRegistryContract.connect(emma).renew(phoneNumber1)).to.be.revertedWith('caller is not authorised');
+
+    //joe encounters an error when trying to renew record with an insufficient balance
+    await expect(pnsRegistryContract.connect(joe).renew(phoneNumber1)).to.be.revertedWith('insufficient balance');
+
+    //joe renews phone record successfully
+    await expect(pnsRegistryContract.connect(joe).renew(phoneNumber1, { value: ethToWei('0.5') })).to.emit(
+      pnsRegistryContract,
+      'PhoneRecordRenewed',
+    );
 
     //Balance Checks
     const joeBalance = await joe.provider.getBalance(joe.address);

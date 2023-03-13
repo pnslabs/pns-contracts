@@ -123,6 +123,13 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 		uint256 ethToUSD = priceConverter.convertETHToUSD(msg.value);
 		require(ethToUSD >= registryRenewCostInUSD, 'insufficient balance');
 
+		//move to  DAO treasury
+		uint256 registryRenewCostInEth = priceConverter.convertUSDToETH(registryRenewCostInUSD);
+		toTreasury(registryRenewCostInEth);
+
+		phoneRegistry[phoneHash].expiration = block.timestamp + EXPIRY_TIME;
+		emit PhoneRecordRenewed(phoneHash);
+
 		//refund user if excessive
 		if (ethToUSD > registryRenewCostInUSD) {
 			uint256 refunAmountInUSD = ethToUSD - registryRenewCostInUSD;
@@ -130,10 +137,6 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 			(bool sent, ) = msg.sender.call{value: refundAmountInETH}('');
 			require(sent, 'Transfer failed.');
 		}
-		//move to  DAO treasury
-		toTreasury(registryRenewCostInUSD);
-		phoneRegistry[phoneHash].expiration = block.timestamp + EXPIRY_TIME;
-		emit PhoneRecordRenewed(phoneHash);
 	}
 
 	/**
@@ -277,11 +280,11 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 	}
 
 	/**
-	 * @dev Permits the function to run only if phone record is not expired.
+	 * @dev Permits the function to run only if phone record is expired.
 	 * @param phoneHash The phoneHash of the record to be compared.
 	 */
 	modifier notExpired(bytes32 phoneHash) {
-		require(!_hasPassedExpiryTime(phoneHash), 'cannot renew expired record');
+		require(_hasPassedExpiryTime(phoneHash), 'cannot renew an active record');
 		_;
 	}
 
