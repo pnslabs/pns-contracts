@@ -75,7 +75,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 	 * @param phoneHash The phoneHash to transfer ownership of.
 	 * @param newOwner The address of the new owner.
 	 */
-	function transfer(bytes32 phoneHash, address newOwner) public virtual authorised(phoneHash) {
+	function transfer(bytes32 phoneHash, address newOwner) public virtual authorised(phoneHash) notExpired(phoneHash) {
 		require(newOwner != address(0x0), 'cannot set owner to the zero address');
 		require(newOwner != address(this), 'cannot set owner to the registry address');
 
@@ -118,7 +118,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 	 * @dev Renew a phone record.
 	 * @param phoneHash The phoneHash.
 	 */
-	function renew(bytes32 phoneHash) external payable virtual authorised(phoneHash) notExpired(phoneHash) {
+	function renew(bytes32 phoneHash) external payable virtual authorised(phoneHash) hasExpired(phoneHash) {
 		//convert to wei
 		uint256 ethToUSD = priceConverter.convertETHToUSD(msg.value);
 		require(ethToUSD >= registryRenewCostInUSD, 'insufficient balance');
@@ -283,8 +283,17 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 	 * @dev Permits the function to run only if phone record is expired.
 	 * @param phoneHash The phoneHash of the record to be compared.
 	 */
+	modifier hasExpired(bytes32 phoneHash) {
+		require(_hasPassedExpiryTime(phoneHash), 'cannot proceed: record not expired');
+		_;
+	}
+
+	/**
+	 * @dev Permits the function to run only if phone record is not expired.
+	 * @param phoneHash The phoneHash of the record to be compared.
+	 */
 	modifier notExpired(bytes32 phoneHash) {
-		require(_hasPassedExpiryTime(phoneHash), 'cannot renew an active record');
+		require(!_hasPassedGracePeriod(phoneHash), 'cannot proceed: record expired');
 		_;
 	}
 

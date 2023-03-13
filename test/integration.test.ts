@@ -19,7 +19,7 @@ describe.only('PNS Registry', () => {
   const phoneNumber2 = keccak256('08084442592');
   const oneYearInSeconds = 31536000;
   const twoYearsInSeconds = 63072000;
-  const thirtyDaysInSeconds = 2592000;
+  const sixtyDaysInSeconds = 5184000;
   const label = 'ETH';
   const label2 = 'BTC';
   const status = true;
@@ -105,7 +105,7 @@ describe.only('PNS Registry', () => {
     assert.equal(record.owner, joe.address);
 
     //joe encounters an error when trying to transfer ownership using the wrong owner
-    await expect(pnsRegistryContract.connect(emma).transfer(phoneNumber1, joe.address)).to.be.revertedWith(
+    await expect(pnsRegistryContract.connect(emma).transfer(phoneNumber1, emma.address)).to.be.revertedWith(
       'caller is not authorised',
     );
 
@@ -131,7 +131,7 @@ describe.only('PNS Registry', () => {
 
     //emma encounters an error when trying to renew record before expiration
     await expect(pnsRegistryContract.connect(emma).renew(phoneNumber1)).to.be.revertedWith(
-      'cannot renew an active record',
+      'cannot proceed: record not expired',
     );
 
     //increase evm time
@@ -147,6 +147,14 @@ describe.only('PNS Registry', () => {
     await expect(pnsRegistryContract.connect(emma).renew(phoneNumber1, { value: ethToWei('0.5') })).to.emit(
       pnsRegistryContract,
       'PhoneRecordRenewed',
+    );
+
+    //increase evm time
+    await increaseTime(oneYearInSeconds + sixtyDaysInSeconds);
+
+    //emma encounters an error when trying to transfer ownership when record has passed its grace period
+    await expect(pnsRegistryContract.connect(emma).transfer(phoneNumber1, joe.address)).to.be.revertedWith(
+      'cannot proceed: record expired',
     );
 
     //Balance Checks
