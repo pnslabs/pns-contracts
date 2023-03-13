@@ -66,8 +66,8 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 	 * @dev Sets the record for a phoneHash.
 	 * @param phoneHash The phoneHash to update.
 	 */
-	function setPhoneRecord(bytes32 phoneHash) external payable virtual {
-		_setPhoneRecord(phoneHash);
+	function setPhoneRecord(bytes32 phoneHash, string calldata resolver) external payable virtual {
+		_setPhoneRecord(phoneHash, resolver);
 	}
 
 	/**
@@ -229,19 +229,19 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 		record.creation = block.timestamp;
 	}
 
-	function _setPhoneRecord(bytes32 phoneHash) internal onlyVerified(phoneHash) onlyVerifiedOwner(phoneHash) {
+	function _setPhoneRecord(bytes32 phoneHash, string calldata resolver) internal onlyVerified(phoneHash) onlyVerifiedOwner(phoneHash) {
 		uint256 ethToUSD = priceConverter.convertETHToUSD(msg.value);
 		require(ethToUSD >= registryCostInUSD, 'insufficient balance');
 		//create the record in registry
 		createRecord(msg.sender, phoneHash);
 		//update the address field of eth as default
-		// pnsResolver.setAddr(phoneHash, msg.sender);
+		// pnsResolver.setAddr(phoneHash, resolver);
 
 		// Send the registry cost to the treasury
 		uint256 registryCostInEth = priceConverter.convertUSDToETH(registryCostInUSD);
 		toTreasury(registryCostInEth);
 
-		emit PhoneRecordCreated(phoneHash, msg.sender);
+		emit PhoneRecordCreated(phoneHash, resolver, msg.sender);
 
 		// Refund remaining balance to caller
 		if (ethToUSD > registryCostInUSD) {

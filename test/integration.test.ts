@@ -80,25 +80,24 @@ describe.only('PNS Registry', () => {
     assert.equal(owner, joe.address);
 
     //joe encounters an error when attempting to create a record with an unverified phone number
-    await expect(pnsRegistryContract.connect(joe).setPhoneRecord(phoneNumber2)).to.be.revertedWith(
+    await expect(pnsRegistryContract.connect(joe).setPhoneRecord(phoneNumber2, joe.address)).to.be.revertedWith(
       'phone record is not verified',
     );
 
     //joe encounters an error when attempting to create a record when connected to the wrong owner
-    await expect(pnsRegistryContract.connect(emma).setPhoneRecord(phoneNumber1)).to.be.revertedWith(
+    await expect(pnsRegistryContract.connect(emma).setPhoneRecord(phoneNumber1, joe.address)).to.be.revertedWith(
       'caller is not verified owner',
     );
 
     //joe encounters an error when attempting to create a record with an insufficient balance
-    await expect(pnsRegistryContract.connect(joe).setPhoneRecord(phoneNumber1)).to.be.revertedWith(
+    await expect(pnsRegistryContract.connect(joe).setPhoneRecord(phoneNumber1, joe.address)).to.be.revertedWith(
       'insufficient balance',
     );
 
     //joe creates a record successfully
-    await expect(pnsRegistryContract.connect(joe).setPhoneRecord(phoneNumber1, { value: ethToWei('1') })).to.emit(
-      pnsRegistryContract,
-      'PhoneRecordCreated',
-    );
+    await expect(
+      pnsRegistryContract.connect(joe).setPhoneRecord(phoneNumber1, joe.address, { value: ethToWei('1') }),
+    ).to.emit(pnsRegistryContract, 'PhoneRecordCreated');
 
     //Balance Checks
     const joeBalance = await joe.provider.getBalance(joe.address);
