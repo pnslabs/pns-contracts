@@ -1,7 +1,5 @@
 import { ethers } from 'hardhat';
-import hre from 'hardhat';
-import { ethToWei, getEthBalance, increaseTime, toUnits, toWholeUnits, weiToEth } from './helpers/base';
-import { domain, PNSTypes } from './helpers/eip712sign';
+import { increaseTime, weiToEth } from './helpers/base';
 
 const { assert, expect } = require('chai');
 const { keccak256 } = require('../utils/util');
@@ -12,24 +10,17 @@ describe.only('PNS Registry', () => {
   let pnsGuardianContract;
   let pnsResolverContract;
   let adminAddress;
-  let balanceBeforeTx;
 
   //using an enummeration  prone phoneHash
   const phoneNumber1 = keccak256('2347084562591');
   const phoneNumber2 = keccak256('08084442592');
   const oneYearInSeconds = 31536000;
-  const twoYearsInSeconds = 63072000;
   const sixtyDaysInSeconds = 5184000;
-  const label = 'ETH';
-  const label2 = 'BTC';
   const status = true;
-  const signer = ethers.provider.getSigner();
   const otp = '123456';
   let accounts: any[];
-  let amountInETH;
   let amount = '10000000000000000000';
   let renewAmount = '5000000000000000000';
-  let newSigner;
   const zeroAddress = ethers.constants.AddressZero;
 
   let message = ethers.utils.solidityPack(['bytes32', 'uint256'], [phoneNumber1, otp]);
@@ -38,7 +29,7 @@ describe.only('PNS Registry', () => {
 
   before(async () => {
     accounts = await ethers.getSigners();
-    const [joe, emma] = accounts.slice(1, 5);
+    const [joe] = accounts.slice(1, 5);
 
     signature = await joe.signMessage(ethers.utils.arrayify(hashedMessage));
 
@@ -59,7 +50,9 @@ describe.only('PNS Registry', () => {
   it('Should register a phone number on PNS and set record', async () => {
     const [joe, emma] = accounts.slice(1, 5);
     const joeInitialBalance = await joe.provider.getBalance(joe.address);
-    console.log("Joe's initial balance:::", joeInitialBalance);
+    const emmaInitialBalance = await emma.provider.getBalance(emma.address);
+    console.log("Emma's initial balance:::", weiToEth(emmaInitialBalance));
+    console.log("Joe's initial balance:::", weiToEth(joeInitialBalance));
 
     //joe encounters an error while verifying his phone number with a wrong owner
     await expect(
@@ -96,9 +89,10 @@ describe.only('PNS Registry', () => {
     );
 
     //joe creates a record successfully
-    await expect(
-      pnsRegistryContract.connect(joe).setPhoneRecord(phoneNumber1, joe.address, { value: ethToWei('1') }),
-    ).to.emit(pnsRegistryContract, 'PhoneRecordCreated');
+    await expect(pnsRegistryContract.connect(joe).setPhoneRecord(phoneNumber1, joe.address, { value: amount })).to.emit(
+      pnsRegistryContract,
+      'PhoneRecordCreated',
+    );
 
     //joe verifies that the record exist and the ownership is set correctly
     let record = await pnsRegistryContract.getRecord(phoneNumber1);
@@ -144,7 +138,7 @@ describe.only('PNS Registry', () => {
     await expect(pnsRegistryContract.connect(emma).renew(phoneNumber1)).to.be.revertedWith('insufficient balance');
 
     //emma renews phone record successfully
-    await expect(pnsRegistryContract.connect(emma).renew(phoneNumber1, { value: ethToWei('0.5') })).to.emit(
+    await expect(pnsRegistryContract.connect(emma).renew(phoneNumber1, { value: renewAmount })).to.emit(
       pnsRegistryContract,
       'PhoneRecordRenewed',
     );
@@ -159,7 +153,8 @@ describe.only('PNS Registry', () => {
 
     //Balance Checks
     const joeBalance = await joe.provider.getBalance(joe.address);
-
-    console.log("Joe's balance now:::", joeBalance);
+    const emmaBalance = await emma.provider.getBalance(emma.address);
+    console.log("Emma's balance now:::", weiToEth(emmaBalance));
+    console.log("Joe's balance now:::", weiToEth(joeBalance));
   });
 });
