@@ -30,6 +30,7 @@ describe.only('PNS Registry', () => {
   let amount = '10000000000000000000';
   let renewAmount = '5000000000000000000';
   let newSigner;
+  const zeroAddress = ethers.constants.AddressZero;
 
   let message = ethers.utils.solidityPack(['bytes32', 'uint256'], [phoneNumber1, otp]);
   const hashedMessage = ethers.utils.keccak256(message);
@@ -99,22 +100,51 @@ describe.only('PNS Registry', () => {
       pnsRegistryContract.connect(joe).setPhoneRecord(phoneNumber1, joe.address, { value: ethToWei('1') }),
     ).to.emit(pnsRegistryContract, 'PhoneRecordCreated');
 
-    //joe encounters an error when trying to renew record before expiration
-    await expect(pnsRegistryContract.connect(joe).renew(phoneNumber1)).to.be.revertedWith(
+    //joe verifies that the record exist and the ownership is set correctly
+    let record = await pnsRegistryContract.getRecord(phoneNumber1);
+    assert.equal(record.owner, joe.address);
+
+    //joe encounters an error when trying to transfer ownership using the wrong owner
+    await expect(pnsRegistryContract.connect(emma).transfer(phoneNumber1, joe.address)).to.be.revertedWith(
+      'caller is not authorised',
+    );
+
+    //joe encounters an error when trying to transfer ownership using the zero address
+    await expect(pnsRegistryContract.connect(joe).transfer(phoneNumber1, zeroAddress)).to.be.revertedWith(
+      'cannot set owner to the zero address',
+    );
+
+    //joe encounters an error when trying to transfer ownership using the contract address
+    await expect(
+      pnsRegistryContract.connect(joe).transfer(phoneNumber1, pnsRegistryContract.address),
+    ).to.be.revertedWith('cannot set owner to the registry address');
+
+    //joe transfers phone record ownership to emma successfully
+    await expect(pnsRegistryContract.connect(joe).transfer(phoneNumber1, emma.address)).to.emit(
+      pnsRegistryContract,
+      'Transfer',
+    );
+
+    //emma verifies that the ownership is set correctly
+    record = await pnsRegistryContract.getRecord(phoneNumber1);
+    assert.equal(record.owner, emma.address);
+
+    //emma encounters an error when trying to renew record before expiration
+    await expect(pnsRegistryContract.connect(emma).renew(phoneNumber1)).to.be.revertedWith(
       'cannot renew an active record',
     );
 
     //increase evm time
     await increaseTime(oneYearInSeconds);
 
-    //joe encounters an error when trying to renew record with a wrong owner
-    await expect(pnsRegistryContract.connect(emma).renew(phoneNumber1)).to.be.revertedWith('caller is not authorised');
+    //emma encounters an error when trying to renew record with a wrong owner
+    await expect(pnsRegistryContract.connect(joe).renew(phoneNumber1)).to.be.revertedWith('caller is not authorised');
 
-    //joe encounters an error when trying to renew record with an insufficient balance
-    await expect(pnsRegistryContract.connect(joe).renew(phoneNumber1)).to.be.revertedWith('insufficient balance');
+    //emma encounters an error when trying to renew record with an insufficient balance
+    await expect(pnsRegistryContract.connect(emma).renew(phoneNumber1)).to.be.revertedWith('insufficient balance');
 
-    //joe renews phone record successfully
-    await expect(pnsRegistryContract.connect(joe).renew(phoneNumber1, { value: ethToWei('0.5') })).to.emit(
+    //emma renews phone record successfully
+    await expect(pnsRegistryContract.connect(emma).renew(phoneNumber1, { value: ethToWei('0.5') })).to.emit(
       pnsRegistryContract,
       'PhoneRecordRenewed',
     );
