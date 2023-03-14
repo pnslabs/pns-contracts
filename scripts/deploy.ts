@@ -6,6 +6,7 @@ import { ethToWei } from '../test/helpers/base';
 
 async function deployContract() {
   let adminAccount;
+  let treasury;
   let pnsRegistryContract;
   let registryCost = ethToWei('9.99'); // 10 usd
   let registryRenewCost = ethToWei('4.99'); // 5 usd
@@ -19,7 +20,7 @@ async function deployContract() {
 
   console.log(hre.network.name, 'network name');
 
-  [adminAccount] = await ethers.getSigners();
+  [adminAccount, treasury] = await ethers.getSigners();
   const adminAddress = adminAccount.address;
   console.log(adminAddress, 'address');
   console.log('------------------------------------------------');
@@ -96,10 +97,9 @@ async function deployContract() {
       },
     );
   } else {
-    const treasuryAddress = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266';
     pnsRegistryContract = await upgrades.deployProxy(
       PNSRegistryContract,
-      [pnsGuardianContract.address, priceConverter.address, treasuryAddress],
+      [pnsGuardianContract.address, priceConverter.address, treasury.address],
       {
         initializer: 'initialize',
       },

@@ -11,6 +11,7 @@ import './Interfaces/pns/IPNSRegistry.sol';
 import './Interfaces/pns/IPNSResolver.sol';
 import './Interfaces/pns/IPNSGuardian.sol';
 import './Interfaces/dependencies/IPriceConverter.sol';
+import 'hardhat/console.sol';
 
 /**
  * @title The contract for phone number service Registry.
@@ -64,7 +65,6 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 	/**
 	 * @dev Sets the record for a phoneHash.
 	 * @param phoneHash The phoneHash to update.
-	 * @param resolver The address the phone number resolves to.
 	 */
 	function setPhoneRecord(bytes32 phoneHash, string calldata resolver) external payable virtual {
 		_setPhoneRecord(phoneHash, resolver);
@@ -75,7 +75,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 	 * @param phoneHash The phoneHash to transfer ownership of.
 	 * @param newOwner The address of the new owner.
 	 */
-	function transfer(bytes32 phoneHash, address newOwner) public virtual authorised(phoneHash) authenticated(phoneHash) {
+	function transfer(bytes32 phoneHash, address newOwner) public virtual authorised(phoneHash) notExpired(phoneHash) {
 		require(newOwner != address(0x0), 'cannot set owner to the zero address');
 		require(newOwner != address(this), 'cannot set owner to the registry address');
 
@@ -118,10 +118,17 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 	 * @dev Renew a phone record.
 	 * @param phoneHash The phoneHash.
 	 */
-	function renew(bytes32 phoneHash) external payable virtual authorised(phoneHash) notExpired(phoneHash) {
+	function renew(bytes32 phoneHash) external payable virtual authorised(phoneHash) hasExpired(phoneHash) {
 		//convert to wei
 		uint256 ethToUSD = priceConverter.convertETHToUSD(msg.value);
 		require(ethToUSD >= registryRenewCostInUSD, 'insufficient balance');
+
+		//move to  DAO treasury
+		uint256 registryRenewCostInETH = priceConverter.convertUSDToETH(registryRenewCostInUSD);
+		toTreasury(registryRenewCostInETH);
+
+		phoneRegistry[phoneHash].expiration = block.timestamp + EXPIRY_TIME;
+		emit PhoneRecordRenewed(phoneHash);
 
 		//refund user if excessive
 		if (ethToUSD > registryRenewCostInUSD) {
@@ -130,10 +137,6 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 			(bool sent, ) = msg.sender.call{value: refundAmountInETH}('');
 			require(sent, 'Transfer failed.');
 		}
-		//move to  DAO treasury
-		toTreasury(registryRenewCostInUSD);
-		phoneRegistry[phoneHash].expiration = block.timestamp + EXPIRY_TIME;
-		emit PhoneRecordRenewed(phoneHash);
 	}
 
 	/**
@@ -235,17 +238,21 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 		//create the record in registry
 		createRecord(msg.sender, phoneHash);
 		//update the address field of eth as default
-		pnsResolver.setAddr(phoneHash, resolver);
+		// pnsResolver.setAddr(phoneHash, resolver);
+
+		// Send the registry cost to the treasury
+		uint256 registryCostInEth = priceConverter.convertUSDToETH(registryCostInUSD);
+		toTreasury(registryCostInEth);
+
+		emit PhoneRecordCreated(phoneHash, resolver, msg.sender);
+
+		// Refund remaining balance to caller
 		if (ethToUSD > registryCostInUSD) {
 			uint256 refunAmountInUSD = ethToUSD - registryCostInUSD;
 			uint256 refundAmountInETH = priceConverter.convertUSDToETH(refunAmountInUSD);
 			(bool sent, ) = msg.sender.call{value: refundAmountInETH}('');
 			require(sent, 'Transfer failed.');
 		}
-		// Send the contract balance to the treasury
-		toTreasury(registryCostInUSD);
-		//implement move funds to trwasury
-		emit PhoneRecordCreated(phoneHash, resolver, msg.sender);
 	}
 
 	function toTreasury(uint256 amount) internal {
@@ -273,21 +280,20 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 	}
 
 	/**
-	 * @dev Permits the function to run only if phone record is not expired.
+	 * @dev Permits the function to run only if phone record is expired.
 	 * @param phoneHash The phoneHash of the record to be compared.
 	 */
-	modifier notExpired(bytes32 phoneHash) {
-		require(!_hasPassedExpiryTime(phoneHash), 'cannot renew expired record');
+	modifier hasExpired(bytes32 phoneHash) {
+		require(_hasPassedExpiryTime(phoneHash), 'cannot proceed: record not expired');
 		_;
 	}
 
 	/**
-	 * @dev Permits the function to run only if phone record is still authenticated.
+	 * @dev Permits the function to run only if phone record is not expired.
 	 * @param phoneHash The phoneHash of the record to be compared.
 	 */
-	modifier authenticated(bytes32 phoneHash) {
-		bool expiry = _hasPassedExpiryTime(phoneHash);
-		require(!expiry, 'grace period passed');
+	modifier notExpired(bytes32 phoneHash) {
+		require(!_hasPassedGracePeriod(phoneHash), 'cannot proceed: record expired');
 		_;
 	}
 

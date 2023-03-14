@@ -14,7 +14,6 @@ interface IPNSRegistry is IPNSSchema {
 	/**
 	 * @dev logs the event when a phoneHash record is created.
 	 * @param phoneHash The phoneHash to be linked to the record.
-	 * @param wallet The resolver (address) of the record
 	 * @param owner The address of the owner
 	 */
 	event PhoneRecordCreated(bytes32 indexed phoneHash, string indexed wallet, address indexed owner);

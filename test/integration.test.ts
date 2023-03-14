@@ -1,7 +1,5 @@
 import { ethers } from 'hardhat';
-import hre from 'hardhat';
-import { ethToWei, getEthBalance, toUnits, toWholeUnits, weiToEth } from './helpers/base';
-import { domain, PNSTypes } from './helpers/eip712sign';
+import { increaseTime, weiToEth } from './helpers/base';
 
 const { assert, expect } = require('chai');
 const { keccak256 } = require('../utils/util');
@@ -12,24 +10,18 @@ describe.only('PNS Registry', () => {
   let pnsGuardianContract;
   let pnsResolverContract;
   let adminAddress;
-  let balanceBeforeTx;
 
   //using an enummeration  prone phoneHash
   const phoneNumber1 = keccak256('2347084562591');
   const phoneNumber2 = keccak256('08084442592');
   const oneYearInSeconds = 31536000;
-  const twoYearsInSeconds = 63072000;
-  const thirtyDaysInSeconds = 2592000;
-  const label = 'ETH';
-  const label2 = 'BTC';
+  const sixtyDaysInSeconds = 5184000;
   const status = true;
-  const signer = ethers.provider.getSigner();
   const otp = '123456';
   let accounts: any[];
-  let amountInETH;
   let amount = '10000000000000000000';
   let renewAmount = '5000000000000000000';
-  let newSigner;
+  const zeroAddress = ethers.constants.AddressZero;
 
   let message = ethers.utils.solidityPack(['bytes32', 'uint256'], [phoneNumber1, otp]);
   const hashedMessage = ethers.utils.keccak256(message);
@@ -37,7 +29,7 @@ describe.only('PNS Registry', () => {
 
   before(async () => {
     accounts = await ethers.getSigners();
-    const [joe, emma] = accounts.slice(1, 5);
+    const [joe] = accounts.slice(1, 5);
 
     signature = await joe.signMessage(ethers.utils.arrayify(hashedMessage));
 
@@ -55,45 +47,126 @@ describe.only('PNS Registry', () => {
     adminAddress = _adminAddress;
   });
 
-  it('Should register a phone number on PNS and set record', async () => {
+  it('Should verify a phone number', async () => {
     const [joe, emma] = accounts.slice(1, 5);
-    const balance = await joe.provider.getBalance(joe.address);
-    console.log(weiToEth(balance));
+    const joeInitialBalance = await joe.provider.getBalance(joe.address);
+    const emmaInitialBalance = await emma.provider.getBalance(emma.address);
+    console.log("Emma's initial balance:::", weiToEth(emmaInitialBalance));
+    console.log("Joe's initial balance:::", weiToEth(joeInitialBalance));
 
-    const value = {
-      phoneHash: phoneNumber1,
-    };
-    const sig = await joe._signTypedData(domain, PNSTypes, value);
-    console.log('this is signature', sig);
+    //joe encounters an error while verifying his phone number with a wrong owner
+    await expect(
+      pnsGuardianContract.verifyPhoneHash(phoneNumber1, hashedMessage, status, emma.address, signature),
+    ).to.be.revertedWith('signer does not match signature');
+
+    //joe encounters an error while verifying his phone number with a wrong verifier
+    await expect(
+      pnsGuardianContract.connect(joe).verifyPhoneHash(phoneNumber1, hashedMessage, status, emma.address, signature),
+    ).to.be.revertedWith('Only Guardian Verifier');
+
     //joe verifies his phone number successfully
-    await expect(pnsGuardianContract.verifyPhoneHash(phoneNumber1, status, joe.address, sig)).to.not.be.reverted;
+    await expect(
+      pnsGuardianContract.verifyPhoneHash(phoneNumber1, hashedMessage, status, joe.address, signature),
+    ).to.emit(pnsGuardianContract, 'PhoneVerified');
 
-    //joe's record authenticated successfully by guardian
-    let joeVerificationStatus = await pnsRegistryContract.getVerificationStatus(phoneNumber1);
-    await expect(joeVerificationStatus).to.be.equal(true);
+    //joe verifies that his ownership is verified correctly
+    const owner = await pnsGuardianContract.getVerifiedOwner(phoneNumber1);
+    assert.equal(owner, joe.address);
+  });
 
-    //joe's verification record is owned by joe
-    // let verificationOwner = await pnsGuardianContract.getVerifiedOwner(phoneNumber1);
-    // console.log('joeVerificationStatus', verificationOwner);
-    // await expect(verificationOwner).to.be.equal(joe.address);
+  it('Should create a phone record successfully', async () => {
+    const [joe, emma] = accounts.slice(1, 5);
 
-    //joe attempts to create a record with an unverified phone number
+    //joe encounters an error when attempting to create a record with an unverified phone number
     await expect(pnsRegistryContract.connect(joe).setPhoneRecord(phoneNumber2, joe.address)).to.be.revertedWith(
       'phone record is not verified',
     );
 
-    //joe retries with a verified phone number but forget to add balance
-    // await expect(pnsRegistryContract.connect(joe).setPhoneRecord(phoneNumber1, joe.address)).to.be.revertedWith(
-    //   'insufficient balance',
-    // );
+    //joe encounters an error when attempting to create a record when connected to the wrong owner
+    await expect(pnsRegistryContract.connect(emma).setPhoneRecord(phoneNumber1, joe.address)).to.be.revertedWith(
+      'caller is not verified owner',
+    );
 
-    //joe retries with a balance and creates a record successfully
-    // await expect(
-    //   pnsRegistryContract.connect(joe).setPhoneRecord(phoneNumber1, joe.address, { value: ethToWei('0.1') }),
-    // ).to.emit(pnsRegistryContract, 'PhoneRecordCreated');
+    //joe encounters an error when attempting to create a record with an insufficient balance
+    await expect(pnsRegistryContract.connect(joe).setPhoneRecord(phoneNumber1, joe.address)).to.be.revertedWith(
+      'insufficient balance',
+    );
 
-    // //Balance Checks
-    // // const joeBalanceBeforeLink = await getEthBalance(joe.address);
-    // const RegistryContractBalance = await getEthBalance(pnsRegistryContract.address);
+    //joe creates a record successfully
+    await expect(pnsRegistryContract.connect(joe).setPhoneRecord(phoneNumber1, joe.address, { value: amount })).to.emit(
+      pnsRegistryContract,
+      'PhoneRecordCreated',
+    );
+
+    //joe verifies that the record exist and the ownership is set correctly
+    let record = await pnsRegistryContract.getRecord(phoneNumber1);
+    assert.equal(record.owner, joe.address);
+  });
+
+  it('Should transfer ownership to another address', async () => {
+    const [joe, emma] = accounts.slice(1, 5);
+
+    //joe encounters an error when trying to transfer ownership using the wrong owner
+    await expect(pnsRegistryContract.connect(emma).transfer(phoneNumber1, emma.address)).to.be.revertedWith(
+      'caller is not authorised',
+    );
+
+    //joe encounters an error when trying to transfer ownership using the zero address
+    await expect(pnsRegistryContract.connect(joe).transfer(phoneNumber1, zeroAddress)).to.be.revertedWith(
+      'cannot set owner to the zero address',
+    );
+
+    //joe encounters an error when trying to transfer ownership using the contract address
+    await expect(
+      pnsRegistryContract.connect(joe).transfer(phoneNumber1, pnsRegistryContract.address),
+    ).to.be.revertedWith('cannot set owner to the registry address');
+
+    //joe transfers phone record ownership to emma successfully
+    await expect(pnsRegistryContract.connect(joe).transfer(phoneNumber1, emma.address)).to.emit(
+      pnsRegistryContract,
+      'Transfer',
+    );
+
+    //emma verifies that the ownership is set correctly
+    const record = await pnsRegistryContract.getRecord(phoneNumber1);
+    assert.equal(record.owner, emma.address);
+  });
+
+  it('Should renew an expired record', async () => {
+    const [joe, emma] = accounts.slice(1, 5);
+
+    //emma encounters an error when trying to renew record before expiration
+    await expect(pnsRegistryContract.connect(emma).renew(phoneNumber1)).to.be.revertedWith(
+      'cannot proceed: record not expired',
+    );
+
+    //increase evm time
+    await increaseTime(oneYearInSeconds);
+
+    //emma encounters an error when trying to renew record with a wrong owner
+    await expect(pnsRegistryContract.connect(joe).renew(phoneNumber1)).to.be.revertedWith('caller is not authorised');
+
+    //emma encounters an error when trying to renew record with an insufficient balance
+    await expect(pnsRegistryContract.connect(emma).renew(phoneNumber1)).to.be.revertedWith('insufficient balance');
+
+    //emma renews phone record successfully
+    await expect(pnsRegistryContract.connect(emma).renew(phoneNumber1, { value: renewAmount })).to.emit(
+      pnsRegistryContract,
+      'PhoneRecordRenewed',
+    );
+
+    //increase evm time
+    await increaseTime(oneYearInSeconds + sixtyDaysInSeconds);
+
+    //emma encounters an error when trying to transfer ownership when record has passed its grace period
+    await expect(pnsRegistryContract.connect(emma).transfer(phoneNumber1, joe.address)).to.be.revertedWith(
+      'cannot proceed: record expired',
+    );
+
+    //Balance Checks
+    const joeBalance = await joe.provider.getBalance(joe.address);
+    const emmaBalance = await emma.provider.getBalance(emma.address);
+    console.log("Emma's balance now:::", weiToEth(emmaBalance));
+    console.log("Joe's balance now:::", weiToEth(joeBalance));
   });
 });
