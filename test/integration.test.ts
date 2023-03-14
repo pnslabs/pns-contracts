@@ -47,7 +47,7 @@ describe.only('PNS Registry', () => {
     adminAddress = _adminAddress;
   });
 
-  it('Should register a phone number on PNS and set record', async () => {
+  it('Should verify a phone number', async () => {
     const [joe, emma] = accounts.slice(1, 5);
     const joeInitialBalance = await joe.provider.getBalance(joe.address);
     const emmaInitialBalance = await emma.provider.getBalance(emma.address);
@@ -72,6 +72,10 @@ describe.only('PNS Registry', () => {
     //joe verifies that his ownership is verified correctly
     const owner = await pnsGuardianContract.getVerifiedOwner(phoneNumber1);
     assert.equal(owner, joe.address);
+  });
+
+  it('Should create a phone record successfully', async () => {
+    const [joe, emma] = accounts.slice(1, 5);
 
     //joe encounters an error when attempting to create a record with an unverified phone number
     await expect(pnsRegistryContract.connect(joe).setPhoneRecord(phoneNumber2, joe.address)).to.be.revertedWith(
@@ -97,6 +101,10 @@ describe.only('PNS Registry', () => {
     //joe verifies that the record exist and the ownership is set correctly
     let record = await pnsRegistryContract.getRecord(phoneNumber1);
     assert.equal(record.owner, joe.address);
+  });
+
+  it('Should transfer ownership to another address', async () => {
+    const [joe, emma] = accounts.slice(1, 5);
 
     //joe encounters an error when trying to transfer ownership using the wrong owner
     await expect(pnsRegistryContract.connect(emma).transfer(phoneNumber1, emma.address)).to.be.revertedWith(
@@ -120,8 +128,12 @@ describe.only('PNS Registry', () => {
     );
 
     //emma verifies that the ownership is set correctly
-    record = await pnsRegistryContract.getRecord(phoneNumber1);
+    const record = await pnsRegistryContract.getRecord(phoneNumber1);
     assert.equal(record.owner, emma.address);
+  });
+
+  it('Should renew an expired record', async () => {
+    const [joe, emma] = accounts.slice(1, 5);
 
     //emma encounters an error when trying to renew record before expiration
     await expect(pnsRegistryContract.connect(emma).renew(phoneNumber1)).to.be.revertedWith(
