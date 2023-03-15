@@ -71,6 +71,14 @@ module.exports = {
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
       gasPrice: parseInt(`${utils.parseUnits('132', 'gwei')}`),
     },
+    hardhat: {
+      gasPrice: parseInt(`${utils.parseUnits('132', 'gwei')}`),
+      blockGasLimit: 12000000,
+      accounts: {
+        // 100 000 ETH
+        accountsBalance: '100000000000000000000000',
+      },
+    },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,

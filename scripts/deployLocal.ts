@@ -7,9 +7,11 @@ import { ethToWei } from '../test/helpers/base';
 async function deployContract() {
   let adminAccount;
   let pnsRegistryContract;
-  let registryCost = ethToWei('10'); // 10 usd
-  let registryRenewCost = ethToWei('5'); // 5 usd
+  let registryCost = ethToWei('9.99'); // 10 usd
+  let registryRenewCost = ethToWei('4.99'); // 5 usd
   let ethPrice = '163759050000';
+
+  const treasuryAddress = '0x';
 
   console.log(hre.network.name, 'network name');
 
@@ -25,7 +27,12 @@ async function deployContract() {
 
   const DummyPriceOracleContract = await ethers.getContractFactory('DummyPriceOracle');
 
+  const PriceConverter = await ethers.getContractFactory('PriceConverter');
+
   const dummyPriceOrcleContract = await DummyPriceOracleContract.deploy(ethPrice);
+
+  const priceConverter = await PriceConverter.deploy(dummyPriceOrcleContract.address);
+  await priceConverter.deployed();
 
   const pnsGuardianContract = await upgrades.deployProxy(PNSGuardianContract, [adminAddress], {
     initializer: 'initialize',
@@ -83,14 +90,16 @@ async function deployContract() {
       },
     );
   } else {
+    const treasuryAddress = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266';
     pnsRegistryContract = await upgrades.deployProxy(
       PNSRegistryContract,
-      [pnsGuardianContract.address, dummyPriceOrcleContract.address, adminAddress],
+      [pnsGuardianContract.address, dummyPriceOrcleContract.address, adminAddress, treasuryAddress],
       {
         initializer: 'initialize',
       },
     );
   }
+
   await pnsRegistryContract.deployed();
 
   console.log('PNS Registry Contract Deployed to', pnsRegistryContract.address);

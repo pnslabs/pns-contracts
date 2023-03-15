@@ -24,7 +24,7 @@ jobs:
       - name: Compile & Build Contracts
         run: yarn compile
       - name: Deploy Contracts Locally
-        run: yarn deploy
+        run: yarn deploy:localhost
         id: deployment-successful
 
   lint:
@@ -37,7 +37,6 @@ jobs:
       - name: Lint Contracts
         run: yarn lint:contracts
         continue-on-error: true
-
 
   tests:
     name: Unit tests

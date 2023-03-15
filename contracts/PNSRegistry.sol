@@ -2,21 +2,16 @@
 pragma solidity 0.8.9;
 
 //  ==========  External imports    ==========
-
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
-// import '@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol';
-
 import 'hardhat/console.sol';
 
 // ==========  Internal imports    ==========
-import './Interfaces/IPNSRegistry.sol';
-import './Interfaces/IPNSResolver.sol';
-import './Interfaces/IPNSGuardian.sol';
-
-interface AggregatorInterface {
-	function latestAnswer() external view returns (int256);
-}
+import './Interfaces/pns/IPNSRegistry.sol';
+import './Interfaces/pns/IPNSResolver.sol';
+import './Interfaces/pns/IPNSGuardian.sol';
+import './Interfaces/dependencies/IPriceConverter.sol';
+import 'hardhat/console.sol';
 
 /**
  * @title The contract for phone number service Registry.
@@ -25,10 +20,10 @@ interface AggregatorInterface {
  * @dev The interface IPNSRegistry is inherited which inherits IPNSSchema.
  */
 
-contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
+contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 	// using AddressUpgradeable for address payable;
 	/// Expiry time value
-	uint256 public expiryTime;
+	uint256 public constant EXPIRY_TIME = 365 days;
 	/// Grace period value
 	uint256 public gracePeriod;
 	/// registry cost
@@ -36,248 +31,56 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	/// registry renew cost
 	uint256 public registryRenewCostInUSD;
 
+	address public treasuryAddress;
 	/// Oracle feed pricing
-	//AggregatorV3Interface public priceFeedContract;
-	AggregatorInterface public priceFeedContract;
+	IPriceConverter public priceConverter;
+	IPNSGuardian public pnsGuardian;
+	IPNSResolver public pnsResolver;
 
-	IPNSGuardian public pnsGuardianContract;
+	/// Mapping state to store mobile phone number record that will be linked to a resolver
+	mapping(bytes32 => PhoneRecord) public phoneRegistry;
 
 	/// Create a new role identifier for the minter role
 	bytes32 public constant MAINTAINER_ROLE = keccak256('MAINTAINER_ROLE');
-
-	bytes32 public constant VERIFIER_ROLE = keccak256('VERIFIER_ROLE');
-
-	/// Mapping state to map phonehash to a map of resolver record
-	mapping(bytes32 => mapping(string => ResolverRecord)) resolverRecordMapping;
-	/// Mapping state to store mobile phone number record that will be linked to a resolver
-	mapping(bytes32 => PhoneRecord) public records;
-	// mapping state to store resolver recordslinked to a phone number
-	mapping(bytes32 => ResolverRecord[]) public resolverRecords;
-
-	/**
-	 * @dev logs the event when a phoneHash record is created.
-	 * @param phoneHash The phoneHash to be linked to the record.
-	 * @param wallet The resolver (address) of the record
-	 * @param owner The address of the owner
-	 */
-	event PhoneRecordCreated(bytes32 indexed phoneHash, address indexed wallet, address indexed owner);
-
-	/**
-	 * @dev logs when there is a transfer of ownership of a phoneHash to a new address
-	 * @param phoneHash The phoneHash of the record to be updated.
-	 * @param owner The address of the owner
-	 */
-	event Transfer(bytes32 indexed phoneHash, address indexed owner);
-
-	/**
-	 * @dev logs when a resolver address is linked to a specified phoneHash.
-	 * @param phoneHash The phoneHash of the record to be linked.
-	 * @param wallet The address of the resolver.
-	 */
-	event PhoneLinked(bytes32 indexed phoneHash, address indexed wallet);
-
-	/**
-	 * @dev logs when phone record has entered a grace period.
-	 * @param phoneHash The phoneHash of the record.
-	 */
-	event PhoneRecordEnteredGracePeriod(bytes32 indexed phoneHash);
-
-	/**
-	 * @dev logs when phone record has expired.
-	 * @param phoneHash The phoneHash of the record.
-	 */
-	event PhoneRecordExpired(bytes32 indexed phoneHash);
-
-	/**
-	 * @dev logs when phone record is re-authenticated.
-	 * @param phoneHash The phoneHash of the record.
-	 */
-	event PhoneRecordRenewed(bytes32 indexed phoneHash);
-
-	/**
-	 * @dev logs when phone record is claimed.
-	 * @param updater Who made the call
-	 * @param expiryTime The new expiry time in seconds.
-	 */
-	event ExpiryTimeUpdated(address indexed updater, uint256 expiryTime);
-
-	/**
-	 * @dev logs when phone record is claimed.
-	 * @param updater Who made the call
-	 * @param gracePeriod The new grace period in seconds.
-	 *
-	 */
-	event GracePeriodUpdated(address indexed updater, uint256 gracePeriod);
-
-	/**
-	 * @dev logs when phone is verified.
-	 * @param phoneHash Phone number that was verified
-	 * @param status The verification status
-	 *
-	 */
-	event PhoneNumberVerified(bytes32 indexed phoneHash, bool status);
-
-	/**
-	 * @dev logs when funds is withdrawn from the smar contracts.
-	 * @param _recipient withdrawal recipient
-	 * @param amount Withdeawal amount
-	 *
-	 */
-	event WithdrawalSuccessful(address indexed _recipient, uint256 amount);
 
 	/**
 	 * @dev contract initializer function. This function exist because the contract is upgradable.
 	 */
 	function initialize(
-		address _pnsGuardianContract,
-		address _priceAggregator,
-		address _verifier
+		address _pnsGuardian,
+		address _priceConverter,
+		address _treasuryAddress
 	) external initializer {
 		__AccessControl_init();
-
 		//set oracle constant
-		expiryTime = 365 days;
 		gracePeriod = 60 days;
 
-		priceFeedContract = AggregatorInterface(_priceAggregator);
-		pnsGuardianContract = IPNSGuardian(_pnsGuardianContract);
+		priceConverter = IPriceConverter(_priceConverter);
+		pnsGuardian = IPNSGuardian(_pnsGuardian);
+		treasuryAddress = _treasuryAddress;
 
 		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-
-		_grantRole(VERIFIER_ROLE, _verifier);
-	}
-
-	function setPhoneRecordMapping(PhoneRecord memory recordData, bytes32 phoneHash) external {
-		_setPhoneRecordMapping(recordData, phoneHash);
-	}
-
-	function getRecordMapping(bytes32 phoneHash) external view returns (PhoneRecord memory) {
-		return records[phoneHash];
 	}
 
 	/**
 	 * @dev Sets the record for a phoneHash.
 	 * @param phoneHash The phoneHash to update.
-	 * @param resolver The address the phone number resolves to.
-	 * @param label The specified label of the resolver.
 	 */
-	function setPhoneRecord(
-		bytes32 phoneHash,
-		address resolver,
-		string memory label
-	) external payable virtual {
-		return _setPhoneRecord(phoneHash, msg.sender, resolver, label);
-	}
-
-	/**
-	 * @dev Checks if the specified phoneHash is verified.
-	 * @param phoneHash The phoneHash to update.
-	 */
-	function isRecordVerified(bytes32 phoneHash) public view returns (bool) {
-		VerificationRecord memory verificationRecordData = pnsGuardianContract.getVerificationRecord(phoneHash);
-		return verificationRecordData.isVerified;
+	function setPhoneRecord(bytes32 phoneHash, address resolver) external payable virtual {
+		_setPhoneRecord(phoneHash, resolver);
 	}
 
 	/**
 	 * @dev Transfers ownership of a phoneHash to a new address. Can only be called by the current owner of the phoneHash.
 	 * @param phoneHash The phoneHash to transfer ownership of.
-	 * @param owner The address of the new owner.
+	 * @param newOwner The address of the new owner.
 	 */
-	function setOwner(bytes32 phoneHash, address owner) public virtual authorised(phoneHash) expired(phoneHash) authenticated(phoneHash) {
-		require(owner != address(0x0), 'cannot set owner to the zero address');
-		require(owner != address(this), 'cannot set owner to the registry address');
-		records[phoneHash].owner = owner;
+	function transfer(bytes32 phoneHash, address newOwner) public virtual authorised(phoneHash) notExpired(phoneHash) {
+		require(newOwner != address(0x0), 'cannot set owner to the zero address');
+		require(newOwner != address(this), 'cannot set owner to the registry address');
 
-		emit Transfer(phoneHash, owner);
-	}
-
-	/**
-	 * @dev Sets the resolver address for the specified phoneHash.
-	 * @param phoneHash The phoneHash to update.
-	 * @param resolver The address of the resolver.
-	 * @param label The specified label of the resolver.
-	 */
-	function linkPhoneToWallet(
-		bytes32 phoneHash,
-		address resolver,
-		string memory label
-	) public virtual authorised(phoneHash) expired(phoneHash) authenticated(phoneHash) {
-		_linkphoneHashToWallet(phoneHash, resolver, label);
-		emit PhoneLinked(phoneHash, resolver);
-	}
-
-	/**
-	 * @dev Renew a phone record.
-	 * @param phoneHash The phoneHash.
-	 */
-	function renew(bytes32 phoneHash) external payable virtual authorised(phoneHash) hasExpiryOf(phoneHash) {
-		//convert to wei
-		uint256 ethToUSD = convertETHToUSD(msg.value);
-		require(ethToUSD >= registryRenewCostInUSD, 'insufficient balance');
-		PhoneRecord storage recordData = records[phoneHash];
-		bool _timeHasPassedExpiryTime = _hasPassedExpiryTime(phoneHash);
-		bool _hasExhaustedGracePeriod = _hasPassedGracePeriod(phoneHash);
-		require(recordData.exists, 'only an existing phone record can be renewed');
-		require(_timeHasPassedExpiryTime && !_hasExhaustedGracePeriod, 'only a phone record currently in grace period can be renewed');
-
-		recordData.isInGracePeriod = false;
-		recordData.isExpired = false;
-		recordData.expirationTime = block.timestamp + expiryTime;
-
-		//refund user if excessive
-		if (ethToUSD > registryRenewCostInUSD) {
-			uint256 refunAmountInUSD = ethToUSD - registryRenewCostInUSD;
-			uint256 refundAmountInETH = convertUSDToETH(refunAmountInUSD);
-			(bool sent, ) = msg.sender.call{value: refundAmountInETH}('');
-			require(sent, 'Transfer failed.');
-		}
-
-		//implement move money(ETH) to treasury
-		emit PhoneRecordRenewed(phoneHash);
-	}
-
-	/**
-	 * @dev Claims an already existing but expired phone record, and sets a completely new resolver.
-	 * @param phoneHash The phoneHash.
-	 * @param resolver The address the phone number resolves to.
-	 * @param label The specified label of the resolver.
-	 */
-	function claimExpiredPhoneRecord(
-		bytes32 phoneHash,
-		address resolver,
-		string memory label
-	) external payable virtual hasExpiryOf(phoneHash) {
-		PhoneRecord storage recordData = records[phoneHash];
-		bool _hasExhaustedGracePeriod = _hasPassedGracePeriod(phoneHash);
-
-		require(recordData.exists, 'only an existing phone record can be claimed');
-		require(_hasExhaustedGracePeriod, 'only an expired phone record can be claimed');
-
-		delete records[phoneHash];
-		delete resolverRecords[phoneHash];
-
-		return _setPhoneRecord(phoneHash, msg.sender, resolver, label);
-	}
-
-	/**
-	 * @dev Gets the current version of the smart contract.
-	 * @return uint32 The current version
-	 */
-	function getVersion() external view virtual returns (uint32) {
-		return 1;
-	}
-
-	/**
-	 * @dev Updates the expiry time of a phone record.
-	 * @param time The new expiry time in seconds.
-	 */
-	function setExpiryTime(uint256 time) external onlySystemRoles {
-		expiryTime = time;
-		emit ExpiryTimeUpdated(msg.sender, time);
-	}
-
-	function getExpiryTime() external view returns (uint256) {
-		return expiryTime;
+		phoneRegistry[phoneHash].owner = newOwner;
+		emit Transfer(phoneHash, newOwner);
 	}
 
 	/**
@@ -286,7 +89,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	 */
 	function setGracePeriod(uint256 time) external onlySystemRoles {
 		gracePeriod = time;
-		emit GracePeriodUpdated(msg.sender, time);
+		emit changeGracePeriod(msg.sender, time);
 	}
 
 	function setRegistryCost(uint256 _registryCostInUSD) external onlySystemRoles {
@@ -299,76 +102,164 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		registryRenewCostInUSD = _registryRenewCostInUSD;
 	}
 
-	function getGracePeriod() external view returns (uint256) {
-		return gracePeriod;
+	function setTreasuryAddress(address _treasuryAddress) external onlySystemRoles {
+		treasuryAddress = _treasuryAddress;
 	}
 
-	function verifyPhone(
-		bytes32 phoneHash,
-		bytes32 hashedMessage,
-		bool status,
-		bytes memory signature
-	) external {
-		pnsGuardianContract.setVerificationStatus(phoneHash, hashedMessage, status, signature);
-		emit PhoneNumberVerified(phoneHash, status);
+	function setGuardian(address _newGuardianAddress) external onlySystemRoles {
+		pnsGuardian = IPNSGuardian(_newGuardianAddress);
 	}
 
-	function _setPhoneRecord(
-		bytes32 phoneHash,
-		address owner,
-		address resolver,
-		string memory label
-	) internal onlyVerified(phoneHash) onlyVerifiedOwner(phoneHash) {
-		uint256 ethToUSD = convertETHToUSD(msg.value);
-		require(ethToUSD >= registryCostInUSD, 'insufficient balance');
+	function setResolver(address _newResolverAddress) external onlySystemRoles {
+		pnsResolver = IPNSResolver(_newResolverAddress);
+	}
 
-		PhoneRecord storage recordData = records[phoneHash];
+	/**
+	 * @dev Renew a phone record.
+	 * @param phoneHash The phoneHash.
+	 */
+	function renew(bytes32 phoneHash) external payable virtual authorised(phoneHash) hasExpired(phoneHash) {
+		//convert to wei
+		uint256 ethToUSD = priceConverter.convertETHToUSD(msg.value);
+		require(ethToUSD >= registryRenewCostInUSD, 'insufficient balance');
 
-		mapping(string => ResolverRecord) storage resolverRecordData = resolverRecordMapping[phoneHash];
+		//move to  DAO treasury
+		uint256 registryRenewCostInETH = priceConverter.convertUSDToETH(registryRenewCostInUSD);
+		toTreasury(registryRenewCostInETH);
 
-		require(!resolverRecordData[label].exists, 'phone record has been created and linked to a wallet already');
+		phoneRegistry[phoneHash].expiration = block.timestamp + EXPIRY_TIME;
+		emit PhoneRecordRenewed(phoneHash);
 
-		if (!resolverRecordData[label].exists) {
-			resolverRecordData[label].label = label;
-			resolverRecordData[label].createdAt = block.timestamp;
-			resolverRecordData[label].wallet = resolver;
-			resolverRecordData[label].exists = true;
-			resolverRecords[phoneHash].push(resolverRecordData[label]);
-		}
-		recordData.phoneHash = phoneHash;
-		recordData.owner = owner;
-		recordData.createdAt = block.timestamp;
-		recordData.exists = true;
-		recordData.isInGracePeriod = false;
-		recordData.isExpired = false;
-		recordData.expirationTime = block.timestamp + expiryTime;
-
-		if (ethToUSD > registryCostInUSD) {
-			uint256 refunAmountInUSD = ethToUSD - registryCostInUSD;
-			uint256 refundAmountInETH = convertUSDToETH(refunAmountInUSD);
+		//refund user if excessive
+		if (ethToUSD > registryRenewCostInUSD) {
+			uint256 refunAmountInUSD = ethToUSD - registryRenewCostInUSD;
+			uint256 refundAmountInETH = priceConverter.convertUSDToETH(refunAmountInUSD);
 			(bool sent, ) = msg.sender.call{value: refundAmountInETH}('');
 			require(sent, 'Transfer failed.');
 		}
-		//implement move funds to trwasury
-		emit PhoneRecordCreated(phoneHash, resolver, owner);
 	}
 
-	function _linkphoneHashToWallet(
-		bytes32 phoneHash,
-		address resolver,
-		string memory label
-	) internal {
-		mapping(string => ResolverRecord) storage resolverRecordData = resolverRecordMapping[phoneHash];
-		PhoneRecord storage recordData = records[phoneHash];
-		require(recordData.exists, 'phone record not found');
+	/**
+	 * @dev Gets the current version of the smart contract.
+	 * @return uint32 The current version
+	 */
+	function getVersion() external view virtual returns (uint32) {
+		return 1;
+	}
 
-		if (!resolverRecordData[label].exists) {
-			resolverRecordData[label].label = label;
-			resolverRecordData[label].createdAt = block.timestamp;
-			resolverRecordData[label].wallet = resolver;
-			resolverRecordData[label].exists = true;
-			resolverRecords[phoneHash].push(resolverRecordData[label]);
+	/**
+	 * @dev Returns the PhoneRecord data linked to the specified phone number hash.
+	 * @param phoneHash The specified phoneHash.
+	 */
+	function getRecordFull(bytes32 phoneHash)
+		external
+		view
+		returns (
+			address owner,
+			bool isExpired,
+			bool isInGracePeriod,
+			uint256 expiration,
+			uint256 creation
+		)
+	{
+		recordExists(phoneHash);
+		PhoneRecord memory record = phoneRegistry[phoneHash];
+		isInGracePeriod = _hasPassedExpiryTime(phoneHash);
+		isExpired = _hasPassedGracePeriod(phoneHash);
+		expiration = record.expiration;
+		creation = record.creation;
+		owner = record.owner;
+	}
+
+	function getRecord(bytes32 phoneHash) external view returns (PhoneRecord memory) {
+		return phoneRegistry[phoneHash];
+	}
+
+	function getVerificationStatus(bytes32 phoneHash) public view returns (bool) {
+		bool status = pnsGuardian.getVerificationStatus(phoneHash);
+		return status;
+	}
+
+	/**
+	 * @dev Checks if the specified phoneHash is verified.
+	 * @param phoneHash The phoneHash to update.
+	 */
+	function isRecordVerified(bytes32 phoneHash) public view returns (bool) {
+		return getVerificationStatus(phoneHash);
+	}
+
+	/**
+	 * @dev Returns whether a record has been imported to the registry.
+	 * @param phoneHash The specified phoneHash.
+	 * @return Bool if record exists
+	 */
+	function recordExists(bytes32 phoneHash) public view returns (bool) {
+		return phoneRegistry[phoneHash].owner != address(0);
+	}
+
+	/**
+	 * @dev Returns the expiry state of an existing phone record.
+	 * @param phoneHash The specified phoneHash.
+	 */
+	function _hasPassedExpiryTime(bytes32 phoneHash) public view returns (bool) {
+		return block.timestamp > phoneRegistry[phoneHash].expiration;
+	}
+
+	/**
+	 * @dev Returns the grace period state of an existing phone record.
+	 * @param phoneHash The specified phoneHash.
+	 */
+	function _hasPassedGracePeriod(bytes32 phoneHash) public view returns (bool) {
+		return block.timestamp > (phoneRegistry[phoneHash].expiration + gracePeriod);
+	}
+
+	/**
+	 * @dev Withdraws funds from the protocol contract
+	 * @param amount The amount to withdraw
+	 * @param _recipient The recipient of the funds
+	 */
+	function withdraw(address _recipient, uint256 amount) external onlySystemRoles {
+		require(amount > 0, 'amount must be greater than zero');
+		(bool success, ) = _recipient.call{value: amount}('');
+		require(success, 'Transfer failed.');
+		emit WithdrawalSuccessful(_recipient, amount);
+	}
+
+	function createRecord(address owner, bytes32 phoneHash) internal {
+		PhoneRecord storage record = phoneRegistry[phoneHash];
+		record.owner = owner;
+		record.expiration = block.timestamp + EXPIRY_TIME;
+		record.creation = block.timestamp;
+	}
+
+	function _setPhoneRecord(bytes32 phoneHash, address resolver) internal onlyVerified(phoneHash) onlyVerifiedOwner(phoneHash) {
+		uint256 ethToUSD = priceConverter.convertETHToUSD(msg.value);
+		require(ethToUSD >= registryCostInUSD, 'insufficient balance');
+		//create the record in registry
+		createRecord(msg.sender, phoneHash);
+		//update the address field of eth as default
+		pnsResolver.seedResolver(phoneHash, resolver);
+
+		// Send the registry cost to the treasury
+		uint256 registryCostInEth = priceConverter.convertUSDToETH(registryCostInUSD);
+		toTreasury(registryCostInEth);
+
+		emit PhoneRecordCreated(phoneHash, resolver, msg.sender);
+		//  address(pnsResolver).call(abi.encodeWithSignature(
+		// 	"seedResolver(bytes32, address)", phoneHash, resolver));
+
+		// Refund remaining balance to caller
+		if (ethToUSD > registryCostInUSD) {
+			uint256 refunAmountInUSD = ethToUSD - registryCostInUSD;
+			uint256 refundAmountInETH = priceConverter.convertUSDToETH(refunAmountInUSD);
+			(bool sent, ) = msg.sender.call{value: refundAmountInETH}('');
+			require(sent, 'Transfer failed.');
 		}
+	}
+
+	function toTreasury(uint256 amount) internal {
+		(bool sent, ) = treasuryAddress.call{value: amount}('');
+		require(sent, 'Transfer failed.');
 	}
 
 	/**
@@ -380,125 +271,22 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 		return keccak256(abi.encode(phoneHash));
 	}
 
-	function convertETHToUSD(uint256 ethAmount) public view returns (uint256) {
-		uint256 ethPrice = getEtherPriceInUSD();
-		uint256 ethAmountInUSD = (ethAmount * ethPrice) / 10**18;
-		return uint256(ethAmountInUSD);
-	}
-
-	function convertUSDToETH(uint256 usdAmount) public view returns (uint256) {
-		uint256 ethPrice = getEtherPriceInUSD();
-		uint256 ethAmountInUSD = (usdAmount * 10**18) / ethPrice;
-		return uint256(ethAmountInUSD);
-	}
-
-	/**
-	 * @dev Returns the latest price
-	 */
-
-	function getEtherPriceInUSD() public view returns (uint256) {
-		int256 answer = priceFeedContract.latestAnswer();
-		// Chainlink returns 8 decimal places so we convert to wei
-		return uint256(answer * 10**10);
-	}
-
-	/**
-	 * @dev Returns the PhoneRecord data linked to the specified phone number hash.
-	 * @param phoneHash The specified phoneHash.
-	 */
-	function getRecord(bytes32 phoneHash) external view returns (PhoneRecord memory) {
-		PhoneRecord memory recordData = records[phoneHash];
-		require(recordData.exists, 'phone record not found');
-		bool _isInGracePeriod = _hasPassedExpiryTime(phoneHash);
-		bool _isExpired = _hasPassedGracePeriod(phoneHash);
-
-		return
-			PhoneRecord(
-				recordData.owner,
-				recordData.phoneHash,
-				recordData.exists,
-				_isInGracePeriod,
-				_isExpired,
-				recordData.expirationTime,
-				recordData.createdAt
-			);
-	}
-
-	function getVerificationRecord(bytes32 phoneHash) external view returns (VerificationRecord memory) {
-		VerificationRecord memory verificationRecordData = pnsGuardianContract.getVerificationRecord(phoneHash);
-		return verificationRecordData;
-	}
-
-	/**
-	 * @dev Returns whether a record has been imported to the registry.
-	 * @param phoneHash The specified phoneHash.
-	 * @return Bool if record exists
-	 */
-	function recordExists(bytes32 phoneHash) public view returns (bool) {
-		return records[phoneHash].exists;
-	}
-
-	function getResolver(bytes32 phoneHash) external view returns (ResolverRecord[] memory) {
-		return resolverRecords[phoneHash];
-	}
-
-	/**
-	 * @dev Returns the expiry state of an existing phone record.
-	 * @param phoneHash The specified phoneHash.
-	 */
-	function _hasPassedExpiryTime(bytes32 phoneHash) internal view hasExpiryOf(phoneHash) returns (bool) {
-		return block.timestamp > records[phoneHash].expirationTime;
-	}
-
-	/**
-	 * @dev Returns the grace period state of an existing phone record.
-	 * @param phoneHash The specified phoneHash.
-	 */
-	function _hasPassedGracePeriod(bytes32 phoneHash) internal view hasExpiryOf(phoneHash) returns (bool) {
-		return block.timestamp > (records[phoneHash].expirationTime + gracePeriod);
-	}
-
-	function _setPhoneRecordMapping(PhoneRecord memory recordData, bytes32 phoneHash) internal {
-		PhoneRecord storage _recordData = records[phoneHash];
-		_recordData.createdAt = recordData.createdAt;
-		_recordData.owner = recordData.owner;
-		_recordData.exists = recordData.exists;
-		_recordData.phoneHash = recordData.phoneHash;
-		_recordData.isInGracePeriod = recordData.isInGracePeriod;
-		_recordData.isExpired = recordData.isExpired;
-		_recordData.expirationTime = recordData.expirationTime;
-	}
-
-	/**
-	 * @dev Withdraws funds from the protocol contract
-	 * @param amount The amount to withdraw
-	 * @param _recipient The recipient of the funds
-	 */
-	function withdraw(address _recipient, uint256 amount) external onlySystemRoles {
-		require(_recipient != address(0), 'recipient address cannot be zero address');
-		require(amount > 0, 'amount must be greater than zero');
-		(bool success, ) = _recipient.call{value: amount}('');
-		require(success, 'Transfer failed.');
-		emit WithdrawalSuccessful(_recipient, amount);
-	}
-
 	//============MODIFIERS==============
 	/**
 	 * @dev Permits modifications only by the owner of the specified phoneHash.
 	 * @param phoneHash The phoneHash of the record owner to be compared.
 	 */
 	modifier authorised(bytes32 phoneHash) {
-		address owner = records[phoneHash].owner;
-		require(owner == msg.sender, 'caller is not authorised');
+		require(msg.sender == phoneRegistry[phoneHash].owner, 'caller is not authorised');
 		_;
 	}
 
 	/**
-	 * @dev Permits the function to run only if expiry of record is found
+	 * @dev Permits the function to run only if phone record is expired.
 	 * @param phoneHash The phoneHash of the record to be compared.
 	 */
-	modifier hasExpiryOf(bytes32 phoneHash) {
-		require(records[phoneHash].expirationTime > 0, 'phone expiry record not found');
+	modifier hasExpired(bytes32 phoneHash) {
+		require(_hasPassedExpiryTime(phoneHash), 'cannot proceed: record not expired');
 		_;
 	}
 
@@ -506,54 +294,25 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSSchema {
 	 * @dev Permits the function to run only if phone record is not expired.
 	 * @param phoneHash The phoneHash of the record to be compared.
 	 */
-	modifier expired(bytes32 phoneHash) {
-		bool _hasExpired = _hasPassedExpiryTime(phoneHash);
-		if (_hasExpired) {
-			PhoneRecord storage recordData = records[phoneHash];
-			recordData.isInGracePeriod = true;
-			emit PhoneRecordEnteredGracePeriod(phoneHash);
-		}
+	modifier notExpired(bytes32 phoneHash) {
+		require(!_hasPassedGracePeriod(phoneHash), 'cannot proceed: record expired');
 		_;
 	}
 
-	/**
-	 * @dev Permits the function to run only if phone record is still authenticated.
-	 * @param phoneHash The phoneHash of the record to be compared.
-	 */
-	modifier authenticated(bytes32 phoneHash) {
-		bool _hasExhaustedGracePeriod = _hasPassedGracePeriod(phoneHash);
-		if (_hasExhaustedGracePeriod) {
-			PhoneRecord storage recordData = records[phoneHash];
-			recordData.isInGracePeriod = false;
-			recordData.isExpired = true;
-			emit PhoneRecordExpired(phoneHash);
-			revert('phone record has expired, please renew');
-		}
+	modifier onlyVerified(bytes32 phoneHash) {
+		bool status = pnsGuardian.getVerificationStatus(phoneHash);
+		require(status, 'phone record is not verified');
 		_;
 	}
+
+	modifier onlyVerifiedOwner(bytes32 phoneHash) virtual {
+		address owner = pnsGuardian.getVerifiedOwner(phoneHash);
+		require(owner == msg.sender, 'caller is not verified owner');
+		_;
+	}
+
 	modifier onlySystemRoles() {
 		require(hasRole(MAINTAINER_ROLE, msg.sender) || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), 'not allowed to execute function');
 		_;
 	}
-
-	modifier onlyVerifierRoles() {
-		require(hasRole(VERIFIER_ROLE, msg.sender) || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), 'NON_VERIFIER_ROLE: Not allowed to execute function');
-		_;
-	}
-	modifier onlyVerified(bytes32 phoneHash) {
-		VerificationRecord memory verificationRecordData = pnsGuardianContract.getVerificationRecord(phoneHash);
-		require(verificationRecordData.isVerified, 'phone record is not verified');
-		_;
-	}
-	modifier onlyVerifiedOwner(bytes32 phoneHash) virtual {
-		VerificationRecord memory verificationRecordData = pnsGuardianContract.getVerificationRecord(phoneHash);
-		require(verificationRecordData.owner == msg.sender, 'caller is not verified owner');
-		_;
-	}
-
-	// Function to receive Ether. msg.data must be empty
-	receive() external payable {}
-
-	// Fallback function is called when msg.data is not empty
-	fallback() external payable {}
 }

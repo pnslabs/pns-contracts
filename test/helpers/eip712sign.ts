@@ -1,42 +1,33 @@
-const ethUtil = require('ethereumjs-util');
-const { getMessage } = require('eip-712');
+//hardhat depoyment path default guardian
+const VERIFYING_CONTRACT = '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9';
+// testing chainID
+const chainID = 1337;
 
-const typedData = {
-  types: {
-    EIP712Domain: [
-      { name: 'name', type: 'string' },
-      { name: 'version', type: 'string' },
-      { name: 'chainId', type: 'uint256' },
-      { name: 'verifyingContract', type: 'address' },
-    ],
-    Whitelist: [{ name: 'user', type: 'address' }],
-  },
-  domain: {
-    name: 'PNS - core',
-    version: 'v1.0.0',
-    chainId: 31337,
-    verifyingContract: '',
-  },
-  primaryType: 'Whitelist',
-  message: {
-    user: '',
-  },
+export const domain = {
+  name: 'PNS Guardian',
+  version: '1.0',
+  //hardhat chain ID
+  chainId: chainID,
+  verifyingContract: VERIFYING_CONTRACT,
 };
 
-function replaceAddresses(contractAddress: string, from: string) {
-  typedData.domain.verifyingContract = contractAddress;
-  typedData.message.user = from;
-}
-
-const signEIP712Message = (contractAddress: any, from: any, privateKey: any) => {
-  replaceAddresses(contractAddress, from);
-
-  // Sign
-  const message = getMessage(typedData, true);
-  const { r, s, v } = ethUtil.ecsign(message, privateKey);
-  const sigHex = `0x${r.toString('hex')}${s.toString('hex')}${('0' + v.toString(16)).slice(-2)}`;
-
-  return sigHex;
+export const PNSTypes = {
+  verify: [{ name: 'phoneHash', type: 'bytes32' }],
 };
 
-export default signEIP712Message;
+// const typedData = {
+//   types: {
+//     EIP712Domain: [
+//       { name: 'name', type: 'string' },
+//       { name: 'version', type: 'string' },
+//       { name: 'chainId', type: 'uint256' },
+//       { name: 'verifyingContract', type: 'address' },
+//     ],
+//     verify: [{ name: 'phoneHash', type: 'bytes32' }],
+//   },
+//   domain: domain,
+//   primaryType: types,
+//   message: {
+//     user: '',
+//   },
+// };
