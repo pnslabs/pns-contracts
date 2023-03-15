@@ -185,7 +185,7 @@ describe.only('PNS', () => {
 
     assert.equal(resolveAddress, emma.address);
 
-    //joe decides to add BTC address to his resolve record
+    //emma decides to add BTC address to his resolve record
     const data = formatsByName['BTC'].decoder('1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa');
     console.log('this is btc data', data);
     await pnsResolverContract.connect(emma)['setAddr(bytes32,uint256,bytes)'](phoneNumber1, 0, data);
