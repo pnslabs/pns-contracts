@@ -176,14 +176,14 @@ describe.only('PNS', () => {
     assert.equal(owner, emma.address);
 
     //get eth record
-    let getRecord = await pnsResolverContract['addr(bytes32)'](phoneNumber1);
-    assert.equal(getRecord, joe.address);
+    let resolveAddress = await pnsResolverContract['addr(bytes32)'](phoneNumber1);
+    assert.equal(resolveAddress, joe.address);
 
     // change eth record to resolve emma
     await pnsResolverContract.connect(emma)['setAddr(bytes32,address)'](phoneNumber1, emma.address);
-    getRecord = await pnsResolverContract['addr(bytes32)'](phoneNumber1);
+    resolveAddress = await pnsResolverContract['addr(bytes32)'](phoneNumber1);
 
-    assert.equal(getRecord, emma.address);
+    assert.equal(resolveAddress, emma.address);
 
     //joe decides to add BTC address to his resolve record
     const data = formatsByName['BTC'].decoder('1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa');
@@ -191,7 +191,7 @@ describe.only('PNS', () => {
     await pnsResolverContract.connect(emma)['setAddr(bytes32,uint256,bytes)'](phoneNumber1, 0, data);
     const btcAddress = await pnsResolverContract['addr(bytes32,uint256)'](phoneNumber1, 0);
 
-    // console.log('btc record', getRecord)
+    // console.log('btc record', resolveAddress)
     // const addr = formatsByCoinType[0].encoder(btcAddress);
     // console.log('btcaddress', addr);
   });
