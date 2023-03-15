@@ -109,10 +109,6 @@ contract PNSGuardian is Initializable, IPNSGuardian, EIP712Upgradeable {
 		return verificationRecord.owner != address(0);
 	}
 
-	function registryAddress() public view returns (address) {
-		return address(registryContract);
-	}
-
 	/**
 	 * @dev Modifier that permits modifications only by the PNS guardian verifier.
 	 */
