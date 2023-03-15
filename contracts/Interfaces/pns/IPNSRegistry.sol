@@ -16,7 +16,7 @@ interface IPNSRegistry is IPNSSchema {
 	 * @param phoneHash The phoneHash to be linked to the record.
 	 * @param owner The address of the owner
 	 */
-	event PhoneRecordCreated(bytes32 indexed phoneHash, string indexed wallet, address indexed owner);
+	event PhoneRecordCreated(bytes32 indexed phoneHash, address indexed wallet, address indexed owner);
 
 	event PhoneNumberVerified(bytes32 indexed phoneHash, bool status);
 
@@ -59,7 +59,7 @@ interface IPNSRegistry is IPNSSchema {
 
 	// event Transfer(bytes32 indexed phoneHash, address owner);
 
-	function setPhoneRecord(bytes32 phoneHash, string calldata resolver) external payable;
+	function setPhoneRecord(bytes32 phoneHash, address resolver) external payable;
 
 	function getRecord(bytes32 phoneHash) external view returns (PhoneRecord memory);
 

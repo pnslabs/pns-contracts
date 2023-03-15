@@ -11,7 +11,7 @@ import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import './Interfaces/pns/IPNSResolver.sol';
 import './Interfaces/pns/IPNSRegistry.sol';
 //ens compactibility
-import './dependencies/AddrResolver.sol';
+import './dependencies/AddressResolver.sol';
 
 /**
  * @title The contract for phone number service.
@@ -20,8 +20,7 @@ import './dependencies/AddrResolver.sol';
  * @dev The interface IPNSResolver is inherited which inherits IPNSSchema.
  */
 
-contract PNSResolver is Initializable, AddrResolver, OwnableUpgradeable {
-	uint256 private constant COIN_TYPE_ETH = 60;
+contract PNSResolver is Initializable, AddressResolver, OwnableUpgradeable {
 	IPNSRegistry public PNSRegistry;
 
 	/**
@@ -64,5 +63,26 @@ contract PNSResolver is Initializable, AddrResolver, OwnableUpgradeable {
 
 	function isAuthorised(bytes32 phoneHash) internal view override returns (bool) {
 		return msg.sender == getOwner(phoneHash);
+	}
+
+	function seedResolver(bytes32 phoneHash, address a) external registryAuthorised(phoneHash) {
+		seedAddr(phoneHash, COIN_TYPE_ETH, addressToBytes(a));
+	}
+
+	function seedAddr(
+		bytes32 phoneHash,
+		uint256 coinType,
+		bytes memory a
+	) internal registryAuthorised(phoneHash) {
+		emit AddressChanged(phoneHash, coinType, a);
+		if (coinType == COIN_TYPE_ETH) {
+			emit AddrChanged(phoneHash, bytesToAddress(a));
+		}
+		resolveAddress[phoneHash][coinType] = a;
+	}
+
+	modifier registryAuthorised(bytes32 node) {
+		require(msg.sender == address(PNSRegistry), 'only registry can call');
+		_;
 	}
 }

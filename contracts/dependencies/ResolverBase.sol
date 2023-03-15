@@ -7,7 +7,7 @@ abstract contract ResolverBase is ERC165 {
 	function isAuthorised(bytes32 node) internal view virtual returns (bool);
 
 	modifier authorised(bytes32 node) {
-		require(isAuthorised(node));
+		require(isAuthorised(node), 'only record owner');
 		_;
 	}
 

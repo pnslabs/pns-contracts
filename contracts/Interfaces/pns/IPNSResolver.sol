@@ -24,5 +24,7 @@ interface IPNSResolver is IAddressResolver {
 
 	function getVersion() external view returns (uint32 version);
 
-	function setAddr(bytes32 phoneHash, string calldata addr) external;
+	function setAddr(bytes32 phoneHash, address addr) external;
+
+	function seedResolver(bytes32 phoneHash, address addr) external;
 }

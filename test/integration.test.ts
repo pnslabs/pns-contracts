@@ -1,11 +1,12 @@
 import { ethers } from 'hardhat';
+import { formatsByName, formatsByCoinType } from '@ensdomains/address-encoder';
 import { increaseTime, weiToEth } from './helpers/base';
 
 const { assert, expect } = require('chai');
 const { keccak256 } = require('../utils/util');
 const { deployContract } = require('../scripts/deploy');
 
-describe.only('PNS Registry', () => {
+describe.only('PNS', () => {
   let pnsRegistryContract;
   let pnsGuardianContract;
   let pnsResolverContract;
@@ -14,8 +15,6 @@ describe.only('PNS Registry', () => {
   //using an enummeration  prone phoneHash
   const phoneNumber1 = keccak256('2347084562591');
   const phoneNumber2 = keccak256('08084442592');
-  const oneYearInSeconds = 31536000;
-  const sixtyDaysInSeconds = 5184000;
   const status = true;
   const otp = '123456';
   let accounts: any[];
@@ -140,8 +139,8 @@ describe.only('PNS Registry', () => {
       'cannot proceed: record not expired',
     );
 
-    //increase evm time
-    await increaseTime(oneYearInSeconds);
+    //1 year later
+    await increaseTime(365 * 86400);
 
     //emma encounters an error when trying to renew record with a wrong owner
     await expect(pnsRegistryContract.connect(joe).renew(phoneNumber1)).to.be.revertedWith('caller is not authorised');
@@ -155,8 +154,8 @@ describe.only('PNS Registry', () => {
       'PhoneRecordRenewed',
     );
 
-    //increase evm time
-    await increaseTime(oneYearInSeconds + sixtyDaysInSeconds);
+    //1yr + 60 days later
+    await increaseTime((365 + 60) * 86400);
 
     //emma encounters an error when trying to transfer ownership when record has passed its grace period
     await expect(pnsRegistryContract.connect(emma).transfer(phoneNumber1, joe.address)).to.be.revertedWith(
@@ -168,5 +167,32 @@ describe.only('PNS Registry', () => {
     const emmaBalance = await emma.provider.getBalance(emma.address);
     console.log("Emma's balance now:::", weiToEth(emmaBalance));
     console.log("Joe's balance now:::", weiToEth(joeBalance));
+  });
+
+  it('Should add address to resolver', async () => {
+    const [joe, emma] = accounts.slice(1, 5);
+    //since joe has a record on the registry
+    const owner = await pnsResolverContract.connect(joe).getOwner(phoneNumber1);
+    assert.equal(owner, emma.address);
+
+    //get eth record
+    let getRecord = await pnsResolverContract['addr(bytes32)'](phoneNumber1);
+    assert.equal(getRecord, joe.address);
+
+    // change eth record to resolve emma
+    await pnsResolverContract.connect(emma)['setAddr(bytes32,address)'](phoneNumber1, emma.address);
+    getRecord = await pnsResolverContract['addr(bytes32)'](phoneNumber1);
+
+    assert.equal(getRecord, emma.address);
+
+    //joe decides to add BTC address to his resolve record
+    const data = formatsByName['BTC'].decoder('1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa');
+    console.log('this is btc data', data);
+    await pnsResolverContract.connect(emma)['setAddr(bytes32,uint256,bytes)'](phoneNumber1, 0, data);
+    const btcAddress = await pnsResolverContract['addr(bytes32,uint256)'](phoneNumber1, 0);
+
+    // console.log('btc record', getRecord)
+    // const addr = formatsByCoinType[0].encoder(btcAddress);
+    // console.log('btcaddress', addr);
   });
 });

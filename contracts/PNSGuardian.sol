@@ -99,7 +99,6 @@ contract PNSGuardian is Initializable, IPNSGuardian, EIP712Upgradeable {
 		address signer = ECDSA.recover(prefixedHashMessage, _signature);
 
 		require(owner == signer, 'signer does not match signature');
-
 		VerificationRecord storage verificationRecord = verifiedRecord[phoneHash];
 
 		if (verificationRecord.owner == address(0)) {
