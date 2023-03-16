@@ -10,7 +10,7 @@ pragma solidity 0.8.9;
 interface IPNSSchema {
 	struct PhoneRecord {
 		address owner;
-		uint256 expiration;
-		uint256 creation;
+		uint48 expiration;
+		uint48 creation;
 	}
 }
