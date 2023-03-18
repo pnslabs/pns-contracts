@@ -114,7 +114,7 @@ async function deployContract() {
   await pnsRegistryContract.setRegistryRenewCost(registryRenewCost);
   const pnsRegistryRenewCost = await pnsRegistryContract.registryRenewCostInUSD();
   await pnsGuardianContract.setPNSRegistry(pnsRegistryContract.address);
-  const guardianRegistry = await pnsGuardianContract.registryAddress();
+  const guardianRegistry = await pnsGuardianContract.registryContract();
   console.log('Registry contract in guardian after deployment', guardianRegistry);
   console.log('------------------------------------------------');
   console.log(
