@@ -14,8 +14,6 @@ import './Interfaces/pns/IPNSRegistry.sol';
 /// @author  PNS core team
 /// @notice The PNS Guardian is responsible for authenticating the records created in PNS registry
 contract PNSGuardian is Initializable, IPNSGuardian, EIP712Upgradeable {
-	/// the guardian layer address that updates verification state
-	address public registryAddress;
 	/// PNS registry
 	IPNSRegistry public registryContract;
 	/// Address of off chain verifier
@@ -103,7 +101,7 @@ contract PNSGuardian is Initializable, IPNSGuardian, EIP712Upgradeable {
 
 		if (verificationRecord.owner == address(0)) {
 			verificationRecord.owner = signer;
-			verificationRecord.verifiedAt = block.timestamp;
+			verificationRecord.verifiedAt = uint48(block.timestamp);
 			verificationRecord.isVerified = status;
 		}
 

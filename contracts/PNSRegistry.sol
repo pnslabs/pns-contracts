@@ -148,7 +148,7 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 		uint256 registryRenewCostInETH = priceConverter.convertUSDToETH(registryRenewCostInUSD);
 		toTreasury(registryRenewCostInETH);
 
-		phoneRegistry[phoneHash].expiration = block.timestamp + EXPIRY_TIME;
+		phoneRegistry[phoneHash].expiration = uint48(block.timestamp + EXPIRY_TIME);
 		emit PhoneRecordRenewed(phoneHash);
 
 		//refund user if excessive
@@ -276,8 +276,8 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 	function createRecord(address owner, bytes32 phoneHash) internal {
 		PhoneRecord storage record = phoneRegistry[phoneHash];
 		record.owner = owner;
-		record.expiration = block.timestamp + EXPIRY_TIME;
-		record.creation = block.timestamp;
+		record.expiration = uint48(block.timestamp + EXPIRY_TIME);
+		record.creation = uint48(block.timestamp);
 	}
 
 	/**
