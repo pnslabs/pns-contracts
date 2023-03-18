@@ -1,17 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-//  ==========  External imports    ==========
+//  ==========EXTERNAL IMPORTS==========
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
-import 'hardhat/console.sol';
 
-// ==========  Internal imports    ==========
+// ==========INTERNAL IMPORTS==========
 import './Interfaces/pns/IPNSRegistry.sol';
 import './Interfaces/pns/IPNSResolver.sol';
 import './Interfaces/pns/IPNSGuardian.sol';
 import './Interfaces/dependencies/IPriceConverter.sol';
-import 'hardhat/console.sol';
 
 /**
  * @title The contract for phone number service Registry.
