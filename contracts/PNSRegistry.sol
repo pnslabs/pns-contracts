@@ -4,14 +4,12 @@ pragma solidity 0.8.9;
 //  ==========EXTERNAL IMPORTS==========
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
-import 'hardhat/console.sol';
 
 // ==========INTERNAL IMPORTS==========
 import './Interfaces/pns/IPNSRegistry.sol';
 import './Interfaces/pns/IPNSResolver.sol';
 import './Interfaces/pns/IPNSGuardian.sol';
 import './Interfaces/dependencies/IPriceConverter.sol';
-import 'hardhat/console.sol';
 
 /**
  * @title The contract for phone number service Registry.
