@@ -169,9 +169,14 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 	}
 
 	/**
-	 * @dev Returns the PhoneRecord data linked to the specified phone number hash.
-	 * @param phoneHash The specified phoneHash.
-	 */
+	* @dev Retrieves the full record of a phone number, including its owner, expiration date, creation date, and whether it is currently expired or in grace period.
+	* @param phoneHash The hash of the phone number to retrieve the record for.
+	* @return owner The address of the current owner of the phone number.
+	* @return isExpired A boolean indicating whether the phone number is currently expired.
+	* @return isInGracePeriod A boolean indicating whether the phone number is currently in the grace period.
+	* @return expiration The timestamp indicating when the phone number will expire.
+	* @return creation The timestamp indicating when the phone number was first registered.
+	*/
 	function getRecordFull(
 		bytes32 phoneHash
 	) external view returns (address owner, bool isExpired, bool isInGracePeriod, uint256 expiration, uint256 creation) {
