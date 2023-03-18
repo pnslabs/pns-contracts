@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-//  ==========External imports==========
+//  ==========EXTERNAL IMPORTS==========
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 // import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 
-//  ==========Internal imports==========
+//  ==========INTERNAL IMPORTS==========
 import './Interfaces/pns/IPNSGuardian.sol';
 import './Interfaces/pns/IPNSRegistry.sol';
 
@@ -16,6 +16,7 @@ import './Interfaces/pns/IPNSRegistry.sol';
 /// @author  PNS core team
 /// @notice The PNS Guardian is responsible for authenticating the records created in PNS registry
 contract PNSGuardian is Initializable, IPNSGuardian, EIP712Upgradeable {
+
 	//============STATE VARIABLES==============
 
 	// PNS registry
