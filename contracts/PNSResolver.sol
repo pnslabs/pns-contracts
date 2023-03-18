@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-//  ==========  External imports    ==========
+//  ==========External imports==========
 
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol';
 import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 
-// ==========  Internal imports    ==========
+// ==========Internal imports==========
 import './Interfaces/pns/IPNSResolver.sol';
 import './Interfaces/pns/IPNSRegistry.sol';
 //ens compactibility
