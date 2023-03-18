@@ -1,0 +1,5 @@
+# These owners will be the default owners for everything in
+# the repo. Unless a later match takes precedence,
+# below list of github user will be requested to
+# review when someone opens a pull request.
+*        @MeisterJustice @bizmindx @njokuScript
