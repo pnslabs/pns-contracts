@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
+//  ==========External imports==========
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 // import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 
+//  ==========Internal imports==========
 import './Interfaces/pns/IPNSGuardian.sol';
 import './Interfaces/pns/IPNSRegistry.sol';
 
