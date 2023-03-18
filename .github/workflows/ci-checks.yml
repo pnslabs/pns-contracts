@@ -4,11 +4,18 @@
 #                 3. Deploy a Contract to the Local network
 #                 4. Test the locally deployed Contract in the local network.
 #                 5. Run all tests
-#                 6. slither integration ( static analysis)
+#                 6. slither integration ( static analysis) 
 
 name: ci-checks
 
-on: [push]
+on:   
+  push:
+    branches:
+      - master
+      - release-v*
+  pull_request: {}
+  workflow_dispatch: {}
+  
 
 concurrency:
   group: checks-${{ github.ref }}
