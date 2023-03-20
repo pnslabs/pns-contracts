@@ -141,13 +141,15 @@ async function deployContract() {
   return { pnsRegistryContract, pnsGuardianContract, adminAddress, pnsResolverContract };
 }
 
-async function deployUpgradedContract(pnsRegistryContract) {
+async function deployUpgradedContract(proxyAddress) {
   const PNSV2MockContract = await ethers.getContractFactory('PNSV2Mock');
 
-  const upgradedPNSRegistryContract = await upgrades.upgradeProxy(pnsRegistryContract, PNSV2MockContract);
+  const upgradedPNSRegistryContract = await upgrades.upgradeProxy(proxyAddress, PNSV2MockContract);
 
   return { upgradedPNSRegistryContract };
 }
+
+deployContract();
 
 module.exports = {
   deployContract,
