@@ -54,9 +54,6 @@ The PNS Guardian contract is the entry point for record creation and it's respon
 
 The smart contracts are stored under the `contracts` directory.
 
-Files marked with an asterisk (\*) are specific to [sound.xyz](https://sound.xyz),  
-but you can refer to them if you are building contracts to interact with them on-chain,   
-or building your own customized versions.
 
 ```ml
 contracts/
