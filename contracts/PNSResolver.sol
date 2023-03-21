@@ -6,6 +6,7 @@ pragma solidity 0.8.9;
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol';
 import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 
 // ==========INTERNAL IMPORTS==========
 import './Interfaces/pns/IPNSResolver.sol';
@@ -20,8 +21,7 @@ import './dependencies/AddressResolver.sol';
  * @dev The interface IPNSResolver is inherited which inherits IPNSSchema.
  */
 
-contract PNSResolver is Initializable, AddressResolver, OwnableUpgradeable {
-	
+contract PNSResolver is Initializable, UUPSUpgradeable, AddressResolver, OwnableUpgradeable {
 	//  ==========STATE VARIABLES==========
 	IPNSRegistry public PNSRegistry;
 
@@ -35,6 +35,9 @@ contract PNSResolver is Initializable, AddressResolver, OwnableUpgradeable {
 		__Ownable_init();
 		PNSRegistry = _PNSRegistry;
 	}
+
+	/// @dev required by the OZ UUPS module
+	function _authorizeUpgrade(address) internal override onlyOwner {}
 
 	/**
 	 * @dev Returns the version number of the contract.
@@ -90,7 +93,11 @@ contract PNSResolver is Initializable, AddressResolver, OwnableUpgradeable {
 	 * @param coinType The coin type to seed the address for.
 	 * @param a The address to seed.
 	 */
-	function seedAddr(bytes32 phoneHash, uint256 coinType, bytes memory a) internal registryAuthorised(phoneHash) {
+	function seedAddr(
+		bytes32 phoneHash,
+		uint256 coinType,
+		bytes memory a
+	) internal registryAuthorised(phoneHash) {
 		emit AddressChanged(phoneHash, coinType, a);
 		if (coinType == COIN_TYPE_ETH) {
 			emit AddrChanged(phoneHash, bytesToAddress(a));

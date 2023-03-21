@@ -4,6 +4,7 @@ pragma solidity 0.8.9;
 //  ==========EXTERNAL IMPORTS==========
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 
 // ==========INTERNAL IMPORTS==========
 import './Interfaces/pns/IPNSRegistry.sol';
@@ -18,7 +19,7 @@ import './Interfaces/dependencies/IPriceConverter.sol';
  * @dev The interface IPNSRegistry is inherited which inherits IPNSSchema.
  */
 
-contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
+contract PNSRegistry is Initializable, UUPSUpgradeable, AccessControlUpgradeable, IPNSRegistry {
 	// using AddressUpgradeable for address payable;
 
 	//============STATE VARIABLES==============
@@ -55,7 +56,11 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 	 * @param _priceConverter Address of the IPriceConverter contract.
 	 * @param _treasuryAddress Address of the treasury.
 	 */
-	function initialize(address _pnsGuardian, address _priceConverter, address _treasuryAddress) external initializer {
+	function initialize(
+		address _pnsGuardian,
+		address _priceConverter,
+		address _treasuryAddress
+	) external initializer {
 		__AccessControl_init();
 		//set oracle constant
 		gracePeriod = 60 days;
@@ -66,6 +71,9 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 
 		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
 	}
+
+	/// @dev required by the OZ UUPS module
+	function _authorizeUpgrade(address) internal override onlySystemRoles {}
 
 	/**
 	 * @dev Sets the record for a phone number hash.
@@ -167,17 +175,25 @@ contract PNSRegistry is Initializable, AccessControlUpgradeable, IPNSRegistry {
 	}
 
 	/**
-	* @dev Retrieves the full record of a phone number, including its owner, expiration date, creation date, and whether it is currently expired or in grace period.
-	* @param phoneHash The hash of the phone number to retrieve the record for.
-	* @return owner The address of the current owner of the phone number.
-	* @return isExpired A boolean indicating whether the phone number is currently expired.
-	* @return isInGracePeriod A boolean indicating whether the phone number is currently in the grace period.
-	* @return expiration The timestamp indicating when the phone number will expire.
-	* @return creation The timestamp indicating when the phone number was first registered.
-	*/
-	function getRecordFull(
-		bytes32 phoneHash
-	) external view returns (address owner, bool isExpired, bool isInGracePeriod, uint256 expiration, uint256 creation) {
+	 * @dev Retrieves the full record of a phone number, including its owner, expiration date, creation date, and whether it is currently expired or in grace period.
+	 * @param phoneHash The hash of the phone number to retrieve the record for.
+	 * @return owner The address of the current owner of the phone number.
+	 * @return isExpired A boolean indicating whether the phone number is currently expired.
+	 * @return isInGracePeriod A boolean indicating whether the phone number is currently in the grace period.
+	 * @return expiration The timestamp indicating when the phone number will expire.
+	 * @return creation The timestamp indicating when the phone number was first registered.
+	 */
+	function getRecordFull(bytes32 phoneHash)
+		external
+		view
+		returns (
+			address owner,
+			bool isExpired,
+			bool isInGracePeriod,
+			uint256 expiration,
+			uint256 creation
+		)
+	{
 		recordExists(phoneHash);
 		PhoneRecord memory record = phoneRegistry[phoneHash];
 		isInGracePeriod = _hasPassedExpiryTime(phoneHash);
