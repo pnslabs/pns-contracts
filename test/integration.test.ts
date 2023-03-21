@@ -6,7 +6,7 @@ const { assert, expect } = require('chai');
 const { keccak256 } = require('../utils/util');
 const { deployContract } = require('../scripts/deploy');
 
-describe.only('PNS', () => {
+describe('PNS', () => {
   let pnsRegistryContract;
   let pnsGuardianContract;
   let pnsResolverContract;
